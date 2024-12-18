@@ -27,6 +27,7 @@ jobs:
       - name: Get Test folder
         uses: actions/checkout@v4
         with:
+          repository: matcom/computer_networks_fall_2024
           path: environment
       - name: Prepare environment
         run: |
