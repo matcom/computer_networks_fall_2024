@@ -7,7 +7,9 @@
 # 3. SMTP
 # 4. IRC
 
-PROTOCOL=0
+PROTOCOL=3
+
+echo "PROTOCOL=${PROTOCOL}"
 
 # Don't modify the next line
 echo "PROTOCOL=${PROTOCOL}" >> "$GITHUB_ENV"
