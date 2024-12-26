@@ -1,5 +1,8 @@
 import os
 import socket
+import time
+
+from requests.structures import CaseInsensitiveDict
 
 class NotConnected(Exception):
     pass
@@ -38,7 +41,7 @@ def parse_response(res: bytes):
     index += 1
     
     buffer, index = readline(res, index)
-    headers = {}
+    headers = CaseInsensitiveDict()
     while buffer != b'\r':
         header, value = map(str.strip, buffer.decode().split(":", 1))
         headers[header] = value
@@ -88,18 +91,21 @@ class HTTPConnection:
         self.sock.sendall(data)
 
     def receive(self):
-        return self.sock.recv(1024)
+        return self.sock.recv(1048576)
 
     def request(self, method, url, body="", headers=None):
         headers = headers or {}
         headers["Content-Length"] = str(len(body))
-        headers["User-Agent"] = headers.get("User-Agent", "blob")
+        headers["Accept-Encoding"] = headers.get("Accept", "identity")
+        headers["Host"] = headers.get("Host", self.host)
 
         req = f"{method.upper()} {url} {self._version_str}\r\n"
         for header, value in headers.items():
             req += f"{header}: {value}\r\n"
 
-        req += f"\r\n{body}\r\n"
+        if body:
+            req += f"\r\n{body}\r\n"
+        req += "\r\n"
 
         self.send(req.encode())
 
@@ -125,15 +131,25 @@ def request(method="GET", url="/", headers=None):
     try:
         conn.connect()
         conn.request(method, url, headers=headers)
+        # XXX writes headers first and then it writes the body
+        # so we wait for a bit
+        time.sleep(1)
         res = conn.receive()
     finally:
         conn.close()
+    data = parse_response(res)
 
-    return parse_response(res)
+    return data
 
 if __name__ == "__main__":
-    host = "127.0.0.1"
-    port = 8000
+    URL = "http://httpbin.org/"
+    #URL = "http://127.0.0.1:8000"
 
-    res = request("GET", "http://127.0.0.1:8000/")
+    res = request("GET", URL, headers={"User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"})
+    print(res)
     res.visualise()
+
+    res = request("HEAD", URL)
+    print(res, res.headers)
+    res = request("OPTIONS", URL)
+    print(res, res.headers)
