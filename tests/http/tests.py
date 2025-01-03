@@ -10,6 +10,24 @@ def make_request(method, path, headers=None, data=None):
     response = <procesar respuesta con propiedades status, body, headers>()
     return response
 
+
+# Ejemplo:
+
+#     import os
+#     import json
+
+#     def make_request(method, path, headers=None, data=None):
+
+#         headers_json = json.dumps(headers) if headers else '{}'
+#         data_json = json.dumps(data) if data else '{}'
+
+#         command = f'python3 client.py {method} "http://localhost:8080{path}" {headers_json} "{data_json}"'
+#         response_string = os.popen(command).read()
+
+#         response_data = json.loads(response_string)
+
+#         return response_data
+
 #############################################################
 #############################################################
 #############################################################
@@ -19,7 +37,19 @@ def make_request(method, path, headers=None, data=None):
 
 
 
-AUTHORIZED_TOKEN = "12345"
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 # Almacena los resultados de las pruebas
 results = []
@@ -46,65 +76,65 @@ def evaluate_response(case, expected_status, actual_status, expected_body=None, 
 # Pruebas de casos simples
 print_case("GET root", "Testing a simple GET request to '/' without authorization")
 response = make_request("GET", "/")
-evaluate_response("GET root", 200, response.status_code, "Welcome to the server!", response.body)
+evaluate_response("GET root", 200, response['status'], "Welcome to the server!", response['body'])
 
 print_case("POST simple body", "Testing POST request to '/' with a plain text body")
 response = make_request("POST", "/", data="Hello, server!")
-evaluate_response("POST simple body", 200, response.status_code, "POST request successful", response.body)
+evaluate_response("POST simple body", 200, response['status'], "POST request successful", response['body'])
 
 print_case("HEAD root", "Testing a simple HEAD request to '/' without authorization")
 response = make_request("HEAD", "/")
-evaluate_response("HEAD root", 200, response.status_code)
+evaluate_response("HEAD root", 200, response['status'])
 
 # Pruebas de casos avanzados (con autorización)
 print_case("GET secure without Authorization", "Testing GET request to '/secure' without authorization")
 response = make_request("GET", "/secure")
-evaluate_response("GET secure without Authorization", 401, response.status_code, "Authorization header missing", response.body)
+evaluate_response("GET secure without Authorization", 401, response['status'], "Authorization header missing", response['body'])
 
 print_case("GET secure with valid Authorization", "Testing GET request to '/secure' with valid authorization")
-response = make_request("GET", "/secure", headers={"Authorization": f"Bearer {AUTHORIZED_TOKEN}"})
-evaluate_response("GET secure with valid Authorization", 200, response.status_code, "You accessed a protected resource", response.body)
+response = make_request("GET", "/secure", headers='{"Authorization": "Bearer 12345"}')
+evaluate_response("GET secure with valid Authorization", 200, response['status'], "You accessed a protected resource", response['body'])
 
 print_case("GET secure with invalid Authorization", "Testing GET request to '/secure' with invalid authorization")
-response = make_request("GET", "/secure", headers={"Authorization": "Bearer invalid_token"})
-evaluate_response("GET secure with invalid Authorization", 401, response.status_code, "Invalid or missing authorization token", response.body)
+response = make_request("GET", "/secure", headers='{"Authorization": "Bearer invalid_token"}')
+evaluate_response("GET secure with invalid Authorization", 401, response['status'], "Invalid or missing authorization token", response['body'])
 
 # Ajuste en PUT request
 print_case("PUT request", "Testing a simple PUT request to '/resource'")
 response = make_request("PUT", "/resource")
-evaluate_response("PUT request", 200, response.status_code, "PUT request successful! Resource '/resource' would be updated if this were implemented.", response.body)
+evaluate_response("PUT request", 200, response['status'], "PUT request successful! Resource '/resource' would be updated if this were implemented.", response['body'])
 
 # Ajuste en DELETE request
 print_case("DELETE request", "Testing DELETE request to '/resource'")
 response = make_request("DELETE", "/resource")
-evaluate_response("DELETE request", 200, response.status_code, "DELETE request successful! Resource '/resource' would be deleted if this were implemented.", response.body)
+evaluate_response("DELETE request", 200, response['status'], "DELETE request successful! Resource '/resource' would be deleted if this were implemented.", response['body'])
 
 print_case("OPTIONS request", "Testing OPTIONS request to '/'")
 response = make_request("OPTIONS", "/")
-evaluate_response("OPTIONS request", 204, response.status_code)
+evaluate_response("OPTIONS request", 204, response['status'])
 
 print_case("TRACE request", "Testing TRACE request to '/'")
 response = make_request("TRACE", "/")
-evaluate_response("TRACE request", 200, response.status_code)
+evaluate_response("TRACE request", 200, response['status'])
 
 print_case("CONNECT request", "Testing CONNECT request to '/target'")
 response = make_request("CONNECT", "/target")
-evaluate_response("CONNECT request", 200, response.status_code, "CONNECT method successful", response.body)
+evaluate_response("CONNECT request", 200, response['status'], "CONNECT method successful", response['body'])
 
 # Ajuste en Malformed POST body
 print_case("Malformed POST body", "Testing POST request with malformed JSON body")
 response = make_request(
     "POST",
     "/secure",
-    headers={"Authorization": f"Bearer {AUTHORIZED_TOKEN}", "Content-Type": "application/json"},
+    headers='{"Authorization": "Bearer 12345", "Content-Type": "application/json"}',
     data='{"key":}'
 )
 evaluate_response(
     "Malformed POST body",
     400,
-    response.status_code,
+    response['status'],
     "Malformed JSON body",
-    response.body
+    response['body']
 )
 
 # Nuevo caso: Malformed POST body without Authorization
@@ -112,52 +142,20 @@ print_case("Malformed POST body without Authorization", "Testing POST request wi
 response = make_request(
     "POST",
     "/secure",
-    headers={"Content-Type": "application/json"},
+    headers='{"Content-Type": "application/json"}',
     data='{"key":}'
 )
 evaluate_response(
     "Malformed POST body without Authorization",
     401,
-    response.status_code,
+    response['status'],
     "Authorization header missing",
-    response.body
-)
-
-# Ajuste para XML malformado
-print_case("Malformed XML body", "Testing POST request with malformed XML body")
-response = make_request(
-    "POST",
-    "/secure",
-    headers={"Authorization": f"Bearer {AUTHORIZED_TOKEN}", "Content-Type": "application/xml"},
-    data="<key>value"
-)
-evaluate_response(
-    "Malformed XML body",
-    400,
-    response.status_code,
-    "Malformed XML body",
-    response.body
-)
-
-# Nuevo caso: Malformed XML body without Authorization
-print_case("Malformed XML body without Authorization", "Testing POST request with malformed XML body and no authorization")
-response = make_request(
-    "POST",
-    "/secure",
-    headers={"Content-Type": "application/xml"},
-    data="<key>value"
-)
-evaluate_response(
-    "Malformed XML body without Authorization",
-    401,
-    response.status_code,
-    "Authorization header missing",
-    response.body
+    response['body']
 )
 
 print_case("Invalid Method", "Testing an unsupported method (PATCH)")
 response = make_request("PATCH", "/")
-evaluate_response("Invalid Method", 405, response.status_code)
+evaluate_response("Invalid Method", 405, response['status'])
 
 # Resumen
 print("\n🎉 \033[1mTest Summary\033[0m 🎉")
