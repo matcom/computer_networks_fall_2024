@@ -4,6 +4,8 @@ import time
 
 from requests.structures import CaseInsensitiveDict
 
+from parse_http_url import parse_http_url,BadUrlError
+
 class NotConnected(Exception):
     pass
 
@@ -116,16 +118,11 @@ class HTTPConnection:
 
 
 def request(method="GET", url="/", headers=None):
-    url_split = url.split("/")
-
-    url = "/".join(url_split[3:]) or "/"
-    host_port = url_split[2].split(":")
-    if len(host_port) < 2:
-        host = host_port[0]
-        port = 80
-    else:
-        host, port = host_port
-        port = int(port)
+    try:
+        host,port,_,_ = parse_http_url(url)
+    except BadUrlError as e:
+        print(type(e),e)
+        return
     conn = HTTPConnection(host, port)
     res = None
     try:
