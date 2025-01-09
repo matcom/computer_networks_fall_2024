@@ -67,7 +67,13 @@ def argument_handler(min_required_args, max_required_args, given_args):
 
 # Control de acceso:
 def cmd_USER(socket, *args):
-    pass
+    """Comando usado para autenticarse en el servidor"""
+    args_len = len(args)
+    response = argument_handler(1,1,args_len)
+    if response == "200":
+        return send(socket, f'USER {args[0]}')
+    else:
+        return response
 
 def cmd_PASS(socket, *args):
     pass
