@@ -112,7 +112,14 @@ def cmd_REIN(socket, *args):
         return response
 
 def cmd_QUIT(socket, *args):
-    pass
+    """Cierra la sesión y termina la ejecución del cliente"""
+    args_len = len(args)
+    response = argument_handler(0,0,args_len)
+    if response == "200":
+        response = send(socket, f'QUIT')
+        if not socket is None:
+            socket.close()
+    return response
 
 # Navegación:
 def cmd_PWD(socket, *args):
