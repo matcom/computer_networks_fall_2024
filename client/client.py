@@ -94,7 +94,13 @@ def cmd_ACCT(socket, *args):
         return response
 
 def cmd_SMNT(socket, *args):
-    pass
+    """Monta un sistema de archivos remoto en el servidor FTP."""
+    args_len = len(args)
+    response = argument_handler(1,1,args_len)
+    if response == "200":
+        return send(socket, f'SMNT {args[0]}')
+    else:
+        return response
 
 def cmd_REIN(socket, *args):
     pass
