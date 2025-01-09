@@ -103,7 +103,13 @@ def cmd_SMNT(socket, *args):
         return response
 
 def cmd_REIN(socket, *args):
-    pass
+    """Reinicia la sesión FTP actual."""
+    args_len = len(args)
+    response = argument_handler(0,0,args_len)
+    if response == "200":
+        return send(socket, f'REIN')
+    else:
+        return response
 
 def cmd_QUIT(socket, *args):
     pass
