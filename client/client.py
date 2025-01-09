@@ -76,7 +76,13 @@ def cmd_USER(socket, *args):
         return response
 
 def cmd_PASS(socket, *args):
-    pass
+    """Comando usado para introducir la contraseña en el servidor"""
+    args_len = len(args)
+    response = argument_handler(1,1,args_len)
+    if response == "200":
+        return send(socket, f'PASS {args[0]}')
+    else:
+        return response
 
 def cmd_ACCT(socket, *args):
     pass
