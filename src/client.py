@@ -16,22 +16,26 @@ class SMTPClient:
         self.connection.connect()
         try:
             response = self.commands.ehlo("localhost")
-            print(SMTPResponse.parse(response).message)
+            print(response)
 
             response = self.commands.mail_from(sender)
-            print(SMTPResponse.parse(response).message)
+            print(response)
 
             response = self.commands.rcpt_to(recipient)
-            print(SMTPResponse.parse(response).message)
+            print(response)
 
             response = self.commands.data(message)
-            print(SMTPResponse.parse(response).message)
+            print(response)
             
         except TemporarySMTPException as e:
-            print(f"Temporary error: {e}")
+            print(f"Error temporal: {e}. Puedes reintentar más tarde.")
         except PermanentSMTPException as e:
-            print(f"Permanent error: {e}")
+            print(f"Error permanente: {e}. No puedes continuar con esta operación.")
+        except SMTPException as e:
+            print(f"Error general de SMTP: {e}")
+        except Exception as e:
+            print(f"Error inesperado: {e}")
         finally:
             response = self.commands.quit()
-            print(SMTPResponse.parse(response).message)
+            print(response)
             self.connection.close()
