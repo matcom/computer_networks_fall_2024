@@ -8,17 +8,54 @@ FTP_DATA_PORT = 20                  # Puerto del servidor FTP para enviar y reci
 BUFFER_SIZE = 1024
 TYPE = None
 
-# Funciones
+# Funciones -------------------------------------------------------------------------------------------------------------------
+
+def response(socket):
+    response = ''
+    while True:
+        data = socket.recv(BUFFER_SIZE).decode
+        response += data
+        if data.endswith('\r\n'):
+            break
+    return response
 
 def client_connects_to_server(socket):
     socket.connect((FTP_SERVER_ADDR, FTP_CONTROL_PORT))
-    response = b''
-    while True:
-        data = socket.recv(BUFFER_SIZE)
-        response += data
-        if data.endswith(b'\r\n'):
-            break
-    return response.decode('utf-8')
+    return response()
+
+def send(socket, message):
+    socket.sendall(f"{message}\r\n".encode())
+    return response()
+
+def default_login(socket):
+    send(socket, f"USER anonymous")
+    response = send(socket, "PASS anonymous")
+
+    if "230" in response: 
+        print("Autenticado como usuario anónimo.")
+        return response
+    else:
+        return (f"Error de autenticación: {response}")
+
+def client_login(socket):
+    username = input("Ingrese el nombre de usuario: ")
+    if username == "":
+        return default_login()
+    
+    send(socket, f"USER {username}")
+    password = getpass.getpass("Ingrese la contraseña: ")
+    response = send(socket, f"PASS {password}")
+
+    req = input("Requiere una cuenta específica?   s -> SI    [otra tecla] -> NO: ")
+    if req == "s" or req == "S":
+        account = input("Ingrese su cuenta: ")
+        acct_response = send(socket, f"ACCT {account}") 
+        return acct_response
+
+    elif "230" in response: 
+        return response
+    else:
+        return (f"Error de autenticación: {response}")
 
 # Funciones para manejar comandos ---------------------------------------------------------------------------------------------
 
@@ -132,12 +169,22 @@ def cmd_SITE(command):
 # Ejecución principal del cliente ---------------------------------------------------------------------------------------------
 
 # Conexión inicial
+FTP_SERVER_ADDR = input("Ingrese la dirección IP del servidor FTP: ")
 socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-socket.settimeout(10)
-print(client_connects_to_server(socket))
+try:
+    print(client_connects_to_server(socket))
+except Exception as e:
+    print(f"Error al conectar con el servidor: {e}")
+    exit()
 
-# Realizar conexión al servidor
-
+# Autenticación de usuario
+while True:
+    response = client_login(socket)
+    print(response)
+    if "230" in response:
+        break
+    else:
+        print("Inténtelo de nuevo.")
 
 # Ejecución de comandos del cliente
 while True:
