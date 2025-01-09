@@ -84,23 +84,3 @@ class SMTPResponse:
         :return: Cadena con el código y el mensaje.
         """
         return f"{self.code} {self.message}"
-
-# Ejemplo de uso
-if __name__ == "__main__":
-    # Ejemplo de respuestas del servidor
-    responses = [
-        "250 OK",
-        "354 Start mail input; end with <CRLF>.<CRLF>",
-        "421 Service not available, closing transmission channel",
-        "550 Requested action not taken: mailbox unavailable"
-    ]
-
-    for raw_response in responses:
-        try:
-            response = SMTPResponse(raw_response)
-            print(f"Respuesta: {response}")
-            print(f"  Éxito: {response.is_success()}")
-            print(f"  Error Temporal: {response.is_temporary_error()}")
-            print(f"  Error Permanente: {response.is_permanent_error()}")
-        except ValueError as e:
-            print(f"Error al procesar la respuesta: {e}")

@@ -11,9 +11,7 @@ def main():
     message = 'Subject: Test Email\r\n\r\nThis is a test email.'
 
     client = SMTPClient(host, port)
-    
-    client.test_commands()
-    
+        
     client.send_mail(sender, recipient, message)
 
 if __name__ == '__main__':
