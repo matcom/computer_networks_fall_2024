@@ -15,7 +15,7 @@ def response(socket):
     while True:
         data = socket.recv(BUFFER_SIZE).decode
         response += data
-        if data.endswith('\r\n'):
+        if data.endswith('\r\n') or len(data) < BUFFER_SIZE:
             break
     return response
 
@@ -60,110 +60,110 @@ def client_login(socket):
 # Funciones para manejar comandos ---------------------------------------------------------------------------------------------
 
 # Control de acceso:
-def cmd_USER(username):
+def cmd_USER(socket, *args):
     pass
 
-def cmd_PASS(password):
+def cmd_PASS(socket, *args):
     pass
 
-def cmd_ACCT(account_info):
+def cmd_ACCT(socket, *args):
     pass
 
-def cmd_SMNT(pathname):
+def cmd_SMNT(socket, *args):
     pass
 
-def cmd_REIN():
+def cmd_REIN(socket, *args):
     pass
 
-def cmd_QUIT():
+def cmd_QUIT(socket, *args):
     pass
 
 # Navegación:
-def cmd_PWD():
+def cmd_PWD(socket, *args):
     pass
 
-def cmd_CWD(pathname):
+def cmd_CWD(socket, *args):
     pass
 
-def cmd_CDUP():
+def cmd_CDUP(socket, *args):
     pass
 
-def cmd_MKD(pathname):
+def cmd_MKD(socket, *args):
     pass
 
-def cmd_RMD(pathname):
+def cmd_RMD(socket, *args):
     pass
 
 # Transferencia de archivos:
-def cmd_RETR(pathname):
+def cmd_RETR(socket, *args):
     pass
 
-def cmd_STOR(pathname):
+def cmd_STOR(socket, *args):
     pass
 
-def cmd_APPE(pathname):
+def cmd_APPE(socket, *args):
     pass
 
-def cmd_DELE(pathname):
+def cmd_DELE(socket, *args):
     pass
 
-def cmd_LIST(pathname):
+def cmd_LIST(socket, *args):
     pass
 
-def cmd_NLST(pathname):
+def cmd_NLST(socket, *args):
     pass
 
-def cmd_ABOR():
+def cmd_ABOR(socket, *args):
     pass
 
 # Configuración de transferencia:
-def cmd_TYPE(type_code):
+def cmd_TYPE(socket, *args):
     pass
 
-def cmd_MODE(mode_code):
+def cmd_MODE(socket, *args):
     pass
 
-def cmd_STRU(structure_code):
+def cmd_STRU(socket, *args):
     pass
 
 # Control de conexión:
-def cmd_PORT(host_port):
+def cmd_PORT(socket, *args):
     pass
 
-def cmd_PASV():
+def cmd_PASV(socket, *args):
     pass
 
 # Información del sistema:
-def cmd_SYST():
+def cmd_SYST(socket, *args):
     pass
 
-def cmd_STAT(pathname=None):
+def cmd_STAT(socket, *args):
     pass
 
-def cmd_HELP(command=None):
+def cmd_HELP(socket, *args):
     pass
 
 # Control de archivos:
-def cmd_RNFR(pathname):
+def cmd_RNFR(socket, *args):
     pass
 
-def cmd_RNTO(pathname):
+def cmd_RNTO(socket, *args):
     pass
 
 # Otros comandos:
-def cmd_NOOP():
+def cmd_NOOP(socket, *args):
     pass
 
-def cmd_STOU():
+def cmd_STOU(socket, *args):
     pass
 
-def cmd_ALLO(size):
+def cmd_ALLO(socket, *args):
     pass
 
-def cmd_REST(marker):
+def cmd_REST(socket, *args):
     pass
 
-def cmd_SITE(command):
+def cmd_SITE(socket, *args):
     pass
 
 # Ejecución principal del cliente ---------------------------------------------------------------------------------------------
@@ -190,6 +190,80 @@ while True:
 while True:
     try:
         user_input = input("=> ")
+        command_parts = user_input.strip().split(" ")
+        command = command_parts[0].lower()
+        args = command_parts[1:]
+
+        if command == 'user':
+            print(cmd_USER(socket, *args))
+        elif command == 'pass':
+            print(cmd_PASS(socket, *args))
+        elif command == 'acct':
+            print(cmd_ACCT(socket, *args))
+        elif command == 'smnt':
+            print(cmd_SMNT(socket, *args))
+        elif command == 'rein':
+            print(cmd_REIN(socket, *args))
+        elif command == 'quit':
+            print(cmd_QUIT(socket, *args))
+            break #Revisar si es necesario el break
+        elif command == 'pwd':
+            print(cmd_PWD(socket, *args))
+        elif command == 'cwd':
+            print(cmd_CWD(socket, *args))
+        elif command == 'cdup':
+            print(cmd_CDUP(socket, *args))
+        elif command == 'mkd':
+            print(cmd_MKD(socket, *args))
+        elif command == 'rmd':
+            print(cmd_RMD(socket, *args))
+        elif command == 'retr':
+            print(cmd_RETR(socket, *args))
+        elif command == 'stor':
+            print(cmd_STOR(socket, *args))
+        elif command == 'appe':
+            print(cmd_APPE(socket, *args))
+        elif command == 'dele':
+            print(cmd_DELE(socket, *args))
+        elif command == 'list':
+            print(cmd_LIST(socket, *args))
+        elif command == 'nlst':
+            print(cmd_NLST(socket, *args))
+        elif command == 'abor':
+            print(cmd_ABOR(socket, *args))
+        elif command == 'type':
+            print(cmd_TYPE(socket, *args))
+        elif command == 'mode':
+            print(cmd_MODE(socket, *args))
+        elif command == 'stru':
+            print(cmd_STRU(socket, *args))
+        elif command == 'port':
+            print(cmd_PORT(socket, *args))
+        elif command == 'pasv':
+            print(cmd_PASV(socket, *args))
+        elif command == 'syst':
+            print(cmd_SYST(socket, *args))
+        elif command == 'stat':
+            print(cmd_STAT(socket, *args))
+        elif command == 'help':
+            print(cmd_HELP(socket, *args))
+        elif command == 'rnfr':
+            print(cmd_RNFR(socket, *args))
+        elif command == 'rnto':
+            print(cmd_RNTO(socket, *args))
+        elif command == 'noop':
+            print(cmd_NOOP(socket, *args))
+        elif command == 'stou':
+            print(cmd_STOU(socket, *args))
+        elif command == 'allo':
+            print(cmd_ALLO(socket, *args))
+        elif command == 'rest':
+            print(cmd_REST(socket, *args))
+        elif command == 'site':
+            print(cmd_SITE(socket, *args))
+
+        else:
+            print("502: Comando no reconocido, por favor intente de nuevo.")
 
     except Exception as e:
         print(f"Error: {e}")
