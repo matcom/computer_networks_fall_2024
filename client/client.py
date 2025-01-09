@@ -57,6 +57,12 @@ def client_login(socket):
     else:
         return (f"Error de autenticación: {response}")
 
+def argument_handler(min_required_args, max_required_args, given_args):
+    if min_required_args>given_args:
+        return f"Este comando requiere {min_required_args} argumentos, sin embargo {given_args} fueron recibidos."
+    elif max_required_args<given_args:
+        return f"Este comando recibió {given_args-max_required_args} argumentos innecesarios."
+
 # Funciones para manejar comandos ---------------------------------------------------------------------------------------------
 
 # Control de acceso:
