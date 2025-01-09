@@ -20,6 +20,116 @@ def client_connects_to_server(socket):
             break
     return response.decode('utf-8')
 
+# Funciones para manejar comandos ---------------------------------------------------------------------------------------------
+
+# Control de acceso:
+def cmd_USER(username):
+    pass
+
+def cmd_PASS(password):
+    pass
+
+def cmd_ACCT(account_info):
+    pass
+
+def cmd_SMNT(pathname):
+    pass
+
+def cmd_REIN():
+    pass
+
+def cmd_QUIT():
+    pass
+
+# Navegación:
+def cmd_PWD():
+    pass
+
+def cmd_CWD(pathname):
+    pass
+
+def cmd_CDUP():
+    pass
+
+def cmd_MKD(pathname):
+    pass
+
+def cmd_RMD(pathname):
+    pass
+
+# Transferencia de archivos:
+def cmd_RETR(pathname):
+    pass
+
+def cmd_STOR(pathname):
+    pass
+
+def cmd_APPE(pathname):
+    pass
+
+def cmd_DELE(pathname):
+    pass
+
+def cmd_LIST(pathname):
+    pass
+
+def cmd_NLST(pathname):
+    pass
+
+def cmd_ABOR():
+    pass
+
+# Configuración de transferencia:
+def cmd_TYPE(type_code):
+    pass
+
+def cmd_MODE(mode_code):
+    pass
+
+def cmd_STRU(structure_code):
+    pass
+
+# Control de conexión:
+def cmd_PORT(host_port):
+    pass
+
+def cmd_PASV():
+    pass
+
+# Información del sistema:
+def cmd_SYST():
+    pass
+
+def cmd_STAT(pathname=None):
+    pass
+
+def cmd_HELP(command=None):
+    pass
+
+# Control de archivos:
+def cmd_RNFR(pathname):
+    pass
+
+def cmd_RNTO(pathname):
+    pass
+
+# Otros comandos:
+def cmd_NOOP():
+    pass
+
+def cmd_STOU():
+    pass
+
+def cmd_ALLO(size):
+    pass
+
+def cmd_REST(marker):
+    pass
+
+def cmd_SITE(command):
+    pass
+
+# Ejecución principal del cliente ---------------------------------------------------------------------------------------------
 
 # Conexión inicial
 socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
