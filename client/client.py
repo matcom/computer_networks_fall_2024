@@ -174,8 +174,14 @@ def cmd_RMD(socket, *args):
         return response
 
 # Transferencia de archivos:
-def cmd_RETR(socket, *args):
-    pass
+def cmd_DELE(socket, *args):
+    """Elimina el directorio especificado."""
+    args_len = len(args)
+    response = argument_handler(1,1,args_len)
+    if response == "200":
+        return send(socket, f'DELE {args[0]}')
+    else:
+        return response
 
 def cmd_STOR(socket, *args):
     pass
