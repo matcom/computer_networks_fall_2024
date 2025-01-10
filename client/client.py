@@ -310,7 +310,13 @@ def cmd_REST(socket, *args):
         return response
 
 def cmd_SITE(socket, *args):
-    pass
+    """Envía un comando específico del sitio al servidor FTP."""
+    args_len = len(args)
+    response = argument_handler(1,1,args_len)
+    if response == "200":
+        return send(socket, f'SITE {args[0]}')
+    else:
+        return response
 
 # Ejecución principal del cliente ---------------------------------------------------------------------------------------------
 
