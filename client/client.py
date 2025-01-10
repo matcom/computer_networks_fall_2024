@@ -247,7 +247,17 @@ def cmd_STAT(socket, *args):
         return response
 
 def cmd_HELP(socket, *args):
-    pass
+    """Solicita ayuda sobre un comando específico o sobre el servicio FTP en general."""
+    args_len = len(args)
+    response = argument_handler(0,1,args_len)
+    if response == "200":
+        if args_len==0:
+            print(send(socket, f'HELP'))
+        else:
+            print(send(socket, f'HELP {args[0]}'))
+        return response(socket)
+    else:
+        return response
 
 # Control de archivos:
 def cmd_RNFR(socket, *args):
