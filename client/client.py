@@ -209,12 +209,12 @@ def cmd_ABOR(socket, *args):
 
 # Configuración de transferencia:
 def cmd_TYPE(socket, *args):
-    """Establece el tipo de transferencia de datos (ASCII o BINARY)."""
+    """Establece el tipo de transferencia de datos ('ASCII' o 'BINARY')."""
     args_len = len(args)
     response = argument_handler(1,1,args_len)
     if response == "200":
         if args[0].upper() not in ['A', 'I']:
-            raise ValueError("504: El modo debe ser 'ASCII' o 'BINARY'")
+            raise ValueError("504: El modo debe ser ASCII o BINARY")
         return send(socket, f'TYPE {args[0]}')
     else:
         return response
@@ -225,13 +225,21 @@ def cmd_MODE(socket, *args):
     response = argument_handler(1,1,args_len)
     if response == "200":
         if args[0].upper() not in ['S', 'B']:
-            raise ValueError("504: El modo debe ser 'ASCII' o 'BINARY'")
+            raise ValueError("504: El modo debe ser STREAM o BLOCK")
         return send(socket, f'MODE {args[0]}')
     else:
         return response
 
 def cmd_STRU(socket, *args):
-    pass
+    """Establece la estructura de datos para la transferencia ('FILE' o 'RECORD')."""
+    args_len = len(args)
+    response = argument_handler(1,1,args_len)
+    if response == "200":
+        if args[0].upper() not in ['F', 'R']:
+            raise ValueError("504: El modo debe ser FILE o RECORD")
+        return send(socket, f'STRU {args[0]}')
+    else:
+        return response
 
 # Control de conexión:
 def cmd_PORT(socket, *args):
