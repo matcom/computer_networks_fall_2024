@@ -199,8 +199,13 @@ def cmd_NLST(socket, *args):
     pass
 
 def cmd_ABOR(socket, *args):
-    pass
-
+    """Cancela el comando actual en el servidor FTP."""
+    args_len = len(args)
+    response = argument_handler(0,0,args_len)
+    if response == "200":
+        return send(socket, f'ABOR')
+    else:
+        return response
 # Configuración de transferencia:
 def cmd_TYPE(socket, *args):
     pass
