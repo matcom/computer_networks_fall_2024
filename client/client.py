@@ -1,10 +1,12 @@
 import socket
 import os
+import re
 
 # Configuración inicial
 FTP_SERVER_ADDR = '127.0.0.1'       # Dirección del servidor
 FTP_CONTROL_PORT = 21               # Puerto del servidor FTP para manejar sesiones. Este valor no cambia
-FTP_DATA_PORT = 20                  # Puerto del servidor FTP para enviar y recibir datos
+PASV_MODE = 0                       # Indicador de modo pasivo (0=inactivo   1=activo)
+PASV_SOCKET = None                  # Socket de transferencia utilizado en modo pasivo
 BUFFER_SIZE = 1024
 TYPE = None
 
@@ -262,12 +264,42 @@ def cmd_PORT(socket, *args):
         port_high, port_low = divmod(args[1], 256)
         port_str = f"{port_high},{port_low}"
         command = f"PORT {','.join(ip_parts)}0,{port_str}"
+        if PASV_SOCKET:
+            PASV_SOCKET.close()
+            PASV_SOCKET = None
+            PASV_MODE = 0
         return send(socket, command)
     else:
         return response
 
 def cmd_PASV(socket, *args):
-    pass
+    """Envía el comando PASV al servidor FTP para establecer el modo pasivo (el servidor escucha conexiones y el cliente la inicia)."""
+    args_len = len(args)
+    response = argument_handler(0,0,args_len)
+    if response == "200":
+        try:
+            response = send(socket, 'PASV')
+            # Extraer la dirección IP y el puerto del servidor
+            print(response)
+            match = re.search(r'(\d+),(\d+),(\d+),(\d+),(\d+),(\d+)', response)
+            if match:
+                ip_parts = [int(x) for x in match.groups()[:4]]
+                port = int(match.group(5)) * 256 + int(match.group(6))
+                data_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                data_socket.connect((socket.inet_ntoa(bytes(ip_parts)), port))
+                print('225: Conexión establecida, sin transferencia en proceso.')
+                PASV_MODE = 1
+                return data_socket
+            else:
+                print('425: No se ha podido establecer una conexión de transferencia de datos con el Host.')
+                return None
+        except Exception as e:
+            print(f'No se pudo establecer el modo pasivo: {e}')
+        return None
+    else:
+        print(response)
+        return None
+   
 
 # Información del sistema:
 def cmd_SYST(socket, *args):
@@ -437,7 +469,7 @@ while True:
         elif command == 'port':
             print(cmd_PORT(socket, *args))
         elif command == 'pasv':
-            print(cmd_PASV(socket, *args))
+            PASV_SOCKET = cmd_PASV(socket, *args)
         elif command == 'syst':
             print(cmd_SYST(socket, *args))
         elif command == 'stat':
