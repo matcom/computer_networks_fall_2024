@@ -21,11 +21,11 @@ def response(socket):
 
 def client_connects_to_server(socket):
     socket.connect((FTP_SERVER_ADDR, FTP_CONTROL_PORT))
-    return response()
+    return response(socket)
 
 def send(socket, message):
     socket.sendall(f"{message}\r\n".encode())
-    return response()
+    return response(socket)
 
 def default_login(socket):
     send(socket, f"USER anonymous")
@@ -59,9 +59,15 @@ def client_login(socket):
 
 def argument_handler(min_required_args, max_required_args, given_args):
     if min_required_args>given_args:
-        return f"Este comando requiere {min_required_args} argumentos, sin embargo {given_args} fueron recibidos."
+        if min_required_args==max_required_args:
+            return f"504: Este comando requiere {min_required_args} argumentos, sin embargo {given_args} fueron recibidos."
+        else:
+            return f"504: Este comando requiere al menos {min_required_args} argumentos, sin embargo {given_args} fueron recibidos."
     elif max_required_args<given_args:
-        return f"Este comando recibió {given_args-max_required_args} argumentos innecesarios."
+        return f"504: Este comando recibió {given_args-max_required_args} argumentos innecesarios."
+    else:
+        return "200"
+
 
 # Funciones para manejar comandos ---------------------------------------------------------------------------------------------
 
