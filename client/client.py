@@ -165,7 +165,13 @@ def cmd_MKD(socket, *args):
         return response
 
 def cmd_RMD(socket, *args):
-    pass
+    """Elimina el directorio especificado."""
+    args_len = len(args)
+    response = argument_handler(1,1,args_len)
+    if response == "200":
+        return send(socket, f'RMD {args[0]}')
+    else:
+        return response
 
 # Transferencia de archivos:
 def cmd_RETR(socket, *args):
