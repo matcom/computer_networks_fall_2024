@@ -235,7 +235,16 @@ def cmd_SYST(socket, *args):
         return response
 
 def cmd_STAT(socket, *args):
-    pass
+    """Solicita el estado del servidor FTP o de un archivo específico."""
+    args_len = len(args)
+    response = argument_handler(0,1,args_len)
+    if response == "200":
+        if args_len==0:
+            return send(socket, f'STAT')
+        else:
+            return send(socket, f'STAT {args[0]}')
+    else:
+        return response
 
 def cmd_HELP(socket, *args):
     pass
