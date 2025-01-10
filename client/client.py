@@ -261,7 +261,13 @@ def cmd_HELP(socket, *args):
 
 # Control de archivos:
 def cmd_RNFR(socket, *args):
-    pass
+    """Inicia el proceso de renombrar un archivo en el servidor FTP."""
+    args_len = len(args)
+    response = argument_handler(1,1,args_len)
+    if response == "200":
+        return send(socket, f'RNFR {args[0]}')
+    else:
+        return response
 
 def cmd_RNTO(socket, *args):
     pass
