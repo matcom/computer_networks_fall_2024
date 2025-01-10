@@ -270,7 +270,13 @@ def cmd_RNFR(socket, *args):
         return response
 
 def cmd_RNTO(socket, *args):
-    pass
+    """Completa el proceso de renombrar un archivo en el servidor FTP."""
+    args_len = len(args)
+    response = argument_handler(1,1,args_len)
+    if response == "200":
+        return send(socket, f'RNTO {args[0]}')
+    else:
+        return response
 
 # Otros comandos:
 def cmd_NOOP(socket, *args):
