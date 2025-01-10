@@ -209,7 +209,7 @@ def cmd_ABOR(socket, *args):
 
 # Configuración de transferencia:
 def cmd_TYPE(socket, *args):
-    """Establece el modo de transferencia de datos (ASCII o BINARY)."""
+    """Establece el tipo de transferencia de datos (ASCII o BINARY)."""
     args_len = len(args)
     response = argument_handler(1,1,args_len)
     if response == "200":
@@ -219,9 +219,16 @@ def cmd_TYPE(socket, *args):
     else:
         return response
     
-
 def cmd_MODE(socket, *args):
-    pass
+    """Establece el modo de transferencia de datos ('STREAM' o 'BLOCK')."""
+    args_len = len(args)
+    response = argument_handler(1,1,args_len)
+    if response == "200":
+        if args[0].upper() not in ['S', 'B']:
+            raise ValueError("504: El modo debe ser 'ASCII' o 'BINARY'")
+        return send(socket, f'MODE {args[0]}')
+    else:
+        return response
 
 def cmd_STRU(socket, *args):
     pass
