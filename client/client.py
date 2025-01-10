@@ -129,7 +129,13 @@ def cmd_QUIT(socket, *args):
 
 # Navegación:
 def cmd_PWD(socket, *args):
-    pass
+    """Muestra el directorio de trabajo actual."""
+    args_len = len(args)
+    response = argument_handler(0,0,args_len)
+    if response == "200":
+        return send(socket, f'PWD')
+    else:
+        return response
 
 def cmd_CWD(socket, *args):
     pass
