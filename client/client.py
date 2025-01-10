@@ -6,7 +6,7 @@ import re
 FTP_SERVER_ADDR = '127.0.0.1'       # Dirección del servidor
 FTP_CONTROL_PORT = 21               # Puerto del servidor FTP para manejar sesiones. Este valor no cambia
 PASV_MODE = 0                       # Indicador de modo pasivo (0=inactivo   1=activo)
-PASV_SOCKET = None                  # Socket de transferencia utilizado en modo pasivo
+DATA_SOCKET = None                  # Socket de transferencia utilizado para transferencia de datos
 BUFFER_SIZE = 1024
 TYPE = None
 
@@ -69,7 +69,6 @@ def argument_handler(min_required_args, max_required_args, given_args):
         return f"504: Este comando recibió {given_args-max_required_args} argumentos innecesarios."
     else:
         return "200"
-
 
 # Funciones para manejar comandos ---------------------------------------------------------------------------------------------
 
@@ -260,17 +259,33 @@ def cmd_PORT(socket, *args):
         ip_parts = args[0].split('.')
         if len(ip_parts) != 4:
             raise ValueError("La dirección IP debe tener exactamente cuatro partes.")
+
+        # Iniciando socket de datos local
+        data_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        data_socket.bind((args[0], int(args[1])))
+        data_socket.listen(1)
+
+        # Obtener la dirección IP y el puerto del socket de datos para enviar al servidor
+        data_ip, data_port = data_socket.getsockname()
+        ip_parts = data_ip.split('.')
+        
         # Convertir la dirección IP y el puerto a formato de cadena para el comando PORT
-        port_high, port_low = divmod(args[1], 256)
+        port_high, port_low = divmod(data_port, 256)
         port_str = f"{port_high},{port_low}"
-        command = f"PORT {','.join(ip_parts)}0,{port_str}"
-        if PASV_SOCKET:
-            PASV_SOCKET.close()
-            PASV_SOCKET = None
-            PASV_MODE = 0
-        return send(socket, command)
-    else:
-        return response
+        command = f"PORT {','.join(ip_parts)},{port_str}"
+
+        # Verificando respuesta esperada
+        response = send(socket, command)
+        if response.startswith('227'):
+        # Cerrar el socket pasivo si está abierto
+            if DATA_SOCKET is not None:
+                DATA_SOCKET.close()
+                DATA_SOCKET = None
+                PASV_MODE = 0
+        # Si el servidor responde con un código de éxito, proceder con la transferencia de datos
+        print("Conexión activa establecida.")
+        DATA_SOCKET = data_socket
+    return response
 
 def cmd_PASV(socket, *args):
     """Envía el comando PASV al servidor FTP para establecer el modo pasivo (el servidor escucha conexiones y el cliente la inicia)."""
@@ -299,7 +314,6 @@ def cmd_PASV(socket, *args):
     else:
         print(response)
         return None
-   
 
 # Información del sistema:
 def cmd_SYST(socket, *args):
@@ -490,10 +504,8 @@ while True:
             print(cmd_REST(socket, *args))
         elif command == 'site':
             print(cmd_SITE(socket, *args))
-
         else:
             print("502: Comando no reconocido, por favor intente de nuevo.")
-
     except Exception as e:
         print(f"Error: {e}")
     
