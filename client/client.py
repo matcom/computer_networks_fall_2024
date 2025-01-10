@@ -280,7 +280,13 @@ def cmd_RNTO(socket, *args):
 
 # Otros comandos:
 def cmd_NOOP(socket, *args):
-    pass
+    """Envía un comando NOOP al servidor FTP, no es muy útil excepto si quieres mantener la conexión activa."""
+    args_len = len(args)
+    response = argument_handler(0,0,args_len)
+    if response == "200":
+        return send(socket, f'NOOP')
+    else:
+        return response
 
 def cmd_STOU(socket, *args):
     pass
