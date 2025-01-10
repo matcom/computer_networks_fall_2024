@@ -156,7 +156,13 @@ def cmd_CDUP(socket, *args):
         return response
 
 def cmd_MKD(socket, *args):
-    pass
+    """Crea un nuevo directorio con el nombre especificado."""
+    args_len = len(args)
+    response = argument_handler(1,1,args_len)
+    if response == "200":
+        return send(socket, f'MKD {args[0]}')
+    else:
+        return response
 
 def cmd_RMD(socket, *args):
     pass
