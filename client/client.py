@@ -243,7 +243,28 @@ def cmd_STRU(socket, *args):
 
 # Control de conexión:
 def cmd_PORT(socket, *args):
-    pass
+    """Envía el comando PORT al servidor FTP para especificar el puerto de datos del cliente."""
+    args_len = len(args)
+    response = argument_handler(2,2,args_len)
+    if response == "200":
+        if not isinstance(args[1], int):
+            raise TypeError("504: El argumento 'PORT' debe ser un entero.")
+        if not isinstance(ip, str):
+            raise TypeError("El argumento 'IP' debe ser una cadena.")
+        # Validando puerto
+        if args[1] < 1 or args[1] > 65535:
+            raise ValueError("504: El puerto debe estar en el rango de 1 a 65535.")
+        # Validando IP
+        ip_parts = args[0].split('.')
+        if len(ip_parts) != 4:
+            raise ValueError("La dirección IP debe tener exactamente cuatro partes.")
+        # Convertir la dirección IP y el puerto a formato de cadena para el comando PORT
+        port_high, port_low = divmod(args[1], 256)
+        port_str = f"{port_high},{port_low}"
+        command = f"PORT {','.join(ip_parts)}0,{port_str}"
+        return send(socket, command)
+    else:
+        return response
 
 def cmd_PASV(socket, *args):
     pass
