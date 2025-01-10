@@ -301,7 +301,13 @@ def cmd_ALLO(socket, *args):
         return response
 
 def cmd_REST(socket, *args):
-    pass
+    """Especifica un punto de inicio para la transferencia de datos."""
+    args_len = len(args)
+    response = argument_handler(1,1,args_len)
+    if response == "200":
+        return send(socket, f'REST {args[0]}')
+    else:
+        return response
 
 def cmd_SITE(socket, *args):
     pass
