@@ -292,7 +292,13 @@ def cmd_STOU(socket, *args):
     pass
 
 def cmd_ALLO(socket, *args):
-    pass
+    """Indica al servidor FTP que el cliente está listo para recibir datos."""
+    args_len = len(args)
+    response = argument_handler(1,1,args_len)
+    if response == "200":
+        return send(socket, f'ALLO {args[0]}')
+    else:
+        return response
 
 def cmd_REST(socket, *args):
     pass
