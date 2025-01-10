@@ -138,7 +138,13 @@ def cmd_PWD(socket, *args):
         return response
 
 def cmd_CWD(socket, *args):
-    pass
+    """Cambia el directorio actual al especificado."""
+    args_len = len(args)
+    response = argument_handler(1,1,args_len)
+    if response == "200":
+        return send(socket, f'CWD {args[0]}')
+    else:
+        return response
 
 def cmd_CDUP(socket, *args):
     pass
