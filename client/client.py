@@ -301,7 +301,39 @@ def cmd_APPE(socket, *args):
         return response
 
 def cmd_LIST(socket, *args):
-    pass
+    args_len = len(args)
+    response = argument_handler(0,1,args_len)
+    if response == "200":
+        # Conectar para recibir el archivo
+        data_socket = DATA_SOCKET
+        if data_socket is None:
+            print("421: No existe una conexión abierta en este momento, intentando conectar en modo pasivo")
+            response = cmd_PASV(socket, [])
+            if response is None:
+                return "550: La conexión no se ha podido establecer"
+            data_socket = response
+        try:
+            if args_len == 0:
+                send(socket, 'LIST')
+            else:
+                send(socket, f'LIST {args[0]}')
+            data = b''
+            while True:
+                try:
+                    chunk = data_socket.recv(self.buffer_size)
+                    if not chunk:
+                        break # Se sale del bucle cuando no hay más datos para recibir
+                    data += chunk
+                except socket.timeout:
+                    break
+            print(response(socket))
+        finally:
+            # Asegurarse de que el socket de datos se cierre correctamente
+            data_socket.close()
+        decoded_data = data.decode()
+        return decoded_data
+    else:
+        return response
 
 def cmd_NLST(socket, *args):
     pass
