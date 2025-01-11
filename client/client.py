@@ -8,7 +8,7 @@ FTP_CONTROL_PORT = 21               # Puerto del servidor FTP para manejar sesio
 PASV_MODE = 0                       # Indicador de modo pasivo (0=inactivo   1=activo)
 DATA_SOCKET = None                  # Socket de transferencia utilizado para transferencia de datos
 BUFFER_SIZE = 1024
-TYPE = None
+TYPE = I
 
 # Funciones -------------------------------------------------------------------------------------------------------------------
 
@@ -190,9 +190,6 @@ def cmd_STOR(socket, *args):
 def cmd_APPE(socket, *args):
     pass
 
-def cmd_DELE(socket, *args):
-    pass
-
 def cmd_LIST(socket, *args):
     pass
 
@@ -215,8 +212,10 @@ def cmd_TYPE(socket, *args):
     response = argument_handler(1,1,args_len)
     if response == "200":
         if args[0].upper() not in ['A', 'I']:
-            raise ValueError("504: El modo debe ser ASCII o BINARY")
-        return send(socket, f'TYPE {args[0]}')
+            raise ValueError("504: El modo debe ser A-ASCII o I-BINARY")
+        response = send(socket, f'TYPE {args[0]}')
+        TYPE = args[0].upper()
+        return response
     else:
         return response
     
