@@ -228,7 +228,49 @@ def cmd_RETR(socket, *args):
     return f"226: Archivo {filename} descargado en la carpeta Downloads. Cerrando conexión."
 
 def cmd_STOR(socket, *args):
-    pass
+    args_len = len(args)
+    response = argument_handler(1,1,args_len)
+    if response == "200":
+        # Verificar si el archivo existe
+        if not os.path.exists(args[0]):
+            print(f"La ruta {args[0]} no es una ruta válida.")
+            return
+        # Verificar tipo de archivo para configurar permisos de lectura
+        if self.type == 'A':
+            r_mode = 'r'
+        else:
+            r_mode = 'rb'
+        # Extraer el nombre del archivo de la ruta completa
+        filename = os.path.basename(args[0])
+
+        # Conectar para recibir el archivo
+        data_socket = DATA_SOCKET
+        if data_socket is None:
+            print("421: No existe una conexión abierta en este momento, intentando conectar en modo pasivo")
+            response = cmd_PASV(socket, [])
+            if response is None:
+                return "550: La conexión no se ha podido establecer"
+            data_socket = response
+
+        try:
+            # Enviar el comando STOR
+            send(socket, f'STOR {filename}')
+
+            # Abrir el archivo en modo binario para leer y enviar su contenido
+            with open(filepath, r_mode) as file:
+                while True:
+                    chunk = file.read(self.buffer_size)
+                    if not chunk:
+                        break # Se sale del bucle cuando no hay más datos para enviar
+                    data_socket.sendall(chunk)
+        finally:
+            # Asegurarse de que el socket de datos se cierre correctamente
+            data_socket.close()
+
+        # Leer y retornar la respuesta del servidor
+        return response(socket)
+    else:
+        return response
 
 def cmd_APPE(socket, *args):
     pass
