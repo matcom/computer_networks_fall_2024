@@ -184,6 +184,49 @@ def cmd_DELE(socket, *args):
     else:
         return response
 
+def cmd_RETR(socket, *args):  
+    # Crear la carpeta Downloads si no existe
+    if not os.path.exists('Downloads'):
+        os.makedirs('Downloads')
+    # Verificar tipo de archivo para configurar permisos de escritura
+    if TYPE == 'A':
+        w_mode = 'w'
+    else:
+        w_mode = 'wb'
+    # Conectar pasivamente para recibir el archivo
+    data_socket = DATA_SOCKET
+    if data_socket is None:
+        print("421: No existe una conexión abierta en este momento, intentando iniciar en modo pasivo")
+        response = cmd_PASV(socket, [])
+        if response is None:
+            return "550: La conexión no se ha podido establecer"
+        data_socket = response
+    # Descargar archivo
+    try:
+        # Enviar el comando RETR
+        response = send(socket, f'RETR {filename}')
+        if response.split()[0] == '550':
+            return '550: Archivo no encontrado'
+        
+        # Recibir el archivo y guardarlo en la carpeta Downloads
+        with open(f'Downloads/{filename}', w_mode) as file:
+            while True:
+                try:
+                    chunk = data_socket.recv(BUFFER_SIZE)
+                    if not chunk:
+                        break
+                    if TYPE == 'A':
+                        file.write(chunk.decode())
+                    else:
+                        file.write(chunk)
+                except socket.timeout:
+                    break
+        print(response(socket))
+    finally:
+        # Asegurarse de que el socket de datos se cierre correctamente
+        data_socket.close()
+    return f"226: Archivo {filename} descargado en la carpeta Downloads. Cerrando conexión."
+
 def cmd_STOR(socket, *args):
     pass
 
