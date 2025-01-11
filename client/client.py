@@ -273,7 +273,32 @@ def cmd_STOR(socket, *args):
         return response
 
 def cmd_APPE(socket, *args):
-    pass
+    args_len = len(args)
+    response = argument_handler(1,1,args_len)
+    if response == "200":
+        # Conectar para recibir el archivo
+        data_socket = DATA_SOCKET
+        if data_socket is None:
+            print("421: No existe una conexión abierta en este momento, intentando conectar en modo pasivo")
+            response = cmd_PASV(socket, [])
+            if response is None:
+                return "550: La conexión no se ha podido establecer"
+            data_socket = response
+        try:
+            ans = send(socket, f'APPE {args[0]}')
+            print(ans)
+            if ans.startswith('150'):
+                # Enviar los datos especificados
+                data_socket.sendall(data.encode())
+                data_socket.close()
+                return response(socket)
+            else:
+                print("Permisos insuficientes o error en la operación")
+        finally:
+            # Asegurarse de que el socket de datos se cierre correctamente
+            data_socket.close()
+    else:
+        return response
 
 def cmd_LIST(socket, *args):
     pass
