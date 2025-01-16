@@ -1,7 +1,7 @@
 from .response import SMTPResponse
 from .connection import SMTPConnection
 from .exceptions import SMTPException, TemporarySMTPException, PermanentSMTPException
-
+from .utils import credentials_for_login_authentication, credentials_for_cram_md5_authentication,credentials_for_plain_authentication,credentials_for_xoauth2_authentication
 class SMTPCommands:
     """
     Clase para gestionar y enviar comandos SMTP específicos a través de una conexión.
@@ -60,7 +60,67 @@ class SMTPCommands:
         if response.is_permanent_error():  # EHLO no soportado, intentar HELO
             response = self._send_command(f"HELO {domain}\r\n")
         return response
+    
+    def authenticate(self, mechanism: str, username: str, password: str) -> SMTPResponse:
+        """
+        Autentica al cliente con el servidor SMTP utilizando el mecanismo especificado.
 
+        :param mechanism: Mecanismo de autenticación (PLAIN, LOGIN, etc.).
+        :param username: Nombre de usuario.
+        :param password: Contraseña del usuario.
+        :return: Respuesta del servidor después de la autenticación.
+        :raises SMTPException: Si la autenticación falla o el mecanismo no es soportado.
+        """
+
+        if mechanism.upper() == "PLAIN":
+            encoded_credentials = credentials_for_plain_authentication(username, password)
+            response = self._send_command(f"AUTH PLAIN {encoded_credentials}\r\n")
+            
+            if not response.is_success():
+                raise SMTPException(f"Error durante la autenticación PLAIN: {response}")
+                
+            return response
+
+        if mechanism.upper() == "LOGIN":
+            
+            response = self._send_command("AUTH LOGIN\r\n")
+            if not response.is_provisional():
+                raise SMTPException(f"Error al iniciar LOGIN: {response}")
+            
+            username_b64, password_b64 = credentials_for_login_authentication(username, password)
+            
+            response = self._send_command(f"{username_b64}\r\n")
+            if not response.is_success():
+                raise SMTPException(f"Error durante la autenticación del usuario en LOGIN: {response}")
+            
+            response = self._send_command(f"{password_b64}\r\n")
+            if not response.is_success():
+                raise SMTPException(f"Error durante la autenticación de la contraseña en LOGIN: {response}")
+                
+            return response
+        
+        if mechanism == "CRAM-MD5":
+            
+            response = self._send_command("AUTH CRAM-MD5\r\n")
+            if not response.is_provisional():
+                raise SMTPException(f"Error al iniciar CRAM-MD5: {response}")
+            
+            encoded_credentials = credentials_for_cram_md5_authentication(response, username, password)   
+
+            response = self._send_command(f"{encoded_credentials}\r\n")
+            if not response.is_success():
+                raise SMTPException(f"Error durante la autenticación en CRAM-MD5: {response}")
+
+            return response
+        
+        else:
+            raise SMTPException(f"Mecanismo de autenticación no soportado: {mechanism}")
+        
+        
+
+        
+
+    
     def mail_from(self, sender: str, size: int = None) -> SMTPResponse:
         """
         Envía el comando MAIL FROM al servidor SMTP.

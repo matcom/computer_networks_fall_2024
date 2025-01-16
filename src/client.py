@@ -4,28 +4,137 @@ from .response import SMTPResponse
 from .exceptions import SMTPException, TemporarySMTPException, PermanentSMTPException
 from .utils import validate_email
 
+# class SMTPClient:
+#     def __init__(self, host, port):
+#         self.connection = SMTPConnection(host, port)
+#         self.commands = SMTPCommands(self.connection)
+
+#     def send_mail(self, sender, recipient, message):
+#         if not validate_email(sender) or not validate_email(recipient):
+#             raise SMTPException("Invalid email address")
+
+#         self.connection.connect()
+#         try:
+#             response = self.commands.ehlo("localhost")
+#             print(response)
+
+#             response = self.commands.mail_from(sender)
+#             print(response)
+
+#             response = self.commands.rcpt_to(recipient)
+#             print(response)
+
+#             response = self.commands.data(message)
+#             print(response)
+            
+#         except TemporarySMTPException as e:
+#             print(f"Error temporal: {e}. Puedes reintentar más tarde.")
+#         except PermanentSMTPException as e:
+#             print(f"Error permanente: {e}. No puedes continuar con esta operación.")
+#         except SMTPException as e:
+#             print(f"Error general de SMTP: {e}")
+#         except Exception as e:
+#             print(f"Error inesperado: {e}")
+#         finally:
+#             response = self.commands.quit()
+#             print(response)
+#             self.connection.close()
+            
 class SMTPClient:
+    """
+    Cliente SMTP que maneja conexión, autenticación y envío de correos.
+    """
+
     def __init__(self, host, port):
+        """
+        Inicializa el cliente SMTP.
+
+        :param connection: Instancia de SMTPConnection.
+        """
         self.connection = SMTPConnection(host, port)
         self.commands = SMTPCommands(self.connection)
 
-    def send_mail(self, sender, recipient, message):
-        if not validate_email(sender) or not validate_email(recipient):
-            raise SMTPException("Invalid email address")
-
-        self.connection.connect()
+    def connect(self):
+        """
+        Establece la conexión con el servidor SMTP y realiza el handshake inicial (EHLO).
+        """
         try:
-            response = self.commands.ehlo("localhost")
+            self.connection.connect()
+            response = self.commands.ehlo(self.connection.host)
+            
+            if not response.is_success():
+                raise SMTPException(f"Error en EHLO: {response}")
+            
+            # Parsear capacidades del servidor si EHLO tiene éxito
+            self.auth_methods = None
+            for line in response.message.splitlines():
+                if "AUTH" in line:
+                    self.auth_methods = line.split("AUTH")[1].strip().split(' ')
+            
             print(response)
+            
+        except Exception as e:
+            raise SMTPException(f"Error al conectar: {e}")
 
-            response = self.commands.mail_from(sender)
+    def disconnect(self):
+        """
+        Cierra la conexión SMTP de manera ordenada.
+        """
+        try:
+            print(self.commands.quit())
+            print(self.connection.close())
+        except Exception as e:
+            raise SMTPException(f"Error al desconectar: {e}")
+            
+    def authenticate(self, mechanism: str, username: str, password: str):
+        """
+        Autentica al cliente con el servidor SMTP utilizando el mecanismo especificado.
+        """
+        
+        if not self.auth_methods:
+            raise SMTPException(f"Autentificación no implementada en el servidor")
+        
+        if mechanism.upper() not in self.auth_methods:
+            raise SMTPException(f"Mecanismo no soportado por el servidor: {mechanism}")
+        
+        try:
+            response = self.commands.authenticate(mechanism, username, password)
+            if not response.is_success():
+                raise SMTPException(f"Autenticación fallida: {response}")
+            
             print(response)
+            
+        except Exception as e:
+            raise SMTPException(f"Error durante la autenticación: {e}")
 
-            response = self.commands.rcpt_to(recipient)
-            print(response)
+    def does_server_supports_authentication(self) -> bool:
+        """
+        Se verifica si el servidor SMTP soporta autenticación.
+        """
+        return self.auth_methods is not None
+    
+    def send_mail(self, sender: str, recipients: list, subject: str, body: str):
+        """
+        Envía un correo electrónico utilizando la conexión SMTP establecida.
 
-            response = self.commands.data(message)
-            print(response)
+        :param sender: Dirección del remitente.
+        :param recipients: Lista de direcciones de los destinatarios.
+        :param subject: Asunto del correo.
+        :param body: Cuerpo del correo.
+        """
+        
+        if not validate_email(sender) or not all(validate_email(recipient) for recipient in recipients):
+            raise SMTPException("Invalid email address")
+        
+        try:
+            print(self.commands.mail_from(sender))
+            
+            for recipient in recipients:
+                print(self.commands.rcpt_to(recipient))
+            
+            message = f"Subject: {subject}\r\n\r\n{body}"
+            
+            print(self.commands.data(message))
             
         except TemporarySMTPException as e:
             print(f"Error temporal: {e}. Puedes reintentar más tarde.")
@@ -35,7 +144,3 @@ class SMTPClient:
             print(f"Error general de SMTP: {e}")
         except Exception as e:
             print(f"Error inesperado: {e}")
-        finally:
-            response = self.commands.quit()
-            print(response)
-            self.connection.close()
