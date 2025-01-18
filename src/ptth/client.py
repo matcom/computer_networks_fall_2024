@@ -26,31 +26,36 @@ class HTTPResponse:
     def __str__(self):
         return f"<{self.__class__.__name__} [{self.code}]>"
 
-def readline(data, index=0):
+def readline(connection, index=0):
     buffer = b''
-    while (c := chr(data[index])) != '\n':
-        buffer += c.encode()
+    while (c := connection.receive(1)) != b'\n':
+        buffer += c
         index += 1
 
     return buffer, index
 
-def parse_response(res: bytes):
-    buffer, index = readline(res)
+def parse_response(conn):
+    buffer, index = readline(conn)
     version, code, reason = map(str.strip, buffer.decode().split(" ", 2))
     # ignore \n
     index += 1
     
-    buffer, index = readline(res, index)
+    buffer, index = readline(conn, index)
     headers = CaseInsensitiveDict()
     while buffer != b'\r':
         header, value = map(str.strip, buffer.decode().split(":", 1))
         headers[header] = value
         index += 1
-        buffer, index = readline(res, index)
+        buffer, index = readline(conn, index)
     # ignore \r
     index += 1
 
-    body = res[index: index+int(headers.get("Content-Length", 0))]
+    body = b''
+    cl = int(headers.get("Content-Length", 0))
+    # sometimes it sends an incomplete response
+    # it will hang if c-l is wrong
+    while len(body) < cl:
+        body += conn.receive(cl - len(body))
 
     return HTTPResponse(
         version=version,
@@ -90,8 +95,8 @@ class HTTPConnection:
 
         self.sock.sendall(data)
 
-    def receive(self):
-        return self.sock.recv(1048576)
+    def receive(self, count=1024):
+        return self.sock.recv(count)
 
     def request(self, method, url, body="", headers=None):
         headers = headers or {}
@@ -115,10 +120,10 @@ class HTTPConnection:
     __repr__ = __str__
 
 
-def request(method="GET", url="/", headers=None):
+def request(method="GET", url="/", headers=None, body=""):
     url_split = url.split("/")
 
-    url = "/".join(url_split[3:]) or "/"
+    url = "/" + "/".join(url_split[3:])
     host_port = url_split[2].split(":")
     if len(host_port) < 2:
         host = host_port[0]
@@ -128,28 +133,40 @@ def request(method="GET", url="/", headers=None):
         port = int(port)
     conn = HTTPConnection(host, port)
     res = None
+    data = None
     try:
         conn.connect()
-        conn.request(method, url, headers=headers)
-        # XXX writes headers first and then it writes the body
-        # so we wait for a bit
-        time.sleep(1)
-        res = conn.receive()
+        conn.request(method, url, headers=headers, body=body)
+        data = parse_response(conn)
     finally:
         conn.close()
-    data = parse_response(res)
 
     return data
 
 if __name__ == "__main__":
     URL = "http://httpbin.org/"
+    #URL = "http://www.cubadebate.cu/"
     #URL = "http://127.0.0.1:8000"
 
     res = request("GET", URL, headers={"User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"})
     print(res)
     res.visualise()
+    """
 
     res = request("HEAD", URL)
     print(res, res.headers)
     res = request("OPTIONS", URL)
     print(res, res.headers)
+
+    URL = "http://httpbin.org/status/100"
+    res = request("DELETE", URL)
+    print(res, res.headers, res.reason, res.body)
+
+    URL = "http://httpbin.org/anything"
+    res = request("POST", URL, body="blob doko")
+    print(res, res.headers, res.reason, res.body)
+    res = request("PATCH", URL, body="skipped all the text")
+    print(res, res.headers, res.reason, res.body)
+    res = request("PUT", URL, body="dodo")
+    print(res, res.headers, res.reason, res.body)
+    """
