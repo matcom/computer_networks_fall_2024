@@ -20,6 +20,12 @@ class HTTPResponse:
         self.headers = kwargs.get("headers")
         self.body = kwargs.get("body")
 
+    def get_body_raw(self):
+        return self.body
+    
+    def get_headers(self):
+        return self.headers
+
     def visualise(self):
         with open("/tmp/tmp.html", "wb") as file:
             file.write(self.body)
@@ -118,11 +124,7 @@ class HTTPConnection:
 
 
 def request(method="GET", url="/", headers=None):
-    try:
-        host,port,_,_ = parse_http_url(url)
-    except BadUrlError as e:
-        print(type(e),e)
-        return
+    host,port,_,_ = parse_http_url(url) # Can launch a BadUrlError
     conn = HTTPConnection(host, port)
     res = None
     try:
@@ -137,16 +139,3 @@ def request(method="GET", url="/", headers=None):
     data = parse_response(res)
 
     return data
-
-if __name__ == "__main__":
-    URL = "http://httpbin.org/"
-    #URL = "http://127.0.0.1:8000"
-
-    res = request("GET", URL, headers={"User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"})
-    print(res)
-    res.visualise()
-
-    res = request("HEAD", URL)
-    print(res, res.headers)
-    res = request("OPTIONS", URL)
-    print(res, res.headers)
