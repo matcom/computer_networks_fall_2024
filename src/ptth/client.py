@@ -42,7 +42,7 @@ def readline(connection, index=0):
 
     return buffer, index
 
-def parse_response(conn):
+def parse_response(method, conn):
     buffer, index = readline(conn)
     version, code, reason = map(str.strip, buffer.decode().split(" ", 2))
     # ignore \n
@@ -62,7 +62,10 @@ def parse_response(conn):
     cl = int(headers.get("Content-Length", 0))
     # sometimes it sends an incomplete response
     # it will hang if c-l is wrong
-    while len(body) < cl:
+    # NOTE HEAD request returns c-l as if it were a
+    # GET so it will hang as well
+    # https://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.13
+    while len(body) < cl and method != "HEAD":
         body += conn.receive(cl - len(body))
 
     return HTTPResponse(
@@ -108,9 +111,13 @@ class HTTPConnection:
 
     def request(self, method, url, body="", headers=None):
         headers = headers or {}
-        headers["Content-Length"] = str(len(body))
-        headers["Accept-Encoding"] = headers.get("Accept", "identity")
+        # https://httpwg.org/specs/rfc9110.html#field.host
         headers["Host"] = headers.get("Host", self.host)
+        # https://httpwg.org/specs/rfc9110.html#field.content-length
+        headers["Content-Length"] = str(len(body))
+        # https://httpwg.org/specs/rfc9110.html#field.accept-encoding
+        # no encoding
+        headers["Accept-Encoding"] = headers.get("Accept", "identity")
 
         req = f"{method.upper()} {url} {self._version_str}\r\n"
         for header, value in headers.items():
@@ -136,7 +143,7 @@ def request(method="GET", url="/", headers=None, body=""):
     try:
         conn.connect()
         conn.request(method, url, headers=headers, body=body)
-        data = parse_response(conn)
+        data = parse_response(method, conn)
     finally:
         conn.close()
 
@@ -150,7 +157,6 @@ if __name__ == "__main__":
     res = request("GET", URL, headers={"User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"})
     print(res)
     res.visualise()
-    """
 
     res = request("HEAD", URL)
     print(res, res.headers)
@@ -168,4 +174,3 @@ if __name__ == "__main__":
     print(res, res.headers, res.reason, res.body)
     res = request("PUT", URL, body="dodo")
     print(res, res.headers, res.reason, res.body)
-    """
