@@ -4,6 +4,8 @@ import time
 
 from requests.structures import CaseInsensitiveDict
 
+from parse_http_url import parse_http_url,BadUrlError
+
 class NotConnected(Exception):
     pass
 
@@ -17,6 +19,12 @@ class HTTPResponse:
         self.reason = kwargs.get("reason")
         self.headers = kwargs.get("headers")
         self.body = kwargs.get("body")
+
+    def get_body_raw(self):
+        return self.body
+    
+    def get_headers(self):
+        return self.headers
 
     def visualise(self):
         with open("/tmp/tmp.html", "wb") as file:
@@ -121,16 +129,7 @@ class HTTPConnection:
 
 
 def request(method="GET", url="/", headers=None, body=""):
-    url_split = url.split("/")
-
-    url = "/" + "/".join(url_split[3:])
-    host_port = url_split[2].split(":")
-    if len(host_port) < 2:
-        host = host_port[0]
-        port = 80
-    else:
-        host, port = host_port
-        port = int(port)
+    host,port,_,_ = parse_http_url(url) # Can launch a BadUrlError
     conn = HTTPConnection(host, port)
     res = None
     data = None
