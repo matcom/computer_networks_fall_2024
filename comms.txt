@@ -1,0 +1,27 @@
+Command	Description
+!	Preceding a command with the exclamation point will cause the command to execute on the local system instead of the remote system.
+?	Request assistance or information about the FTP commands. This command does not require a connection to a remote system.
+ascii	Set the file transfer mode to ASCII (Note: this is the default mode for most FTP programs).
+bell	Turns bell mode on / off. This command does not require a connection to a remote system.
+binary	Set the file transfer mode to binary (Note: the binary mode transfers all eight bits per byte and must be used to transfer non-ASCII files).
+bye	Exit the FTP environment (same as quit). This command does not require a connection to a remote system.
+cd	Change directory on the remote system.
+close	Terminate a session with another system.
+debug	Sets debugging on/off. This command does not require a connection to a remote system.
+delete	Delete (remove) a file in the current remote directory (same as rm in UNIX).
+dir	Lists the contents of the remote directory. The asterisk (*) and the question mark (?) may be used as wild cards.
+get	RemoteName LocalName
+help	Request a list of all available FTP commands. This command does not require a connection to a remote system.
+lcd	Change directory on your local system (same as CD in UNIX).
+ls	List the names of the files in the current remote directory.
+mget	Copy multiple files from the remote system to the local system.
+Note: You will be prompted for a "y/n" response before copying each file.
+mkdir	Make a new directory within the current remote directory.
+mput	Copy multiple files from the local system to the remote system. (Note: You will be prompted for a "y/n" response before copying each file).
+open	Open a connection with another system.
+put	Copy a file from the local system to the remote system.
+pwd	Find out the pathname of the current directory on the remote system.
+quit	Exit the FTP environment (same as "bye"). This command does not require a connection to a remote system.
+rmdir	Remove (delete) a directory in the current remote directory.
+trace	Toggles packet tracing. This command does not require a connection to a remote system.
+
