@@ -1,11 +1,10 @@
 import socket
 import ssl
 
-# Configuración del cliente FTP
 FTP_SERVER = '127.0.0.1'
 FTP_PORT = 21
 BUFFER_SIZE = 1024
-TIMEOUT = 30  # Ajustar tiempo de espera a 30 segundos
+TIMEOUT = 30
 
 
 def connect_to_server(server, port):
@@ -38,7 +37,6 @@ def connect_to_server(server, port):
 
     return tls_socket
 
-
 def send_command(client_socket, command):
     client_socket.send((command + "\r\n").encode())
     try:
@@ -49,7 +47,81 @@ def send_command(client_socket, command):
         print("Tiempo de espera agotado para la respuesta del servidor.")
         return None
 
-# Cliente interactivo FTP
+def list_files(tls_socket):
+    response = send_command(tls_socket, 'PASV')
+
+    # Extraer la dirección IP y el puerto del modo pasivo
+    start = response.find('(') + 1
+    end = response.find(')')
+    pasv_data = response[start:end].split(',')
+    ip = '.'.join(pasv_data[:4])
+    port = (int(pasv_data[4]) << 8) + int(pasv_data[5])
+
+    data_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    data_socket.connect((ip, port))
+
+    send_command(tls_socket, 'LIST')
+
+    # Leer la lista de archivos
+    data = b""
+    while True:
+        chunk = data_socket.recv(BUFFER_SIZE)
+        if not chunk:
+            break
+        data += chunk
+    data_socket.close()
+    print(data.decode())
+
+def stor_file(tls_socket, local_file, remote_file):
+    send_command(tls_socket, 'TYPE I')
+    response = send_command(tls_socket, 'PASV')
+
+    start = response.find('(') + 1
+    end = response.find(')')
+    pasv_data = response[start:end].split(',')
+    ip = '.'.join(pasv_data[:4])
+    port = (int(pasv_data[4]) << 8) + int(pasv_data[5])
+
+    data_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    data_socket.connect((ip, port))
+
+    send_command(tls_socket, f'STOR {remote_file}')
+
+    with open(local_file, 'rb') as file:
+        while True:
+            data = file.read(BUFFER_SIZE)
+            if not data:
+                break
+            data_socket.send(data)
+
+    data_socket.close()
+    print(tls_socket.recv(BUFFER_SIZE).decode())
+
+def retr_file(tls_socket, remote_file, local_file):
+    send_command(tls_socket, f'TYPE I')
+    response = send_command(tls_socket, 'PASV')
+
+    start = response.find('(') + 1
+    end = response.find(')')
+    pasv_data = response[start:end].split(',')
+    ip = '.'.join(pasv_data[:4])
+    port = (int(pasv_data[4]) << 8) + int(pasv_data[5])
+
+    data_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    data_socket.connect((ip, port))
+
+    send_command(tls_socket, f'RETR {remote_file}')
+
+    with open(local_file, 'wb') as file:
+        while True:
+            data = data_socket.recv(BUFFER_SIZE)
+            if not data:
+                break
+            file.write(data)
+
+    data_socket.close()
+    print(tls_socket.recv(BUFFER_SIZE).decode())
+
 def ftp_client():
     client_socket = connect_to_server(FTP_SERVER, FTP_PORT)
     if not client_socket:
@@ -74,6 +146,19 @@ def ftp_client():
             if command_name == 'QUIT':
                 send_command(client_socket, command)
                 break
+            
+            elif command_name == 'STOR':
+                local_file = command.split()[1]
+                remote_file = command.split()[2]
+                stor_file(client_socket, local_file, remote_file)
+
+            elif command_name == 'RETR':
+                remote_file = command.split()[1]
+                local_file = command.split()[2]
+                retr_file(client_socket, remote_file, local_file)
+
+            elif command_name == 'LIST':
+                list_files(client_socket)
 
             elif command_name in ['USER', 'PASS', 'CWD', 'TYPE', 'STRU', 'MODE', 'APPE', 'DELE', 'RMD', 'MKD', 'PORT',
                                   'RNFR', 'RNTO']:
@@ -91,7 +176,6 @@ def ftp_client():
     finally:
         client_socket.close()
         print("Conexión cerrada.")
-
 
 if __name__ == "__main__":
     ftp_client()
