@@ -36,3 +36,7 @@ coverage.xml
 
 # Variables de entorno
 .env
+
+# Carpeta de descargas FTP
+Downloads/
+FTP/Downloads/
