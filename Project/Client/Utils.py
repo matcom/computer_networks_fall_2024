@@ -1,14 +1,12 @@
 #utils.py
-from Client import *
-commands = ["USER", "PASS", "ACCT", "CWD", "CDUP",
-            "SMNT", "REIN", "QUIT", "PORT", "PASV",
-            "TYPE", "STRU", "MODE", "RETR", "STOR",
-            "STOU", "APPE", "ALLO", "REST", "RNFR",
-            "RNTO", "ABOR", "DELE", "RMD", "MKD",
-            "PWD", "LIST", "NLST", "SITE", "SYST",
-            "STAT", "HELP", "NOOP",]
 
-
+Commands =  ["USER", "PASS", "ACCT", "CWD", "CDUP",
+                "SMNT", "REIN", "QUIT", "PORT", "PASV",
+                "TYPE", "STRU", "MODE", "LIST", "RETR", "STOR"
+                "STOU", "APPE", "ALLO", "REST", "RNFR",
+                "RNTO", "ABOR", "DELE", "RMD", "MKD",
+                "PWD", "NLST", "SITE", "SYST",
+                "STAT", "HELP", "NOOP",]
 
 def levenshtein_distance(s1, s2):
     if len(s1) == 0:
@@ -23,3 +21,13 @@ def levenshtein_distance(s1, s2):
     replace_cost = levenshtein_distance(s1[1:], s2[1:])
     
     return 1 + min(insert_cost, delete_cost, replace_cost)
+
+def Calculate_Lev(command):
+    lev = 1000000000000
+    sug = ""
+    for c in Commands:
+        newLev = levenshtein_distance(c, command)
+        if newLev < lev:
+            lev = newLev
+            sug = c
+    return sug

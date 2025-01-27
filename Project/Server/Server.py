@@ -18,6 +18,3 @@ while True:
     response = "Server says: hello, " + name
     connection_socket.send(response.encode())
     connection_socket.close()
-    
-    
-

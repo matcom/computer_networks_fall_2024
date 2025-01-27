@@ -1,124 +1,106 @@
 import Utils
 from socket import *
 
-server_name = 'localhost'
-server_port = 12000
-timeout = 35
-buffer_size = 1024
+class Client:
 
-def connect_server():
-    client_socket = socket(AF_INET, SOCK_STREAM)
-    client_socket.settimeout(timeout)
-    client_socket.connect((server_name,server_port))
-
-
-def send_command(client_socket, command):
-    client_socket.send((command + "\r\n").encode())
-    try:
-        response = client_socket.recv(buffer_size).decode()
-        print(response)
-        return response
-    except socket.timeout:
-        print("Tiempo de espera agotado para la respuesta del servidor.")
-        return None
-
-def list_files(tls_socket):
-    response = send_command(tls_socket, 'PASV')
-    start = response.find('(') + 1
-    end = response.find(')')
-    pasv_info = response[start:end].split()
-    ip = '.'.join(pasv_info[:4])
-    port = (int(pasv_info[4]) << 8) + int(pasv_info[5])
-    data_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    data_socket.connect((ip, port))
-    send_command(data_socket, 'LIST')
-
-    files = ''
-    while True:
-        chunk = data_socket.recv(buffer_size).decode()
-        if not chunk:
-            break
-        files += chunk
+    #Constructor de la clase
+    def __init__(self, ip_server, port):
+        self.ip_server = ip_server
+        self.port = port
+        self.client_socket = socket(AF_INET, SOCK_STREAM)
+        self.data_socket = None
     
-    data_socket.close()
-    print(tls_socket.recv(buffer_size).decode())
-
-def stor_file(tls_socket, file_name, file_path):
-    response = send_command(tls_socket, 'PASV')
-    start = response.find('(') + 1
-    end = response.find(')')
-    pasv_info = response[start:end].split()
-    ip = '.'.join(pasv_info[:4])
-    port = (int(pasv_info[4]) << 8) + int(pasv_info[5])
-    data_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    data_socket.connect((ip, port))
-    send_command(data_socket, 'STOR ' + file_name)
-
-    with open(file_path, 'rb') as file:
-        file_content = file.read()
-        data_socket.sendall(file_content)
+    #Conectar con el servidor
+    def connect(self):
+        self.client_socket.connect((self.ip_server, self.port))
+        response = self.receive_response()
+        print(f"{response}")
     
-    data_socket.close()
-    print(tls_socket.recv(buffer_size).decode())
-
-def retr_file(tls_socket, file_name, destiny_path):
-    response = send_command(tls_socket, 'PASV')
-    start = response.find('(') + 1
-    end = response.find(')')
-    pasv_info = response[start:end].split()
-    ip = '.'.join(pasv_info[:4])
-    port = (int(pasv_info[4]) << 8) + int(pasv_info[5])
-    data_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    data_socket.connect((ip, port))
-    send_command(data_socket, 'RETR ' + file_name)
-
-    with open(destiny_path, 'wb') as destiny:
-        while True:
-            data = socket.recv(4096)
-            if not data:
-                break
-            destiny.write(data)
+    #Recibir una respuesta del servidor
+    def receive_response(self):
+        response = self.client_socket.recv(1024)
+        return response.decode()
     
-    data_socket.close()
-    print(tls_socket.recv(buffer_size).decode())
-
-def ftp_client():
-    client_socket = connect_server()
-    if not client_socket:
-        print("No se pudo establecer una conexión segura.")
-        return
+    #Enviar comando al servidor
+    def send_command(self, command):
+        self.client_socket.sendall(f"{command}\r\n".encode())
+        return self.receive_response()
     
-    while True:
-        command = input(">>")
-        if not command:
-            continue
+    #Entrar en modo pasivo
+    def enter_passive_mode(self):
+        response = self.send_command("PASV")
+        start = response.find('(') + 1
+        end = response.find(')')
+        data = response[start:end].split(',')
+        ip = '.'.join(data[:4])
+        port = int(data[4]) * 256 + int(data[5])
+        return ip, port
+    
+    #Salir y cerrar la concexion
+    def quit(self, command):
+        self.send_command("QUIT")
+        self.client_socket.close()
+        print("Close Conection...")
 
-        command_name = command.split()[0].upper()
-        if command_name in Utils.commands:
-            if  command_name == 'QUIT':
-                    send_command(client_socket, command)
+    #Comando para listar archivos
+    def list_file(self, command):
+        ip, port = self.enter_passive_mode()
+        self.data_socket = socket(AF_INET, SOCK_STREAM)
+        self.data_socket.connect((ip, port))
+        self.send_command("LIST")
+        data = self.data_socket.recv(1024)
+        self.data_socket.close()
+        return data.decode()
+    
+    #Comando para recibir archivos
+    def retrieve_file(self, command):
+        filename = command.split()[1]
+        ip, port = self.enter_passive_mode()
+        self.data_socket = socket(AF_INET, SOCK_STREAM)
+        self.data_socket.connect((ip, port))
+        self.send_command(f"RETR {filename}")
+
+        with open(filename, 'wb') as f:
+            while True:
+                data = self.data_socket.recv(1024)
+                if not data:
                     break
-            
-            elif command_name == 'STOR':
-                    local_file = command.split()[1]
-                    remote_file = command.split()[2]
-                    stor_file(client_socket, local_file, remote_file)
+                f.write(data)
+        self.data_socket.close()
+        print(f"The file {filename} downloaded succesfully")
 
-            elif command_name == 'RETR':
-                    remote_file = command.split()[1]
-                    local_file = command.split()[2]
-                    retr_file(client_socket, remote_file, local_file)
+    #Comando para Updatear un archivo
+    def store_file(self, command):
+        filename = command.split()[1]
+        ip, port = self.enter_passive_mode()
+        self.data_socket = socket(AF_INET, SOCK_STREAM)
+        self.data_socket.connect((ip, port))
+        self.send_command(f"STOR {filename}")
 
-            elif command_name == 'LIST':
-                    list_files(client_socket)
+        with open(filename, 'rb') as f:
+            while True:
+                data = f.read(4096)
+                if not data:
+                    break
+                self.data_socket.sendall(data)
+        self.data_socket.close()
+        print(f"The file {filename} uploaded succesfully")
+    
+    Commands_Methods= {
+        "LIST": list_file,
+        "STOR": store_file,
+        "RETR": retrieve_file,
+        "QUIT": quit,
+    }
 
-            else: send_command(client_socket, command_name)
-        
-        else:
-            lev = 1000000000000
-            sug = ""
-            for command in Utils.commands:
-                newlev = Utils.levenshtein_distance(command, command_name)
-                if newlev < sug:
-                    sug = command
-            print(f"Command {command_name} not found, prove with {sug}")
+    #Metodo que llamara a todas las funcionalidades del cliente
+    def ftp_client(self):
+        while True:
+            _input = input("ftp>> ").strip()
+            command = _input.split()[0].upper()
+            if command in self.Commands_Methods.keys():
+                self.Commands_Methods[command](_input)
+                self.send_command(command)
+            else:
+                sug = Utils.Calculate_Lev(command)
+                print(f"Command {command} not found, prove with {sug}")
