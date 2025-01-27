@@ -3,49 +3,8 @@ import os
 def make_request(method, path, headers=None, data=None):
     headerstr = "" if headers is None else f" -h {headers}"
     datastr = "" if data is None else f" -b {data}"
-    response_string = os.popen(f"run.sh -m {method} -u http://localhost:8080/{path}{headerstr}{datastr}").read()
-    return response_string
-
-
-# Ejemplo:
-
-#     import os
-#     import json
-
-#     def make_request(method, path, headers=None, data=None):
-
-#         headers_json = json.dumps(headers) if headers else '{}'
-#         data_json = json.dumps(data) if data else '{}'
-
-#         command = f'python3 tests/http/client.py {method} "http://localhost:8080{path}" {headers_json} "{data_json}"'
-#         response_string = os.popen(command).read()
-
-#         response_data = json.loads(response_string)
-
-#         return response_data
-
-#############################################################
-#############################################################
-#############################################################
-#############################################################
-#############################################################
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    response_string = os.popen(f"run.sh -m {method} -u http://localhost:8080/{path} -h {headerstr} -d {datastr}").read()
+    return response_string # JSON con campos status, body y headers
 
 # Almacena los resultados de las pruebas
 results = []
