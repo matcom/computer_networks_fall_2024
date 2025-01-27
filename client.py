@@ -11,13 +11,12 @@ def main():
     body = sys.argv[4]  # El cuerpo de la solicitud (como string)
 
     # Realizar la solicitud HTTP
-    response = requests.request(method, url, headers=headers, data=body)
 
     # Formateamos la respuesta para que sea legible y fácil de procesar
     response_data = {
-        'status': response.status_code,
-        'body': response.text,
-        'headers': dict(response.headers)
+        'status': '500',
+        'body': 'Error',
+        'headers': '\{\}'
     }
 
     # Imprimimos la respuesta en formato JSON
