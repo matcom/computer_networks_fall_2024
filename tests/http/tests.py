@@ -1,5 +1,4 @@
 import os
-import sys
 
 def make_request(method, path, headers=None, data=None):
     headerstr = "" if headers is None else f" -h {headers}"
@@ -28,7 +27,6 @@ def evaluate_response(case, expected_status, actual_status, expected_body=None, 
         print(f"   ✅ \033[92mSuccess\033[0m")
     else:
         print(f"   ❌ \033[91mFailed\033[0m")
-        sys.exit(1)
 
 # Pruebas de casos simples
 print_case("GET root", "Testing a simple GET request to '/' without authorization")
@@ -132,3 +130,4 @@ if failed_cases > 0:
             if result['expected_body'] and result['actual_body']:
                 print(f"      - Expected body: {result['expected_body']}")
                 print(f"      - Actual body: {result['actual_body']}\n")
+    return 1
