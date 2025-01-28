@@ -1,4 +1,4 @@
-import os
+import os, sys
 
 def make_request(method, path, headers=None, data=None):
     headerstr = "" if headers is None else f" -h {headers}"
@@ -130,4 +130,4 @@ if failed_cases > 0:
             if result['expected_body'] and result['actual_body']:
                 print(f"      - Expected body: {result['expected_body']}")
                 print(f"      - Actual body: {result['actual_body']}\n")
-    return 1
+    sys.exit(1)
