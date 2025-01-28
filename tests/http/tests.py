@@ -27,6 +27,7 @@ def evaluate_response(case, expected_status, actual_status, expected_body=None, 
         print(f"   ✅ \033[92mSuccess\033[0m")
     else:
         print(f"   ❌ \033[91mFailed\033[0m")
+        raise Exception(f'Respuesta equivocada para el caso {case}')
 
 # Pruebas de casos simples
 print_case("GET root", "Testing a simple GET request to '/' without authorization")
