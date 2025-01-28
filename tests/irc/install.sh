@@ -1,5 +1,5 @@
 
 #!/bin/bash
 
-python3 tests/irc/dist/server.py &
+python3 tests/tester.py &
 sleep 2
