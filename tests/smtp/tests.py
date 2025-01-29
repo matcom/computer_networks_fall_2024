@@ -36,7 +36,7 @@ response = send_email(
     subject="Simple Email",
     body="This is a simple email."
 )
-evaluate_response("Send simple email", 250, response.status_code, "Message sent successfully", response.message)
+evaluate_response("Send simple email", 250, response["status_code"], "Message sent successfully", response["message"])
 
 # Caso 2: Envío de correo con encabezados adicionales
 print_case("Send email with CC", "Enviar un correo con encabezados adicionales (CC)")
@@ -47,17 +47,17 @@ response = send_email(
     body="This email includes a CC header.",
     headers='{\\"CC\\":\\ \\"cc@example.com\\"}'
 )
-evaluate_response("Send email with CC", 250, response.status_code, "Message sent successfully", response.message)
+evaluate_response("Send email with CC", 250, response["status_code"], "Message sent successfully", response["message"])
 
 # Caso 3: Envío de correo con múltiples destinatarios
 print_case("Send email to multiple recipients", "Enviar un correo a múltiples destinatarios")
 response = send_email(
     from_address="sender@example.com",
-    to_addresses='["recipient1@example.com",\\ \\"recipient2@example.com\\"]',
+    to_addresses='[\\"recipient1@example.com\\",\\ \\"recipient2@example.com\\"]',
     subject="Multiple Recipients",
     body="This email is sent to multiple recipients."
 )
-evaluate_response("Send email to multiple recipients", 250, response.status_code, "Message sent successfully", response.message)
+evaluate_response("Send email to multiple recipients", 250, response["status_code"], "Message sent successfully", response["message"])
 
 # Caso 4: Envío de correo con mensaje mal formado
 print_case("Malformed email body", "Enviar un correo con un cuerpo mal formado")
@@ -67,7 +67,7 @@ response = send_email(
     subject="Malformed Body",
     body=None  # Este caso puede simular un cuerpo mal formado
 )
-evaluate_response("Malformed email body", 250, response.status_code, "Message sent successfully", response.message)
+evaluate_response("Malformed email body", 250, response["status_code"], "Message sent successfully", response["message"])
 
 # Caso 5: Envío con encabezados vacíos
 print_case("Send email with empty headers", "Enviar un correo con encabezados vacíos")
@@ -78,7 +78,7 @@ response = send_email(
     body="This email has empty headers.",
     headers='{}'
 )
-evaluate_response("Send email with empty headers", 250, response.status_code, "Message sent successfully", response.message)
+evaluate_response("Send email with empty headers", 250, response["status_code"], "Message sent successfully", response["message"])
 
 print_case("Send email without 'From' address", "Enviar un correo sin la dirección 'From'")
 response = send_email(
@@ -87,7 +87,7 @@ response = send_email(
     subject="No From Address",
     body="This email has no 'From' address."
 )
-evaluate_response("Send email without 'From' address", 501, response.status_code, "Invalid sender address", response.message)
+evaluate_response("Send email without 'From' address", 501, response["status_code"], "Invalid sender address", response["message"])
 
 print_case("Send email with invalid recipient address", "Enviar un correo con una dirección de destinatario inválida")
 response = send_email(
@@ -96,7 +96,7 @@ response = send_email(
     subject="Invalid Recipient",
     body="This email has an invalid recipient address."
 )
-evaluate_response("Send email with invalid recipient address", 550, response.status_code, "Invalid recipient address", response.message)
+evaluate_response("Send email with invalid recipient address", 550, response["status_code"], "Invalid recipient address", response["message"])
 
 print_case("Send email with empty body", "Enviar un correo con un cuerpo vacío")
 response = send_email(
@@ -105,7 +105,7 @@ response = send_email(
     subject="Empty Body",
     body=""  # Cuerpo vacío
 )
-evaluate_response("Send email with empty body", 250, response.status_code, "Message sent successfully", response.message)
+evaluate_response("Send email with empty body", 250, response["status_code"], "Message sent successfully", response["message"])
 
 print_case("Send email with empty subject", "Enviar un correo con un asunto vacío")
 response = send_email(
@@ -114,7 +114,7 @@ response = send_email(
     subject="",  # Asunto vacío
     body="This email has no subject."
 )
-evaluate_response("Send email with empty subject", 250, response.status_code, "Message sent successfully", response.message)
+evaluate_response("Send email with empty subject", 250, response["status_code"], "Message sent successfully", response["message"])
 
 # Resumen de los resultados
 print("\n🎉 \033[1mTest Summary\033[0m 🎉")
