@@ -5,6 +5,8 @@ def make_test(args, expeteted_output, error_msg):
 
     output = subprocess.run('pwd', capture_output=True, text=True)
     print(output)
+    output = subprocess.run('ls', capture_output=True, text=True)
+    print(output)
     output = subprocess.run(command, capture_output=True, text=True)
 
     if not all([x in output for x in expeteted_output]):
