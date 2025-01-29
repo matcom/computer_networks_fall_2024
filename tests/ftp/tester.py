@@ -7,6 +7,8 @@ def make_test(args, expeteted_output, error_msg):
     print(output)
     output = subprocess.run('ls', capture_output=True, text=True)
     print(output)
+    output = subprocess.run('chmod +x run.sh', capture_output=True, text=True)
+    print(output)
     output = subprocess.run(command, capture_output=True, text=True)
 
     if not all([x in output for x in expeteted_output]):
