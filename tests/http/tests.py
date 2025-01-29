@@ -1,10 +1,11 @@
 import os, sys
+import json
 
 def make_request(method, path, headers=None, data=None):
     headerstr = "" if headers is None else f" -h {headers}"
     datastr = "" if data is None else f" -b {data}"
     response_string = os.popen(f"run.sh -m {method} -u http://localhost:8080/{path} -h {headerstr} -d {datastr}").read()
-    return response_string # JSON con campos status, body y headers
+    return json.loads(response_string) # JSON con campos status, body y headers
 
 # Almacena los resultados de las pruebas
 results = []
