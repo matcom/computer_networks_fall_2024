@@ -1,21 +1,10 @@
-#############################################################
-#############################################################
-#############Solo debe modificar esta seccion################
-#############################################################
-#############################################################
-import os
+import os, sys
+import json
 
 def send_email(from_address, to_addresses, subject, body, headers=None):
-    response_string = os.popen(<llamado a su script> localhost 2525 <from_address> <to_addresses> <subject> <headers en formato json> <body>).read()
-    response = <procesar respuesta con propiedades status_code, message>()
-    return response
-
-#############################################################
-#############################################################
-#############################################################
-#############################################################
-#############################################################
-
+    headerstr = "-h {}" if headers is None else f" -h {headers}"
+    response_string = os.popen(f"sh run.sh -u localhost -p 2525 -f {from_address} -t {to_addresses} -s {subject} {headerstr} -b {body}").read()
+    return json.loads(response_string)
 
 # Almacena los resultados de las pruebas
 results = []
@@ -43,7 +32,7 @@ def evaluate_response(case, expected_status, actual_status, expected_message=Non
 print_case("Send simple email", "Enviar un correo simple sin encabezados adicionales")
 response = send_email(
     from_address="sender@example.com",
-    to_addresses=["recipient@example.com"],
+    to_addresses='[\\"recipient@example.com\\"]',
     subject="Simple Email",
     body="This is a simple email."
 )
@@ -53,10 +42,10 @@ evaluate_response("Send simple email", 250, response.status_code, "Message sent 
 print_case("Send email with CC", "Enviar un correo con encabezados adicionales (CC)")
 response = send_email(
     from_address="sender@example.com",
-    to_addresses=["recipient@example.com"],
+    to_addresses='[\\"recipient@example.com\\"]',
     subject="Email with CC",
     body="This email includes a CC header.",
-    headers={"CC": "cc@example.com"}
+    headers='{\\"CC\\":\\ \\"cc@example.com\\"}'
 )
 evaluate_response("Send email with CC", 250, response.status_code, "Message sent successfully", response.message)
 
@@ -64,7 +53,7 @@ evaluate_response("Send email with CC", 250, response.status_code, "Message sent
 print_case("Send email to multiple recipients", "Enviar un correo a múltiples destinatarios")
 response = send_email(
     from_address="sender@example.com",
-    to_addresses=["recipient1@example.com", "recipient2@example.com"],
+    to_addresses='["recipient1@example.com",\\ \\"recipient2@example.com\\"]',
     subject="Multiple Recipients",
     body="This email is sent to multiple recipients."
 )
@@ -74,7 +63,7 @@ evaluate_response("Send email to multiple recipients", 250, response.status_code
 print_case("Malformed email body", "Enviar un correo con un cuerpo mal formado")
 response = send_email(
     from_address="sender@example.com",
-    to_addresses=["recipient@example.com"],
+    to_addresses='[\\"recipient@example.com\\"]',
     subject="Malformed Body",
     body=None  # Este caso puede simular un cuerpo mal formado
 )
@@ -84,17 +73,17 @@ evaluate_response("Malformed email body", 250, response.status_code, "Message se
 print_case("Send email with empty headers", "Enviar un correo con encabezados vacíos")
 response = send_email(
     from_address="sender@example.com",
-    to_addresses=["recipient@example.com"],
+    to_addresses='[\\"recipient@example.com\\"]',
     subject="Empty Headers",
     body="This email has empty headers.",
-    headers={}
+    headers='{}'
 )
 evaluate_response("Send email with empty headers", 250, response.status_code, "Message sent successfully", response.message)
 
 print_case("Send email without 'From' address", "Enviar un correo sin la dirección 'From'")
 response = send_email(
     from_address=None,  # Sin dirección 'From'
-    to_addresses=["recipient@example.com"],
+    to_addresses='[\\"recipient@example.com\\"]',
     subject="No From Address",
     body="This email has no 'From' address."
 )
@@ -103,7 +92,7 @@ evaluate_response("Send email without 'From' address", 501, response.status_code
 print_case("Send email with invalid recipient address", "Enviar un correo con una dirección de destinatario inválida")
 response = send_email(
     from_address="sender@example.com",
-    to_addresses=["invalidemail@com"],  # Dirección inválida
+    to_addresses='[\\"invalidemail@com\\"]',  # Dirección inválida
     subject="Invalid Recipient",
     body="This email has an invalid recipient address."
 )
@@ -112,7 +101,7 @@ evaluate_response("Send email with invalid recipient address", 550, response.sta
 print_case("Send email with empty body", "Enviar un correo con un cuerpo vacío")
 response = send_email(
     from_address="sender@example.com",
-    to_addresses=["recipient@example.com"],
+    to_addresses='[\\"recipient@example.com\\"]',
     subject="Empty Body",
     body=""  # Cuerpo vacío
 )
@@ -121,7 +110,7 @@ evaluate_response("Send email with empty body", 250, response.status_code, "Mess
 print_case("Send email with empty subject", "Enviar un correo con un asunto vacío")
 response = send_email(
     from_address="sender@example.com",
-    to_addresses=["recipient@example.com"],
+    to_addresses='[\\"recipient@example.com\\"]',
     subject="",  # Asunto vacío
     body="This email has no subject."
 )
@@ -145,3 +134,4 @@ if failed_cases > 0:
             if result['expected_message'] and result['actual_message']:
                 print(f"      - Expected message: {result['expected_message']}")
                 print(f"      - Actual message: {result['actual_message']}\n")
+    sys.exit(1)
