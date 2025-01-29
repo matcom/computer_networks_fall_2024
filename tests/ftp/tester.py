@@ -5,7 +5,7 @@ def make_test(args, expeteted_output, error_msg):
 
     output = subprocess.run([x for x in command.split(' ')], capture_output=True, text=True)
 
-    if not all([x in output for x in expeteted_output]):
+    if not all([x in output.stdout for x in expeteted_output]):
         print(error_msg)
         return False
     
