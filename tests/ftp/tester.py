@@ -34,9 +34,9 @@ tests = [
 succeed = True
 
 for x in tests:
-    suceed = suceed and make_test(x[0],x[1],x[2])
+    succeed = succeed and make_test(x[0],x[1],x[2])
 
-if not suceed:
+if not succeed:
     print("Errors ocurred during tests process")
     sys.exit(1)
 
