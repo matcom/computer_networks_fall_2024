@@ -3,13 +3,7 @@ import subprocess, sys
 def make_test(args, expeteted_output, error_msg):
     command = f"./run.sh {args}"
 
-    output = subprocess.run('pwd', capture_output=True, text=True)
-    print(output)
-    output = subprocess.run('ls', capture_output=True, text=True)
-    print(output)
-    output = subprocess.run('chmod +x run.sh', capture_output=True, text=True)
-    print(output)
-    output = subprocess.run(command, capture_output=True, text=True)
+    output = subprocess.run([x for x in command.split(' ')], capture_output=True, text=True)
 
     if not all([x in output for x in expeteted_output]):
         print(error_msg)
