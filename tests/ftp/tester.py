@@ -1,7 +1,7 @@
 import subprocess, sys
 
 def make_test(args, expeteted_output, error_msg):
-    command = -f"./run.sh {args}"
+    command = f"./run.sh {args}"
 
     output = subprocess.run(command, capture_output=True, text=True)
 
