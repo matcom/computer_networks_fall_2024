@@ -1,98 +1,43 @@
-import subprocess
-import time
-import os
-from ftpclient import FTPClient
+import subprocess, sys
+
+def make_test(args, expeteted_output, error_msg):
+    command = -f"./run.sh {args}"
+
+    output = subprocess.run(command, capture_output=True, text=True)
+
+    if not all([x in output for x in expeteted_output]):
+        print(error_msg)
+        return False
+    
+    print(f"Test: {command} completed")
+
+    return True
 
 
-def start_ftp_server():
-    """Start the FTP server in a subprocess."""
-    server_process = subprocess.Popen(['dist/ftpserver'])
-    time.sleep(2)  # Give the server some time to start
-    return server_process
+# initial folder structure
+# /: 1. directory 2. 2.txt
+# /directory: 1.txt
 
+tests = [
+    ("-h localhost -p 21 -u user -p pass", ("220","230",), "Login Failed"),
+    ("-h localhost -p 21 -u user -p pass -c PWD", ("150","226",), "/ directory listing failed"),
+    ("-h localhost -p 21 -u user -p pass -c CWD -a /directory", ("250",), "change directory failed"),
+    ("-h localhost -p 21 -u user -p pass -c QUIT", ("221",), "exiting ftp server failed"),
+    ("-h localhost -p 21 -u user -p pass -c RETR -a 2.txt" , ("150","226",), "could not retrieve 2.txt file"),
+    ("-h localhost -p 21 -u user -p pass -c STOR -a tests/ftp/new.txt -b new.txt", ("150", "226",), "file new.txt upload failed"),
+    ("-h localhost -p 21 -u user -p pass -c RNFR -a 2.txt -b 3.txt", ("350", "250",), "rename from 2.txt to 3.txt failed"),
+    ("-h localhost -p 21 -u user -p pass -c DELE -a new.txt", ("250",), "delete new.txt failed"),
+    ("-h localhost -p 21 -u user -p pass -c MKD -a directory2", ("257",), "directory directory2 creation failed"),
+    ("-h localhost -p 21 -u user -p pass -c RMD -a directory2", ("250",), "directory directory2 removal failed"),
+]
 
-def stop_ftp_server(server_process):
-    """Stop the FTP server subprocess."""
-    server_process.terminate()
-    server_process.wait()
+succeed = True
 
+for x in tests:
+    suceed = suceed and make_test(x[0],x[1],x[2])
 
-def test_ftp_client():
-    """Test the FTP client with basic actions."""
-    ftp = FTPClient('127.0.0.1')
+if not suceed:
+    print("Errors ocurred during tests process")
+    sys.exit(1)
 
-    # Connect to the server
-    print("Connecting to server...")
-    response = ftp.connect()
-    print(response)
-
-    # Login
-    print("Logging in...")
-    response = ftp.login('user1', 'password1')
-    print(response)
-
-    # List files in the root directory
-    print("Listing files in root directory...")
-    response = ftp.list_files()
-    print(response)
-
-    # Create a new directory
-    print("Creating a new directory 'test_dir'...")
-    response = ftp.make_directory('test_dir')
-    print(response)
-
-    # Change to the new directory
-    print("Changing to 'test_dir' directory...")
-    response = ftp.change_directory('test_dir')
-    print(response)
-
-    # Print working directory
-    print("Printing working directory...")
-    response = ftp.print_working_directory()
-    print(response)
-
-    # Upload a file
-    test_file = 'test_upload.txt'
-    with open(test_file, 'w') as f:
-        f.write('This is a test file for upload.')
-    print(f"Uploading file '{test_file}'...")
-    response = ftp.store_file(test_file, test_file)
-    print(response)
-
-    # List files in the current directory
-    print("Listing files in 'test_dir' directory...")
-    response = ftp.list_files()
-    print(response)
-
-    # Download the file
-    print(f"Downloading file '{test_file}'...")
-    response = ftp.retrieve_file(test_file, f'downloaded_{test_file}')
-    print(response)
-
-    # Delete the file
-    print(f"Deleting file '{test_file}'...")
-    response = ftp.delete_file(test_file)
-    print(response)
-
-    # Remove the directory
-    print("Removing 'test_dir' directory...")
-    response = ftp.change_directory('..')
-    response = ftp.remove_directory('test_dir')
-    print(response)
-
-    # Quit the session
-    print("Quitting the session...")
-    response = ftp.quit()
-    print(response)
-
-    # Clean up local test files
-    os.remove(test_file)
-    os.remove(f'downloaded_{test_file}')
-
-
-if __name__ == "__main__":
-    server_process = start_ftp_server()
-    try:
-        test_ftp_client()
-    finally:
-        stop_ftp_server(server_process)
+print("All commands executed successfully")
