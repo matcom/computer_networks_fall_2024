@@ -85,12 +85,26 @@ class Client:
                 self.data_socket.sendall(data)
         self.data_socket.close()
         print(f"The file {filename} uploaded succesfully")
-    
+
+    def stou_file(self, command):
+        filename = command.split()[1]
+        ip, port = self.enter_passive_mode()
+        self.data_socket = socket(AF_INET, SOCK_STREAM)
+        self.data_socket.connect((ip, port))
+        self.send_command(f"STOR {filename}")
+
+        
+
     Commands_Methods= {
         "LIST": list_file,
         "STOR": store_file,
         "RETR": retrieve_file,
         "QUIT": quit,
+        "SMNT": send_command,
+        "PORT": send_command,
+        "TYPE": send_command,
+        "STRU": send_command,
+        "MODE": send_command,
     }
 
     #Metodo que llamara a todas las funcionalidades del cliente
