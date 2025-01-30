@@ -1,11 +1,10 @@
 import socket
 import ssl
+import sys
 
-FTP_SERVER = '127.0.0.1'
-FTP_PORT = 21
+# Configuración del cliente FTP
 BUFFER_SIZE = 1024
-TIMEOUT = 30
-
+TIMEOUT = 30  # Ajustar tiempo de espera a 30 segundos
 
 def connect_to_server(server, port):
     context = ssl.create_default_context()
@@ -49,8 +48,6 @@ def send_command(client_socket, command):
 
 def list_files(tls_socket):
     response = send_command(tls_socket, 'PASV')
-
-    # Extraer la dirección IP y el puerto del modo pasivo
     start = response.find('(') + 1
     end = response.find(')')
     pasv_data = response[start:end].split(',')
@@ -59,23 +56,21 @@ def list_files(tls_socket):
 
     data_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     data_socket.connect((ip, port))
-
     send_command(tls_socket, 'LIST')
 
-    # Leer la lista de archivos
     data = b""
     while True:
         chunk = data_socket.recv(BUFFER_SIZE)
         if not chunk:
             break
         data += chunk
+
     data_socket.close()
     print(data.decode())
 
 def stor_file(tls_socket, local_file, remote_file):
     send_command(tls_socket, 'TYPE I')
     response = send_command(tls_socket, 'PASV')
-
     start = response.find('(') + 1
     end = response.find(')')
     pasv_data = response[start:end].split(',')
@@ -84,7 +79,6 @@ def stor_file(tls_socket, local_file, remote_file):
 
     data_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     data_socket.connect((ip, port))
-
     send_command(tls_socket, f'STOR {remote_file}')
 
     with open(local_file, 'rb') as file:
@@ -100,7 +94,6 @@ def stor_file(tls_socket, local_file, remote_file):
 def retr_file(tls_socket, remote_file, local_file):
     send_command(tls_socket, f'TYPE I')
     response = send_command(tls_socket, 'PASV')
-
     start = response.find('(') + 1
     end = response.find(')')
     pasv_data = response[start:end].split(',')
@@ -109,7 +102,6 @@ def retr_file(tls_socket, remote_file, local_file):
 
     data_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     data_socket.connect((ip, port))
-
     send_command(tls_socket, f'RETR {remote_file}')
 
     with open(local_file, 'wb') as file:
@@ -122,51 +114,71 @@ def retr_file(tls_socket, remote_file, local_file):
     data_socket.close()
     print(tls_socket.recv(BUFFER_SIZE).decode())
 
-def ftp_client():
-    client_socket = connect_to_server(FTP_SERVER, FTP_PORT)
+def ftp_client(args):
+    # Inicializar variables para argumentos
+    server = None
+    port = None
+    user = None
+    password = None
+    command = None
+    arg1 = None
+    arg2 = None
+
+    # Procesar argumentos de sys.argv
+    i = 1  # iniciar en 1 para saltar el nombre del script
+    while i < len(args):
+        if args[i] == '-h':
+            server = args[i + 1]
+            i += 2
+        elif args[i] == '-p' and port is None:
+            port = int(args[i + 1])
+            i += 2
+        elif args[i] == '-u':
+            user = args[i + 1]
+            i += 2
+        elif args[i] == '-p' and password is None:
+            password = args[i + 1]
+            i += 2
+        elif args[i] == '-c':
+            command = args[i + 1]
+            i += 2
+        elif args[i] == '-a':
+            arg1 = args[i + 1]
+            i += 2
+        elif args[i] == '-b':
+            arg2 = args[i + 1]
+            i += 2
+        else:
+            i += 1
+
+    client_socket = connect_to_server(server, port)
     if not client_socket:
         print("No se pudo establecer una conexión segura.")
         return
 
     try:
-        user = input("User: ")
         user_response = send_command(client_socket, f"USER {user}")
 
         if user_response and "331" in user_response:
-            password = input("Password: ")
             send_command(client_socket, f"PASS {password}")
 
-        while True:
-            command = input("ftp> ")
-            if not command:
-                continue
-
-            command_name = command.split()[0].upper()
+        if command:
+            command_name = command.upper()
 
             if command_name == 'QUIT':
                 send_command(client_socket, command)
-                break
-            
             elif command_name == 'STOR':
-                local_file = command.split()[1]
-                remote_file = command.split()[2]
-                stor_file(client_socket, local_file, remote_file)
-
+                stor_file(client_socket, arg1, arg2)
             elif command_name == 'RETR':
-                remote_file = command.split()[1]
-                local_file = command.split()[2]
-                retr_file(client_socket, remote_file, local_file)
-
+                retr_file(client_socket, arg1, arg2)
             elif command_name == 'LIST':
                 list_files(client_socket)
-
             elif command_name in ['USER', 'PASS', 'CWD', 'TYPE', 'STRU', 'MODE', 'APPE', 'DELE', 'RMD', 'MKD', 'PORT',
                                   'RNFR', 'RNTO']:
-                send_command(client_socket, command)
-
+                full_command = f"{command} {arg1}" if arg1 else command
+                send_command(client_socket, full_command)
             elif command_name in ['CDUP', 'PWD', 'PASV', 'SYST', 'HELP', 'NOOP', 'REIN']:
                 send_command(client_socket, command)
-
             else:
                 print("Comando no implementado o no reconocido.")
 
@@ -178,4 +190,4 @@ def ftp_client():
         print("Conexión cerrada.")
 
 if __name__ == "__main__":
-    ftp_client()
+    ftp_client(sys.argv)
