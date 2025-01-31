@@ -622,12 +622,12 @@ host = get_arg("-h")
 port = int(get_arg("-p"))
 user = get_arg("-u")
 password = get_arg("-w")
-command = get_arg("-c").lower()
+command = get_arg("-c")
 a_arg = get_arg("-a")
 b_arg = get_arg("-b")
 
-if not all([host, port, user, password, command]):
-    print("Error: Host, puerto, usuario, contraseña y comando son obligatorios.")
+if not all([host, port, user, password]):
+    print("Error: Host, puerto, usuario y contraseña son obligatorios.")
     exit()
 
 # Conexión al servidor
