@@ -1,14 +1,7 @@
 import socket
 import os
 import re
-
-# Configuración inicial
-FTP_SERVER_ADDR = '127.0.0.1'       # Dirección del servidor
-FTP_CONTROL_PORT = 21               # Puerto del servidor FTP para manejar sesiones. Este valor no cambia
-PASV_MODE = 0                       # Indicador de modo pasivo (0=inactivo   1=activo)
-DATA_SOCKET = None                  # Socket de transferencia utilizado para transferencia de datos
-BUFFER_SIZE = 1024
-TYPE = I
+import sys
 
 # Funciones -------------------------------------------------------------------------------------------------------------------
 
@@ -21,9 +14,9 @@ def response(socket):
             break
     return response
 
-def client_connects_to_server(socket):
-    socket.connect((FTP_SERVER_ADDR, FTP_CONTROL_PORT))
-    return response(socket)
+def client_connects_to_server(sock, server_addr, port):
+    sock.connect((server_addr, port))
+    return sock.recv(1024).decode()
 
 def send(socket, message):
     socket.sendall(f"{message}\r\n".encode())
@@ -39,25 +32,15 @@ def default_login(socket):
     else:
         return (f"Error de autenticación: {response}")
 
-def client_login(socket):
-    username = input("Ingrese el nombre de usuario: ")
-    if username == "":
-        return default_login()
+def client_login(sock, username, password):
+    sock.sendall(f"USER {username}\r\n".encode())
+    response = sock.recv(1024).decode()
+
+    if "331" in response:
+        sock.sendall(f"PASS {password}\r\n".encode())
+        response = sock.recv(1024).decode()
     
-    send(socket, f"USER {username}")
-    password = getpass.getpass("Ingrese la contraseña: ")
-    response = send(socket, f"PASS {password}")
-
-    req = input("Requiere una cuenta específica?   s -> SI    [otra tecla] -> NO: ")
-    if req == "s" or req == "S":
-        account = input("Ingrese su cuenta: ")
-        acct_response = send(socket, f"ACCT {account}") 
-        return acct_response
-
-    elif "230" in response: 
-        return response
-    else:
-        return (f"Error de autenticación: {response}")
+    return response
 
 def argument_handler(min_required_args, max_required_args, given_args):
     if min_required_args>given_args:
@@ -625,103 +608,120 @@ def cmd_SITE(socket, *args):
     else:
         return response
 
+# Obtener argumentos manualmente
+def get_arg(flag):
+    try:
+        index = sys.argv.index(flag)
+        return sys.argv[index + 1]
+    except (ValueError, IndexError):
+        return None
+
 # Ejecución principal del cliente ---------------------------------------------------------------------------------------------
 
-# Conexión inicial
-FTP_SERVER_ADDR = input("Ingrese la dirección IP del servidor FTP: ")
-socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+host = get_arg("-h")
+port = int(get_arg("-p"))
+user = get_arg("-u")
+password = get_arg("-w")
+command = get_arg("-c").lower()
+a_arg = get_arg("-a")
+b_arg = get_arg("-b")
+
+if not all([host, port, user, password, command]):
+    print("Error: Host, puerto, usuario, contraseña y comando son obligatorios.")
+    exit()
+
+# Conexión al servidor
+ftp_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 try:
-    print(client_connects_to_server(socket))
+    print(client_connects_to_server(ftp_socket, host, port))
 except Exception as e:
     print(f"Error al conectar con el servidor: {e}")
     exit()
 
-# Autenticación de usuario
-while True:
-    response = client_login(socket)
-    print(response)
-    if "230" in response:
-        break
+# Autenticación
+response = client_login(ftp_socket, user, password)
+print(response)
+if "230" not in response:
+    print("Error de autenticación")
+    exit()
+
+# Ejecutar comando
+cmd_args = [arg for arg in [a_arg, b_arg] if arg is not None]
+
+try:
+    user_input = input("=> ")
+    command_parts = user_input.strip().split(" ")
+    command = command_parts[0].lower()
+    args = command_parts[1:]
+
+    if command == 'user':
+        print(cmd_USER(ftp_socket, *cmd_args))
+    elif command == 'pass':
+        print(cmd_PASS(ftp_socket, *cmd_args))
+    elif command == 'acct':
+        print(cmd_ACCT(ftp_socket, *cmd_args))
+    elif command == 'smnt':
+        print(cmd_SMNT(ftp_socket, *cmd_args))
+    elif command == 'rein':
+        print(cmd_REIN(ftp_socket, *cmd_args))
+    elif command == 'quit':
+        print(cmd_QUIT(ftp_socket, *cmd_args))
+        ftp_socket.close()
+    elif command == 'pwd':
+        print(cmd_PWD(ftp_socket, *cmd_args))
+    elif command == 'cwd':
+        print(cmd_CWD(ftp_socket, *cmd_args))
+    elif command == 'cdup':
+        print(cmd_CDUP(ftp_socket, *cmd_args))
+    elif command == 'mkd':
+        print(cmd_MKD(ftp_socket, *cmd_args))
+    elif command == 'rmd':
+        print(cmd_RMD(ftp_socket, *cmd_args))
+    elif command == 'retr':
+        print(cmd_RETR(ftp_socket, *cmd_args))
+    elif command == 'stor':
+        print(cmd_STOR(ftp_socket, *cmd_args))
+    elif command == 'appe':
+        print(cmd_APPE(ftp_socket, *cmd_args))
+    elif command == 'dele':
+        print(cmd_DELE(ftp_socket, *cmd_args))
+    elif command == 'list':
+        print(cmd_LIST(ftp_socket, *cmd_args))
+    elif command == 'nlst':
+        print(cmd_NLST(ftp_socket, *cmd_args))
+    elif command == 'abor':
+        print(cmd_ABOR(ftp_socket, *cmd_args))
+    elif command == 'type':
+        print(cmd_TYPE(ftp_socket, *cmd_args))
+    elif command == 'mode':
+        print(cmd_MODE(ftp_socket, *cmd_args))
+    elif command == 'stru':
+        print(cmd_STRU(ftp_socket, *cmd_args))
+    elif command == 'port':
+        print(cmd_PORT(ftp_socket, *cmd_args))
+    elif command == 'pasv':
+        PASV_SOCKET = cmd_PASV(ftp_socket, *cmd_args)
+    elif command == 'syst':
+        print(cmd_SYST(ftp_socket, *cmd_args))
+    elif command == 'stat':
+        print(cmd_STAT(ftp_socket, *cmd_args))
+    elif command == 'help':
+        print(cmd_HELP(ftp_socket, *cmd_args))
+    elif command == 'rnfr':
+        print(cmd_RNFR(ftp_socket, *cmd_args))
+    elif command == 'rnto':
+        print(cmd_RNTO(ftp_socket, *cmd_args))
+    elif command == 'noop':
+        print(cmd_NOOP(ftp_socket, *cmd_args))
+    elif command == 'stou':
+        print(cmd_STOU(ftp_socket, *cmd_args))
+    elif command == 'allo':
+        print(cmd_ALLO(ftp_socket, *cmd_args))
+    elif command == 'rest':
+        print(cmd_REST(ftp_socket, *cmd_args))
+    elif command == 'site':
+        print(cmd_SITE(ftp_socket, *cmd_args))
     else:
-        print("Inténtelo de nuevo.")
-
-# Ejecución de comandos del cliente
-while True:
-    try:
-        user_input = input("=> ")
-        command_parts = user_input.strip().split(" ")
-        command = command_parts[0].lower()
-        args = command_parts[1:]
-
-        if command == 'user':
-            print(cmd_USER(socket, *args))
-        elif command == 'pass':
-            print(cmd_PASS(socket, *args))
-        elif command == 'acct':
-            print(cmd_ACCT(socket, *args))
-        elif command == 'smnt':
-            print(cmd_SMNT(socket, *args))
-        elif command == 'rein':
-            print(cmd_REIN(socket, *args))
-        elif command == 'quit':
-            print(cmd_QUIT(socket, *args))
-            break #Revisar si es necesario el break
-        elif command == 'pwd':
-            print(cmd_PWD(socket, *args))
-        elif command == 'cwd':
-            print(cmd_CWD(socket, *args))
-        elif command == 'cdup':
-            print(cmd_CDUP(socket, *args))
-        elif command == 'mkd':
-            print(cmd_MKD(socket, *args))
-        elif command == 'rmd':
-            print(cmd_RMD(socket, *args))
-        elif command == 'retr':
-            print(cmd_RETR(socket, *args))
-        elif command == 'stor':
-            print(cmd_STOR(socket, *args))
-        elif command == 'appe':
-            print(cmd_APPE(socket, *args))
-        elif command == 'dele':
-            print(cmd_DELE(socket, *args))
-        elif command == 'list':
-            print(cmd_LIST(socket, *args))
-        elif command == 'nlst':
-            print(cmd_NLST(socket, *args))
-        elif command == 'abor':
-            print(cmd_ABOR(socket, *args))
-        elif command == 'type':
-            print(cmd_TYPE(socket, *args))
-        elif command == 'mode':
-            print(cmd_MODE(socket, *args))
-        elif command == 'stru':
-            print(cmd_STRU(socket, *args))
-        elif command == 'port':
-            print(cmd_PORT(socket, *args))
-        elif command == 'pasv':
-            PASV_SOCKET = cmd_PASV(socket, *args)
-        elif command == 'syst':
-            print(cmd_SYST(socket, *args))
-        elif command == 'stat':
-            print(cmd_STAT(socket, *args))
-        elif command == 'help':
-            print(cmd_HELP(socket, *args))
-        elif command == 'rnfr':
-            print(cmd_RNFR(socket, *args))
-        elif command == 'rnto':
-            print(cmd_RNTO(socket, *args))
-        elif command == 'noop':
-            print(cmd_NOOP(socket, *args))
-        elif command == 'stou':
-            print(cmd_STOU(socket, *args))
-        elif command == 'allo':
-            print(cmd_ALLO(socket, *args))
-        elif command == 'rest':
-            print(cmd_REST(socket, *args))
-        elif command == 'site':
-            print(cmd_SITE(socket, *args))
-        else:
-            print("502: Comando no reconocido, por favor intente de nuevo.")
-    except Exception as e:
-        print(f"Error: {e}")
-    
+        print("502: Comando no reconocido, por favor intente de nuevo.")
+except Exception as e:
+    print(f"Error al ejecutar el comando: {e}")
