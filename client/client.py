@@ -528,6 +528,7 @@ def cmd_RNTO(socket, *args):
 # Otros comandos:
 def cmd_NOOP(socket, *args):
     """Envía un comando NOOP al servidor FTP, no es muy útil excepto si quieres mantener la conexión activa."""
+    print("Haciendo NOOP")
     args_len = len(args)
     response = argument_handler(0,0,args_len)
     if response == "200":
@@ -649,77 +650,72 @@ if "230" not in response:
 cmd_args = [arg for arg in [a_arg, b_arg] if arg is not None]
 
 try:
-    user_input = input("=> ")
-    command_parts = user_input.strip().split(" ")
-    command = command_parts[0].lower()
-    args = command_parts[1:]
-
-    if command == 'user':
+    if command == 'USER':
         print(cmd_USER(ftp_socket, *cmd_args))
-    elif command == 'pass':
+    elif command == 'PASS':
         print(cmd_PASS(ftp_socket, *cmd_args))
-    elif command == 'acct':
+    elif command == 'ACCT':
         print(cmd_ACCT(ftp_socket, *cmd_args))
-    elif command == 'smnt':
+    elif command == 'SMNT':
         print(cmd_SMNT(ftp_socket, *cmd_args))
-    elif command == 'rein':
+    elif command == 'REIN':
         print(cmd_REIN(ftp_socket, *cmd_args))
-    elif command == 'quit':
+    elif command == 'QUIT':
         print(cmd_QUIT(ftp_socket, *cmd_args))
         ftp_socket.close()
-    elif command == 'pwd':
+    elif command == 'PWD':
         print(cmd_PWD(ftp_socket, *cmd_args))
-    elif command == 'cwd':
+    elif command == 'CWD':
         print(cmd_CWD(ftp_socket, *cmd_args))
-    elif command == 'cdup':
+    elif command == 'CDUP':
         print(cmd_CDUP(ftp_socket, *cmd_args))
-    elif command == 'mkd':
+    elif command == 'MKD':
         print(cmd_MKD(ftp_socket, *cmd_args))
-    elif command == 'rmd':
+    elif command == 'RMD':
         print(cmd_RMD(ftp_socket, *cmd_args))
-    elif command == 'retr':
+    elif command == 'RETR':
         print(cmd_RETR(ftp_socket, *cmd_args))
-    elif command == 'stor':
+    elif command == 'STOR':
         print(cmd_STOR(ftp_socket, *cmd_args))
-    elif command == 'appe':
+    elif command == 'APPE':
         print(cmd_APPE(ftp_socket, *cmd_args))
-    elif command == 'dele':
+    elif command == 'DELE':
         print(cmd_DELE(ftp_socket, *cmd_args))
-    elif command == 'list':
+    elif command == 'LIST':
         print(cmd_LIST(ftp_socket, *cmd_args))
-    elif command == 'nlst':
+    elif command == 'NLST':
         print(cmd_NLST(ftp_socket, *cmd_args))
-    elif command == 'abor':
+    elif command == 'ABOR':
         print(cmd_ABOR(ftp_socket, *cmd_args))
-    elif command == 'type':
+    elif command == 'TYPE':
         print(cmd_TYPE(ftp_socket, *cmd_args))
-    elif command == 'mode':
+    elif command == 'MODE':
         print(cmd_MODE(ftp_socket, *cmd_args))
-    elif command == 'stru':
+    elif command == 'STRU':
         print(cmd_STRU(ftp_socket, *cmd_args))
-    elif command == 'port':
+    elif command == 'PORT':
         print(cmd_PORT(ftp_socket, *cmd_args))
-    elif command == 'pasv':
+    elif command == 'PASV':
         PASV_SOCKET = cmd_PASV(ftp_socket, *cmd_args)
-    elif command == 'syst':
+    elif command == 'SYST':
         print(cmd_SYST(ftp_socket, *cmd_args))
-    elif command == 'stat':
+    elif command == 'STAT':
         print(cmd_STAT(ftp_socket, *cmd_args))
-    elif command == 'help':
+    elif command == 'HELP':
         print(cmd_HELP(ftp_socket, *cmd_args))
-    elif command == 'rnfr':
+    elif command == 'RNFR':
         print(cmd_RNFR(ftp_socket, *cmd_args))
-    elif command == 'rnto':
+    elif command == 'RNTO':
         print(cmd_RNTO(ftp_socket, *cmd_args))
-    elif command == 'noop':
+    elif command == 'NOOP':
         print(cmd_NOOP(ftp_socket, *cmd_args))
-    elif command == 'stou':
+    elif command == 'STOU':
         print(cmd_STOU(ftp_socket, *cmd_args))
-    elif command == 'allo':
+    elif command == 'ALLO':
         print(cmd_ALLO(ftp_socket, *cmd_args))
-    elif command == 'rest':
+    elif command == 'REST':
         print(cmd_REST(ftp_socket, *cmd_args))
-    elif command == 'site':
+    elif command == 'SITE':
         print(cmd_SITE(ftp_socket, *cmd_args))
     else:
         print("502: Comando no reconocido, por favor intente de nuevo.")
