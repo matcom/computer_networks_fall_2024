@@ -112,14 +112,15 @@ def cmd_QUIT(socket, *args):
     return response
 
 # Navegación:
-def cmd_PWD(socket, *args):
+def cmd_PWD(sock, *args):
     """Muestra el directorio de trabajo actual."""
-    args_len = len(args)
-    response = argument_handler(0,0,args_len)
-    if response == "200":
-        return send(socket, f'PWD')
-    else:
-        return response
+    
+    # Verifica que no se envían argumentos adicionales
+    if args:
+        return "501: El comando PWD no acepta argumentos."
+    
+    # Envía el comando PWD al servidor FTP
+    return send(sock, 'PWD\r\n')
 
 def cmd_CWD(socket, *args):
     """Cambia el directorio actual al especificado."""
