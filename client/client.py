@@ -12,12 +12,14 @@ DATA_SOCKET = None                  # Socket de transferencia utilizado para tra
 # Funciones -------------------------------------------------------------------------------------------------------------------
 
 def response(socket):
+    print("ENTRANDO AL BUCLE DE RECIBIDO")
     response = ''
     while True:
         data = socket.recv(BUFFER_SIZE).decode
         response += data
         if data.endswith('\r\n') or len(data) < BUFFER_SIZE:
             break
+    print(f"SALIDA DEL BUCLE DE RECIBIDO. RESPUESTA: {response}")
     return response
 
 def client_connects_to_server(sock, server_addr, port):
