@@ -212,7 +212,7 @@ def cmd_STOR(socket, *args):
         print(f"La ruta {args[0]} no es una ruta válida.")
         return
     # Verificar tipo de archivo para configurar permisos de lectura
-    if self.type == 'A':
+    if TYPE == 'A':
         r_mode = 'r'
     else:
         r_mode = 'rb'
@@ -520,7 +520,7 @@ def cmd_STOU(socket, *args):
         print(f"La ruta {args[0]} no es una ruta válida.")
         return
     # Verificar tipo de archivo para configurar permisos de lectura
-    if self.type == 'A':
+    if TYPE == 'A':
         r_mode = 'r'
     else:
         r_mode = 'rb'
