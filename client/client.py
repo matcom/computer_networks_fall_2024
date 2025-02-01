@@ -4,6 +4,10 @@ import re
 import sys
 
 BUFFER_SIZE = 1024
+TYPE = 'A'
+PASV_MODE = 0                       # Indicador de modo pasivo (0=inactivo   1=activo)
+PASV_SOCKET = None                  # Socket de transferencia utilizado en modo pasivo
+DATA_SOCKET = None                  # Socket de transferencia utilizado para transferencia de datos
 
 # Funciones -------------------------------------------------------------------------------------------------------------------
 
@@ -635,12 +639,12 @@ if not all([host, port, user, password]):
     exit()
 
 # Conexión al servidor
-ftp_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-try:
-    print(client_connects_to_server(ftp_socket, host, port))
-except Exception as e:
-    print(f"Error al conectar con el servidor: {e}")
-    exit()
+# ftp_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+# try:
+#     print(client_connects_to_server(ftp_socket, host, port))
+# except Exception as e:
+#     print(f"Error al conectar con el servidor: {e}")
+#     exit()
 
 # Autenticación
 response = client_login(ftp_socket, user, password)
@@ -721,6 +725,6 @@ try:
     elif command == 'SITE':
         print(cmd_SITE(ftp_socket, *cmd_args))
     else:
-        print("502: Comando no reconocido, por favor intente de nuevo.")
+        print("Comando no reconocido, por favor intente de nuevo.")
 except Exception as e:
     print(f"Error al ejecutar el comando: {e}")
