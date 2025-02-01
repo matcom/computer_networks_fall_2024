@@ -1,187 +1,96 @@
 import socket
 import ssl
-import sys
+import argparse
+import json
 
-BUFFER_SIZE = 1024
-TIMEOUT = 30
-
-def connect_to_server(server, port):
-    context = ssl.create_default_context()
-    context.check_hostname = False
-    context.verify_mode = ssl.CERT_NONE
-
+def connect_to_server(server, port, use_tls=False):
+    """
+    Conecta al servidor FTP.
+    Si use_tls es True, establece una conexión segura (TLS/SSL).
+    """
     client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    client_socket.settimeout(TIMEOUT)
     client_socket.connect((server, port))
-    print(client_socket.recv(BUFFER_SIZE).decode())
 
-    client_socket.send("AUTH TLS\r\n".encode())
-    response = client_socket.recv(BUFFER_SIZE).decode()
-    print(response)
-
-    tls_socket = context.wrap_socket(client_socket, server_hostname=server)
-    tls_socket.settimeout(TIMEOUT)
-
-    try:
-        tls_socket.do_handshake()
-    except ssl.SSLError as e:
-        print(f"Error durante el handshake TLS: {e}")
-        client_socket.close()
-        return None
-
-    # Establecer protección privada para la conexión de datos
-    send_command(tls_socket, "PBSZ 0")
-    send_command(tls_socket, "PROT P")
-
-    return tls_socket
+    if use_tls:
+        # Configura el contexto SSL
+        context = ssl.create_default_context()
+        tls_socket = context.wrap_socket(client_socket, server_hostname=server)
+        return tls_socket
+    else:
+        return client_socket
 
 def send_command(client_socket, command):
-    client_socket.send((command + "\r\n").encode())
-    try:
-        response = client_socket.recv(BUFFER_SIZE).decode()
-        print(response)
-        return response
-    except socket.timeout:
-        print("Tiempo de espera agotado para la respuesta del servidor.")
-        return None
+    """
+    Envía un comando al servidor FTP y devuelve la respuesta en formato JSON.
+    """
+    client_socket.sendall(command.encode())
+    response = client_socket.recv(1024).decode().strip()
+    status_code = response.split(" ")[0]  # Extrae el código de estado
+    return json.dumps({"status": status_code, "message": response}, indent=4)
 
-def list_files(tls_socket):
-    response = send_command(tls_socket, 'PASV')
-
-    # Extraer la dirección IP y el puerto del modo pasivo
-    start = response.find('(') + 1
-    end = response.find(')')
-    pasv_data = response[start:end].split(',')
-    ip = '.'.join(pasv_data[:4])
-    port = (int(pasv_data[4]) << 8) + int(pasv_data[5])
-
-    data_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    data_socket.connect((ip, port))
-
-    send_command(tls_socket, 'LIST')
-
-    # Leer la lista de archivos
-    data = b""
-    while True:
-        chunk = data_socket.recv(BUFFER_SIZE)
-        if not chunk:
-            break
-        data += chunk
-    data_socket.close()
-    print(data.decode())
-
-def stor_file(tls_socket, local_file, remote_file):
-    send_command(tls_socket, 'TYPE I')
-    response = send_command(tls_socket, 'PASV')
-
-    start = response.find('(') + 1
-    end = response.find(')')
-    pasv_data = response[start:end].split(',')
-    ip = '.'.join(pasv_data[:4])
-    port = (int(pasv_data[4]) << 8) + int(pasv_data[5])
-
-    data_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    data_socket.connect((ip, port))
-
-    send_command(tls_socket, f'STOR {remote_file}')
-
-    with open(local_file, 'rb') as file:
-        while True:
-            data = file.read(BUFFER_SIZE)
-            if not data:
-                break
-            data_socket.send(data)
-
-    data_socket.close()
-    print(tls_socket.recv(BUFFER_SIZE).decode())
-
-def retr_file(tls_socket, remote_file, local_file):
-    send_command(tls_socket, f'TYPE I')
-    response = send_command(tls_socket, 'PASV')
-
-    start = response.find('(') + 1
-    end = response.find(')')
-    pasv_data = response[start:end].split(',')
-    ip = '.'.join(pasv_data[:4])
-    port = (int(pasv_data[4]) << 8) + int(pasv_data[5])
-
-    data_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    data_socket.connect((ip, port))
-
-    send_command(tls_socket, f'RETR {remote_file}')
-
-    with open(local_file, 'wb') as file:
-        while True:
-            data = data_socket.recv(BUFFER_SIZE)
-            if not data:
-                break
-            file.write(data)
-
-    data_socket.close()
-    print(tls_socket.recv(BUFFER_SIZE).decode())
-
-def ftp_client(args):
-    # Extraer servidor y puerto de los argumentos
-    server = args[args.index('-h') + 1]
-    port = int(args[args.index('-p') + 1])
-
-    client_socket = connect_to_server(server, port)
-    if not client_socket:
-        print("No se pudo establecer una conexión segura.")
-        return
+def ftp_client(argvs):
+    """
+    Función principal del cliente FTP.
+    """
+    server = argvs.host
+    port = argvs.port
+    username = argvs.username
+    password = argvs.password
+    command = argvs.command
+    argument = argvs.argument
+    use_tls = argvs.use_tls  # Nuevo argumento para usar o no TLS
 
     try:
-        user = args[args.index('-u') + 1]
-        password = args[args.index('-w') + 1]
+        # Conecta al servidor
+        client_socket = connect_to_server(server, port, use_tls)
 
-        user_response = send_command(client_socket, f"USER {user}")
+        # Recibe el mensaje de bienvenida del servidor
+        welcome_message = client_socket.recv(1024).decode().strip()
+        welcome_status = welcome_message.split(" ")[0]
+        print(json.dumps({"status": welcome_status, "message": welcome_message}, indent=4))
 
-        if user_response and "331" in user_response:
-            send_command(client_socket, f"PASS {password}")
+        # Autenticación con USER y PASS
+        user_response = send_command(client_socket, f"USER {username}\r\n")
+        print(user_response)
 
-        if '-c' in args:
-            command = args[args.index('-c') + 1].upper()
-            if command == 'QUIT':
-                send_command(client_socket, 'QUIT')
-            elif command == 'PWD':
-                send_command(client_socket, 'PWD')
-            elif command == 'CWD':
-                directory = args[args.index('-a') + 1]
-                send_command(client_socket, f'CWD {directory}')
-            elif command == 'RETR':
-                remote_file = args[args.index('-a') + 1]
-                local_file = args[args.index('-b') + 1]
-                retr_file(client_socket, remote_file, local_file)
-            elif command == 'STOR':
-                local_file = args[args.index('-a') + 1]
-                remote_file = args[args.index('-b') + 1]
-                stor_file(client_socket, local_file, remote_file)
-            elif command == 'LIST':
-                list_files(client_socket)
-            elif command == 'DELE':
-                file_to_delete = args[args.index('-a') + 1]
-                send_command(client_socket, f'DELE {file_to_delete}')
-            elif command == 'MKD':
-                directory_to_create = args[args.index('-a') + 1]
-                send_command(client_socket, f'MKD {directory_to_create}')
-            elif command == 'RMD':
-                directory_to_remove = args[args.index('-a') + 1]
-                send_command(client_socket, f'RMD {directory_to_remove}')
-            elif command == 'RNFR':
-                old_name = args[args.index('-a') + 1]
-                new_name = args[args.index('-b') + 1]
-                send_command(client_socket, f'RNFR {old_name}')
-                send_command(client_socket, f'RNTO {new_name}')
+        pass_response = send_command(client_socket, f"PASS {password}\r\n")
+        print(pass_response)
+
+        # Verifica si la autenticación fue exitosa
+        if "230" in pass_response:  # Código 230: Usuario autenticado
+            # Ejecuta el comando solicitado
+            if command == "DELE":
+                command_response = send_command(client_socket, f"DELE {argument}\r\n")
+            elif command == "MKD":
+                command_response = send_command(client_socket, f"MKD {argument}\r\n")
+            elif command == "RMD":
+                command_response = send_command(client_socket, f"RMD {argument}\r\n")
             else:
-                print("Comando no implementado o no reconocido.")
+                command_response = json.dumps({"status": "500", "message": "Comando no soportado"}, indent=4)
+
+            print(command_response)
+        else:
+            print(json.dumps({"status": "530", "message": "Error de autenticación. Verifica las credenciales."}, indent=4))
 
     except Exception as e:
-        print(f"Error: {e}")
-
+        print(json.dumps({"status": "500", "message": f"Error durante la ejecución: {e}"}, indent=4))
     finally:
+        # Cierra la conexión
         client_socket.close()
-        print("Conexión cerrada.")
 
 if __name__ == "__main__":
-    argvs = sys.argv[1:]
+    # Configura el parser de argumentos
+    parser = argparse.ArgumentParser(description="Cliente FTP en Python")
+    parser.add_argument("-H", "--host", required=True, help="Dirección del servidor FTP")
+    parser.add_argument("-P", "--port", type=int, default=21, help="Puerto del servidor FTP")
+    parser.add_argument("-u", "--username", required=True, help="Nombre de usuario")
+    parser.add_argument("-w", "--password", required=True, help="Contraseña")
+    parser.add_argument("-c", "--command", required=True, help="Comando a ejecutar (DELE, MKD, RMD)")
+    parser.add_argument("-a", "--argument", required=True, help="Argumento del comando")
+    parser.add_argument("--use_tls", action="store_true", help="Usar TLS/SSL para la conexión")
+
+    # Parsea los argumentos
+    argvs = parser.parse_args()
+
+    # Llama a la función principal del cliente FTP
     ftp_client(argvs)
