@@ -29,7 +29,8 @@ def client_connects_to_server(sock, server_addr, port):
 def send(socket, message):
     socket.sendall(f"{message}\r\n".encode())
     print("MENSAJE ENVIADO, RECIBIENDO RESPUESTA")
-    return response(socket)
+    response = response(socket)
+    return response
 
 def default_login(socket):
     send(socket, f"USER anonymous")
@@ -647,8 +648,8 @@ except Exception as e:
     exit()
 
 # Autenticación
-response = client_login(ftp_socket, user, password)
-print(response)
+Response = client_login(ftp_socket, user, password)
+print(Response)
 # if "230" not in response:
 #     print("Error de autenticación")
 #     exit()
