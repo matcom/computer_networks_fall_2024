@@ -14,9 +14,8 @@ class Client:
         # Diccionario de comandos y sus funciones correspondientes
         self.command_handlers = {
             "LIST": self.list_file,
-            "STOR": lambda args: self.store_file(args[0]) if args else print("Error: Filename required"),
-            "RETR": lambda args: self.retrieve_file(args[0]) if args else print("Error: Filename required"),
-            "QUIT": self.quit,
+            "STOR": lambda args: self.store_file(args),
+            "RETR": lambda args: self.retrieve_file(args),
         }
     
     #Conectar con el servidor
@@ -25,20 +24,28 @@ class Client:
         response = self.receive_response()
         print(f"{response}")
     
+    #Enviar comando al servidor
+    def send_command(self, command):
+        self.client_socket.sendall(f"{command}".encode())
+    
     #Recibir una respuesta del servidor
     def receive_response(self):
         response = self.client_socket.recv(1024)
         return response.decode()
     
-    #Enviar comando al servidor
-    def send_command(self, command):
-        self.client_socket.sendall(f"{command}".encode())
-        return self.receive_response()
+    #Conecta el socket de datos para transferencia de informacion
+    def connect_data_socket(self):
+        ip, port = self.enter_passive_mode()
+        self.data_socket = socket(AF_INET, SOCK_STREAM)
+        self.data_socket.settimeout(5)
+        self.data_socket.connect((ip, port))
     
     #Entrar en modo pasivo
     def enter_passive_mode(self):
-        #try:
-            response = self.send_command("PASV")
+        try:
+            self.send_command("PASV")
+            response = self.receive_response()
+            
             # Extraer la información de IP y puerto
             start = response.find('(') + 1
             end = response.find(')')
@@ -49,163 +56,119 @@ class Client:
             port = int(data[4]) * 256 + int(data[5])
             return ip, port
             
-        # except Exception as e:
-        #     print(f"Error in enter_passive_mode: {e}")
-        #     raise
+        except Exception as e:
+            print(f"Error in enter_passive_mode: {e}")
     
-    #Salir y cerrar la concexion
-    def quit(self, args=None):
-        self.send_command("QUIT")
-        self.client_socket.close()
-        print("Close Connection...")
-
-    #Comando para listar archivos
-    def list_file(self, args=None):
+    def execute_command(self, command, args=None):
+        if command in ["LIST", "STOR", "RETR"]:
+            return self.handle_data_connection(command, args)
+        else:
+            self.send_command(command)
+            return self.receive_response()
+    
+    # Manejar la conexión de datos para comandos que lo requieren
+    def handle_data_connection(self, command, args):
         try:
-            # Obtener IP y puerto del modo pasivo
-            ip, port = self.enter_passive_mode()
-            # Crear nuevo socket de datos
-            self.data_socket = socket(AF_INET, SOCK_STREAM)
+            self.connect_data_socket()
             
-            # Configurar timeout para la conexión
-            self.data_socket.settimeout(5)
+            #Ejecutar el comando
+            response = self.command_handlers[command](args)
             
-            # Intentar conectar
-            try:
-                self.data_socket.connect((ip, port))
-            except Exception as e:
-                return
-            
-            # Enviar comando LIST después de establecer la conexión de datos
-            response = self.send_command("LIST")
-            print(f"{response}")
-            
-            # Recibir datos
-            data = self.data_socket.recv(1024)
-            print(f"Files: \n{data.decode()}")
-            
-            # Cerrar socket de datos
             self.data_socket.close()
+            return response
             
         except Exception as e:
-            print(f"Error in list_file: {e}")
             if self.data_socket:
                 self.data_socket.close()
-
+                    
+            return f"Error in {command}: {e}"
+            
+    #Comando para listar archivos
+    def list_file(self, args=None):
+        
+        self.send_command("LIST")
+        
+        all_data = b""
+        while True:
+            data = self.data_socket.recv(1024)
+            if not data:
+                break
+            all_data += data
+        print("Files \n--------------------------")
+        print(f"{all_data.decode()}\n")
+        
+        return self.receive_response()
+        
+        
     #Comando para recibir archivos
     def retrieve_file(self, filename):
-        #los archios se guardaran en ./local/
+        Utils.validate_args("RETR" , filename)
+        
+        #Agregar la carpeta fuente donde se descargara el archivo
         path = f"./.local/{filename}"
         
-        try:
-            # Obtener IP y puerto del modo pasivo
-            ip, port = self.enter_passive_mode()
+        # Enviar comando y recibir respuesta
+        self.send_command(f"RETR {filename}")
+        response = self.receive_response()
             
-            # Crear nuevo socket de datos
-            self.data_socket = socket(AF_INET, SOCK_STREAM)
+        # Verificar si se encontro el archivo
+        if not response.startswith('550'):
             
-            # Configurar timeout para la conexión
-            self.data_socket.settimeout(5)
-            
-            # Intentar conectar
-            try:
-                self.data_socket.connect((ip, port))
-                
-            except Exception as e:
-                print(f"Error connecting to data socket: {e}")
-                return
-            
-            # Enviar comando RETR y verificar la respuesta
-            response = self.send_command(f"RETR {filename}")
-            
-            # Verificar si el archivo no se encuentra
-            if response.startswith('550'):
-                print(f"Error: {response.strip()}")
-                self.data_socket.close()
-                return
-            
-            # Si el archivo existe, proceder a descargarlo
+            #Proceder a descargarlo
             with open(path, 'wb') as f:
                 while True:
                     data = self.data_socket.recv(1024)
                     if not data:
                         break
                     f.write(data)
-            
-            self.data_socket.close()
-            print(f"{response}")
-            print(f"The file {filename} downloaded successfully")
-            
-        except Exception as e:
-            print(f"Error in retrieve_file: {e}")
-            if self.data_socket:
-                self.data_socket.close()
-
-    #Comando para Updatear un archivo
+                    
+        return response    
+        
     def store_file(self, filename):
-        # los archivos se guardaran en ./local/
+        Utils.validate_args("STOR" , filename)
+        
+        #Agregar la carpeta fuente desde donde se enviara el archivo
         path = f"./.local/{filename}"
         
-        try:
-            # Chequear si el archivo existe localmente
-            if not os.path.exists(path):
-                print(f"Error: File '{filename}' does not exist")
-                self.data_socket.close()
-                return
+        #Chequear si el archivo existe localmente
+        if not os.path.exists(path):
+            return f"Error: File '{filename}' does not exist"
             
-            # Obtener IP y puerto del modo pasivo
-            ip, port = self.enter_passive_mode()
-            
-            # Crear nuevo socket de datos
-            self.data_socket = socket(AF_INET, SOCK_STREAM)
-            
-            # Configurar timeout para la conexión
-            self.data_socket.settimeout(5)
-            
-            # Intentar conectar
-            try:
-                self.data_socket.connect((ip, port))
-                
-            except Exception as e:
-                print(f"Error connecting to data socket: {e}")
-                return
-            
-            # Enviar comando STOR 
-            self.client_socket.sendall(f"STOR {filename}".encode())
-                    
-            with open(path, 'rb') as f:
-                while True:
-                    data = f.read(4096)
-                    if not data:
-                        break
-                    self.data_socket.sendall(data)
-                    
-            self.data_socket.close()
-            print(self.receive_response())
-            print(f"The file {filename} uploaded successfully")
+        #Enviar comando
+        self.send_command(f"STOR {filename}")
         
-        except Exception as e:
-            print(f"Error in store_file: {e}")
-            if self.data_socket:
-                self.data_socket.close()
+        #Enviar archivo            
+        with open(path, 'rb') as f:
+            while True:
+                data = f.read(1024)
+                if not data:
+                    break
+                self.data_socket.sendall(data)
         
+        self.data_socket.close()
+                    
+        return self.receive_response()
+    
     #Metodo que llamara a todas las funcionalidades del cliente
     def ftp_client(self):
         while True:
-            # Obtener y parsear el comando
             user_input = input("ftp>> ").strip().split()
-            if not user_input:
+            cmd , args = Utils.recv_cmd(user_input)
+            
+            #print(f"Debug: cmd:{cmd}, args:{args}")
+            
+            if not cmd:
                 continue
-
-            cmd = user_input[0].upper()
-            args = user_input[1:]
-
-            if cmd in self.command_handlers:
-                # Ejecutar el comando
-                self.command_handlers[cmd](args)
-                # Verificar si el comando es QUIT para salir del bucle
-                if cmd == "QUIT":
-                    break
-            else:
-                sug = Utils.Calculate_Lev(cmd)
+            
+            response = self.execute_command(cmd, args)
+            print(response)
+            
+            #Verificar si la respuesta es de cierre de conexión
+            if response.startswith("221"):
+                print("Cerrando la conexión...")
+                self.client_socket.close()  
+                break
+            #Verificar si la respuesta es de comando desconocido
+            if response.startswith("500"):  
+                sug = Utils.Get_suggestion(cmd)
                 print(f"Command {cmd} not found, try with {sug}")

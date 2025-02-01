@@ -7,7 +7,9 @@ class FTPServer:
         self.server_socket = socket(AF_INET, SOCK_STREAM)
         self.server_socket.bind(('', self.server_port))
         self.server_socket.listen(1)
+        self.conection_socket = None
         self.data_socket = None
+        print("Server Ready...")
         
         # Diccionario de comandos y sus funciones correspondientes
         self.command_handlers = {
@@ -22,15 +24,26 @@ class FTPServer:
         response = f"{code} {message}\r"
         connection.send(response.encode())
     
-    def enter_passive_mode(self, connection):
+    def recv_cmd(self, entry):    
+        if not entry:
+            return None, None
+        
+        cmd = entry[0].upper()
+        args = ' '.join(entry[1:])  # Unir los argumentos en un solo string
+        
+        return cmd , args
+    
+    def handle_quit(self, connection, *args):
+        self.send_response(connection, 221, "Goodbye")
+    
+    def enter_passive_mode(self, connection, *args):
         self.data_socket = socket(AF_INET, SOCK_STREAM)
         self.data_socket.bind(('127.0.0.1', 0))  # Bind explicitly to localhost
         self.data_socket.listen(1)
         
         addr = self.data_socket.getsockname()
         ip = addr[0]  
-        
-        
+                
         ip_parts = ip.split('.')
         p1 = addr[1] // 256
         p2 = addr[1] % 256
@@ -39,25 +52,26 @@ class FTPServer:
         self.send_response(connection, 227, f"Entering Passive Mode {passive_str}")
         
 
-    def handle_list(self, connection):
-        
-        client_data, client_addr = self.data_socket.accept()
+    def handle_list(self, connection, *args):
+        client_data, _ = self.data_socket.accept()
             
         files = '\n'.join(os.listdir('./.home'))
+        
         client_data.send(files.encode())
+        
         client_data.close()
         self.data_socket.close()
-        self.send_response(connection, 226, "Transfer complete")
+        
+        self.send_response(connection, 226, "Transfer complete (File's List)")
 
     def handle_retr(self, connection, filename):
-        
         file_path = os.path.join('./.home', filename)
         
         if not os.path.exists(file_path):
             self.send_response(connection, 550, "File not found")
             return
         
-        client_data, client_addr = self.data_socket.accept()
+        client_data, _ = self.data_socket.accept()
         
         with open(file_path, 'rb') as f:
             while True:
@@ -68,11 +82,12 @@ class FTPServer:
             
         client_data.close()
         self.data_socket.close()
+        
         self.send_response(connection, 226, "Transfer complete")
 
     def handle_stor(self, connection, filename):
-        
         path = "./.home/" + filename
+        
         client_data, _ = self.data_socket.accept()
         
         with open(path, 'wb') as f:
@@ -81,47 +96,39 @@ class FTPServer:
                 if not data:
                     break
                 f.write(data)
-        
+                
         client_data.close()
         self.data_socket.close()
+        
         self.send_response(connection, 226, "Transfer complete")
-
-    def handle_quit(self, connection, *args):
-        self.send_response(connection, 221, "Goodbye")
-
-    def start(self):
-        print("Server Ready...")
+        
+    def accept_conection(self):
         while True:
-            connection_socket, addr = self.server_socket.accept()
-            self.send_response(connection_socket, 220, "Welcome to FTP server")
-            
-            while True:
-                try:
-                    command = connection_socket.recv(1024).decode().strip()
+            self.connection_socket, _ = self.server_socket.accept()
+            self.send_response(self.connection_socket, 220, "Welcome to FTP server")
+            self.listen_commands()
+            self.connection_socket.close()
+    
+    def listen_commands(self):
+        while True:
+            try:
+                command = self.connection_socket.recv(1024).decode().strip().split()
+                cmd , args = self.recv_cmd(command)
+                
+                #print(f"Debug: cmd:{cmd}, args:{args}")
+                
+                if cmd in self.command_handlers:
+                    self.command_handlers[cmd](self.connection_socket,args)
                     
-                    if not command:
+                    if(cmd == "QUIT"):
                         break
-                        
-                    cmd_parts = command.split()
-                    cmd = cmd_parts[0].upper()
-                    args = cmd_parts[1:] if len(cmd_parts) > 1 else []
-                    
-                    #print(f"{cmd} : {args} ")
-                    
-                    if cmd in self.command_handlers:
-                        handler = self.command_handlers[cmd]
-                        handler(connection_socket, *args)
-                        if cmd == "QUIT":
-                            break
-                    else:
-                        self.send_response(connection_socket, 500, "Unknown command")
-                        
-                except Exception as e:
-                    print(f"Error: {e}")
-                    break
-                    
-            connection_socket.close()
-
+                else:
+                    self.send_response(self.connection_socket, 500, "Unknown command")
+            
+            except Exception as e:
+                print(f"Error: {e}")
+                break
+                     
 if __name__ == "__main__":
     server = FTPServer(12000)
-    server.start()
+    server.accept_conection()
