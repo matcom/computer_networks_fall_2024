@@ -11,7 +11,7 @@ DATA_SOCKET = None                  # Socket de transferencia utilizado para tra
 
 # Funciones -------------------------------------------------------------------------------------------------------------------
 
-def response(socket):
+def get_response(socket):
     print("ENTRANDO AL BUCLE DE RECIBIDO")
     response = ''
     while True:
@@ -29,7 +29,7 @@ def client_connects_to_server(sock, server_addr, port):
 def send(socket, message):
     socket.sendall(f"{message}\r\n".encode())
     print("MENSAJE ENVIADO, RECIBIENDO RESPUESTA")
-    response = response(socket)
+    response = get_response(socket)
     return response
 
 def default_login(socket):
