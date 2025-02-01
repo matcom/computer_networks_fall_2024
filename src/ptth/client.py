@@ -213,13 +213,14 @@ class HTTPConnection:
 
 
 def request(method="GET", url="/", headers=None, body=""):
-    host,port,_,_ = parse_http_url(url) # Can launch a BadUrlError
+    host, port, abs_path, query = parse_http_url(url) # Can launch a BadUrlError
     conn = HTTPConnection(host, port)
     res = None
     data = None
+
     try:
         conn.connect()
-        conn.request(method, url, headers=headers, body=body)
+        conn.request(method, abs_path + query, headers=headers, body=body)
         data = parse_response(method, conn)
     finally:
         conn.close()
