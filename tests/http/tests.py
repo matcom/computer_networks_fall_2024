@@ -5,7 +5,7 @@ def make_request(method, path, headers=None, data=None):
     headerstr = "-h {}" if headers is None else f" -h {headers}"
     datastr = "" if data is None else f" -d {data}"
     response_string = os.popen(f"sh run.sh -m {method} -u http://localhost:8080{path} {headerstr} {datastr}").read()
-    print(response_string)
+    print(f'{response_string=}')
     return json.loads(response_string) # JSON con campos status, body y headers
 
 # Almacena los resultados de las pruebas
