@@ -45,7 +45,6 @@ def fix_curious_design_choices(args):
 def main(sys_args):
     # Set up argument parser
     sys_args = fix_curious_design_choices(sys_args)
-    print(sys_args)
 
     parser = argparse.ArgumentParser(description="HTTP Client CLI", add_help=False)
     parser.add_argument("-m", "--method", required=True, help="HTTP method (e.g., GET, POST)")
