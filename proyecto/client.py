@@ -29,16 +29,17 @@ def send_command(client_socket, command):
     status_code = response.split(" ")[0]  # Extrae el código de estado
     return json.dumps({"status": status_code, "message": response}, indent=4)
 
-def parse_pasv_response(response):
+def parse_pasv_response(response, server_ip):
     """
     Extrae la dirección IP y el puerto de la respuesta PASV.
+    Si la respuesta no es válida, usa la dirección IP del servidor.
     """
     match = re.search(r"(\d+),(\d+),(\d+),(\d+),(\d+),(\d+)", response)
     if match:
         ip = ".".join(match.groups()[:4])
         port = int(match.groups()[4]) * 256 + int(match.groups()[5])
         return ip, port
-    return None, None
+    return server_ip, None  # Usa la dirección IP del servidor si la respuesta no es válida
 
 def ftp_client(argvs):
     """
@@ -114,7 +115,7 @@ def ftp_client(argvs):
                 print(pasv_response)
 
                 if "227" in pasv_response:  # Código 227: Entrando en modo pasivo
-                    ip, port = parse_pasv_response(pasv_response)
+                    ip, port = parse_pasv_response(pasv_response, server)  # Pasa la dirección IP del servidor
                     if ip and port:
                         # Establece la conexión de datos
                         data_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -160,7 +161,7 @@ if __name__ == "__main__":
     parser.add_argument("-p", "--port", type=int, default=21, help="Puerto del servidor FTP")
     parser.add_argument("-u", "--username", required=True, help="Nombre de usuario")
     parser.add_argument("-w", "--password", required=True, help="Contraseña")
-    parser.add_argument("-c", "--command", required=False, help="Comando a ejecutar")
+    parser.add_argument("-c", "--command", required=True, help="Comando a ejecutar")
     parser.add_argument("-a", "--argument1", required=False, help="Primer argumento del comando")
     parser.add_argument("-b", "--argument2", required=False, help="Segundo argumento del comando")
     parser.add_argument("--use_tls", action="store_true", help="Usar TLS/SSL para la conexión")
