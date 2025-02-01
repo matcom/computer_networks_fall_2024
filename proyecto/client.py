@@ -114,9 +114,9 @@ def ftp_client(argvs):
 
 if __name__ == "__main__":
     # Configura el parser de argumentos
-    parser = argparse.ArgumentParser(description="Cliente FTP en Python")
-    parser.add_argument("-p", "--port", type=int, default=21, help="Puerto del servidor FTP")
+    parser = argparse.ArgumentParser(description="Cliente FTP en Python", add_help=False)
     parser.add_argument("-h", "--host", required=True, help="Dirección del servidor FTP")
+    parser.add_argument("-p", "--port", type=int, default=21, help="Puerto del servidor FTP")
     parser.add_argument("-u", "--username", required=True, help="Nombre de usuario")
     parser.add_argument("-w", "--password", required=True, help="Contraseña")
     parser.add_argument("-c", "--command", required=True, help="Comando a ejecutar")
