@@ -8,8 +8,9 @@ def make_request(method, path, headers=None, data=None):
     print(f'{response_string=}')
     try:
         return json.loads(response_string) # JSON con campos status, body y headers
-    except:
-        pass
+    except Exception as exc:
+        print(exc)
+        return {"status": 369, "body": "hello"}
 
 # Almacena los resultados de las pruebas
 results = []
