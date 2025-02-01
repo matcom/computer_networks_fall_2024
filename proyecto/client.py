@@ -37,8 +37,46 @@ def ftp_client(argvs):
     username = argvs.username
     password = argvs.password
     command = argvs.command
-    argument = argvs.argument
+    argument1 = argvs.argument1
+    argument2 = argvs.argument2
     use_tls = argvs.use_tls  # Nuevo argumento para usar o no TLS
+
+    # Diccionario de delegados para los comandos FTP
+    command_delegates = {
+        "USER": lambda: f"USER {argument1}\r\n",
+        "PASS": lambda: f"PASS {argument1}\r\n",
+        "ACCT": lambda: f"ACCT {argument1}\r\n",
+        "CWD": lambda: f"CWD {argument1}\r\n",
+        "CDUP": lambda: f"CDUP\r\n",
+        "SMNT": lambda: f"SMNT {argument1}\r\n",
+        "REIN": lambda: f"REIN\r\n",
+        "QUIT": lambda: f"QUIT\r\n",
+        "PORT": lambda: f"PORT {argument1}\r\n",
+        "PASV": lambda: f"PASV\r\n",
+        "TYPE": lambda: f"TYPE {argument1}\r\n",
+        "STRU": lambda: f"STRU {argument1}\r\n",
+        "MODE": lambda: f"MODE {argument1}\r\n",
+        "RETR": lambda: f"RETR {argument1}\r\n",
+        "STOR": lambda: f"STOR {argument1} {argument2}\r\n",
+        "STOU": lambda: f"STOU\r\n",
+        "APPE": lambda: f"APPE {argument1}\r\n",
+        "ALLO": lambda: f"ALLO {argument1}\r\n",
+        "REST": lambda: f"REST {argument1}\r\n",
+        "RNFR": lambda: f"RNFR {argument1}\r\n",
+        "RNTO": lambda: f"RNTO {argument2}\r\n",
+        "ABOR": lambda: f"ABOR\r\n",
+        "DELE": lambda: f"DELE {argument1}\r\n",
+        "RMD": lambda: f"RMD {argument1}\r\n",
+        "MKD": lambda: f"MKD {argument1}\r\n",
+        "PWD": lambda: f"PWD\r\n",
+        "LIST": lambda: f"LIST {argument1}\r\n",
+        "NLST": lambda: f"NLST {argument1}\r\n",
+        "SITE": lambda: f"SITE {argument1}\r\n",
+        "SYST": lambda: f"SYST\r\n",
+        "STAT": lambda: f"STAT {argument1}\r\n",
+        "HELP": lambda: f"HELP {argument1}\r\n",
+        "NOOP": lambda: f"NOOP\r\n",
+    }
 
     try:
         # Conecta al servidor
@@ -59,12 +97,8 @@ def ftp_client(argvs):
         # Verifica si la autenticación fue exitosa
         if "230" in pass_response:  # Código 230: Usuario autenticado
             # Ejecuta el comando solicitado
-            if command == "DELE":
-                command_response = send_command(client_socket, f"DELE {argument}\r\n")
-            elif command == "MKD":
-                command_response = send_command(client_socket, f"MKD {argument}\r\n")
-            elif command == "RMD":
-                command_response = send_command(client_socket, f"RMD {argument}\r\n")
+            if command in command_delegates:
+                command_response = send_command(client_socket, command_delegates[command]())
             else:
                 command_response = json.dumps({"status": "500", "message": "Comando no soportado"}, indent=4)
 
@@ -81,12 +115,13 @@ def ftp_client(argvs):
 if __name__ == "__main__":
     # Configura el parser de argumentos
     parser = argparse.ArgumentParser(description="Cliente FTP en Python")
+    parser.add_argument("-p", "--port", type=int, default=21, help="Puerto del servidor FTP")
     parser.add_argument("-H", "--host", required=True, help="Dirección del servidor FTP")
-    parser.add_argument("-P", "--port", type=int, default=21, help="Puerto del servidor FTP")
     parser.add_argument("-u", "--username", required=True, help="Nombre de usuario")
     parser.add_argument("-w", "--password", required=True, help="Contraseña")
-    parser.add_argument("-c", "--command", required=True, help="Comando a ejecutar (DELE, MKD, RMD)")
-    parser.add_argument("-a", "--argument", required=True, help="Argumento del comando")
+    parser.add_argument("-c", "--command", required=True, help="Comando a ejecutar")
+    parser.add_argument("-a", "--argument1", required=False, help="Primer argumento del comando")
+    parser.add_argument("-b", "--argument2", required=False, help="Segundo argumento del comando")
     parser.add_argument("--use_tls", action="store_true", help="Usar TLS/SSL para la conexión")
 
     # Parsea los argumentos
