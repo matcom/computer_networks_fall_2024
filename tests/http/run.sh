@@ -4,7 +4,7 @@
 echo "Iniciando el servidor..."
 ./tests/http/server &
 SERVER_PID=$!
-
+e
 # Esperar un poco para asegurarnos de que el servidor esté completamente iniciado
 sleep 2
 
