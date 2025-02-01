@@ -1,5 +1,8 @@
+#!/bin/bash
+
 PROTOCOL=2
 
-# Replace the next shell command with the entrypoint of your solution
+# Cambia al directorio proyecto
+cd proyecto
 
 python proyecto/client.py "$@"
