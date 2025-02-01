@@ -224,7 +224,7 @@ def request(method="GET", url="/", headers=None, body=""):
     finally:
         conn.close()
 
-    logging.debug(data)
+    logging.debug("%s %s %s", data, data.body, data.headers)
 
     return data
 
