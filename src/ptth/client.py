@@ -1,10 +1,16 @@
 import os
 import socket
 import time
+import logging
 
 from collections.abc import Callable, Mapping, MutableMapping
 
 from parse_http_url import parse_http_url, BadUrlError
+
+logging.basicConfig(
+    level=logging.WARNING,
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
 
 # stolen from requests
 class CaseInsensitiveDict(MutableMapping):
@@ -162,7 +168,7 @@ class HTTPConnection:
         self.blocksize = blocksize
 
     def connect(self):
-        print(f"INFO - connecting to %s:%s" % (self.host, self.port))
+        logging.info("INFO - connecting to %s:%s" , self.host, self.port)
         self.sock = socket.create_connection((self.host, self.port), self.timeout)
 
     def close(self):
@@ -173,7 +179,7 @@ class HTTPConnection:
     def send(self, data):
         if not self.sock:
             raise NotConnected()
-        print(f"INFO - sending\n%s" % (data,))
+        logging.info("INFO - sending\n%s" , data)
 
         self.sock.sendall(data)
 
