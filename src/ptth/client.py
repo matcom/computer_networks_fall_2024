@@ -224,6 +224,8 @@ def request(method="GET", url="/", headers=None, body=""):
     finally:
         conn.close()
 
+    logging.debug(data)
+
     return data
 
 if __name__ == "__main__":
