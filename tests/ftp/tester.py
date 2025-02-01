@@ -3,9 +3,16 @@ import subprocess, sys
 def make_test(args, expeteted_output, error_msg):
     command = f"./run.sh {args}"
 
-    output = subprocess.run([x for x in command.split(' ')], capture_output=True, text=True).stdout
+    info = subprocess.run([x for x in command.split(' ')], capture_output=True, text=True)
+    output = info.stdout
+    err = info.stderr
 
-    print(output)
+    if len(output) > 0:
+        print(f"Execution output: {output}")
+
+    if len(err) > 0:
+        print(f"An error ocurred during execution: {err}")
+    
 
     if not all([x in output for x in expeteted_output]):
         print("\033[31m" + f"Test: {command} failed with error {error_msg}")
