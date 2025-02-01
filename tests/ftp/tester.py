@@ -29,7 +29,7 @@ def make_test(args, expeteted_output, error_msg):
 
 tests = [
     ("-h localhost -p 21 -u user -w pass", ("220","230",), "Login Failed"),
-    ("-h localhost -p 21 -u user -w pass -c PWD", ("150","226",), "/ directory listing failed"),
+    ("-h localhost -p 21 -u user -w pass -c PWD", ("150","257",), "/ directory listing failed"),
     ("-h localhost -p 21 -u user -w pass -c CWD -a /directory", ("250",), "change directory failed"),
     ("-h localhost -p 21 -u user -w pass -c QUIT", ("221",), "exiting ftp server failed"),
     ("-h localhost -p 21 -u user -w pass -c RETR -a 2.txt" , ("150","226",), "could not retrieve 2.txt file"),
