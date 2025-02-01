@@ -15,7 +15,7 @@ def get_response(socket):
     print("ENTRANDO AL BUCLE DE RECIBIDO")
     response = ''
     while True:
-        data = socket.recv(BUFFER_SIZE).decode
+        data = socket.recv(BUFFER_SIZE).decode()
         response += data
         if data.endswith('\r\n') or len(data) < BUFFER_SIZE:
             break
