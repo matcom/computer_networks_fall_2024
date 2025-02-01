@@ -8,7 +8,7 @@ from collections.abc import Callable, Mapping, MutableMapping
 from parse_http_url import parse_http_url, BadUrlError
 
 logging.basicConfig(
-    level=logging.DEBUG,
+    level=logging.WARNING,
     format='%(asctime)s - %(levelname)s - %(message)s'
 )
 
