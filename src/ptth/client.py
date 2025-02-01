@@ -92,7 +92,7 @@ class HTTPResponse:
     
     def __init__(self, /, **kwargs):
         self.version = kwargs.get("version")
-        self.code = kwargs.get("code")
+        self.code = int(kwargs.get("code"))
         self.reason = kwargs.get("reason")
         self.headers = kwargs.get("headers")
         self.body = kwargs.get("body")
