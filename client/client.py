@@ -120,7 +120,7 @@ def cmd_PWD(sock, *args):
         print("El comando PWD no acepta argumentos.")
     
     # Envía el comando PWD al servidor FTP
-    return send(sock, 'PWD\r\n')
+    return send(sock, 'PWD')
 
 def cmd_CWD(socket, *args):
     """Cambia el directorio actual al especificado."""
