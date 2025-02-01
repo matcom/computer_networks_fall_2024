@@ -453,9 +453,12 @@ def cmd_PORT(socket, *args):
 def cmd_PASV(socket, *args):
     """Envía el comando PASV al servidor FTP para establecer el modo pasivo (el servidor escucha conexiones y el cliente la inicia)."""
     try:
+        print("1- Intentando obtener response de enviar el comando PASV\n")
         response = send(socket, 'PASV')
+        print("2- Response obtenida de enviar el comando PASV, proximo paso imprimir response\n")
         # Extraer la dirección IP y el puerto del servidor
         print(response)
+        print("3- Response impresa, proximo paso buscar match\n")
         match = re.search(r'(\d+),(\d+),(\d+),(\d+),(\d+),(\d+)', response)
         if match:
             ip_parts = [int(x) for x in match.groups()[:4]]
