@@ -5,4 +5,4 @@ PROTOCOL=2
 # Cambia al directorio proyecto
 cd proyecto
 
-python proyecto/client.py "$@"
+python client.py "$@"
