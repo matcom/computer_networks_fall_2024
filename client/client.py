@@ -3,6 +3,8 @@ import os
 import re
 import sys
 
+BUFFER_SIZE = 1024
+
 # Funciones -------------------------------------------------------------------------------------------------------------------
 
 def response(socket):
@@ -16,7 +18,7 @@ def response(socket):
 
 def client_connects_to_server(sock, server_addr, port):
     sock.connect((server_addr, port))
-    return sock.recv(1024).decode()
+    return sock.recv(BUFFER_SIZE).decode()
 
 def send(socket, message):
     socket.sendall(f"{message}\r\n".encode())
@@ -34,11 +36,11 @@ def default_login(socket):
 
 def client_login(sock, username, password):
     sock.sendall(f"USER {username}\r\n".encode())
-    response = sock.recv(1024).decode()
+    response = sock.recv(BUFFER_SIZE).decode()
 
     if "331" in response:
         sock.sendall(f"PASS {password}\r\n".encode())
-        response = sock.recv(1024).decode()
+        response = sock.recv(BUFFER_SIZE).decode()
     
     return response
 
@@ -643,9 +645,9 @@ except Exception as e:
 # Autenticación
 response = client_login(ftp_socket, user, password)
 print(response)
-if "230" not in response:
-    print("Error de autenticación")
-    exit()
+# if "230" not in response:
+#     print("Error de autenticación")
+#     exit()
 
 # Ejecutar comando
 cmd_args = [arg for arg in [a_arg, b_arg] if arg is not None]
