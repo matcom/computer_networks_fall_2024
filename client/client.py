@@ -173,7 +173,7 @@ def cmd_RETR(socket, *args):
         print("No existe una conexión abierta en este momento, intentando iniciar en modo pasivo")
         response = cmd_PASV(socket, [])
         if response is None:
-            return "La conexión no se ha podido establecer"
+            return f"La conexión no se ha podido establecer: {response}"
         data_socket = response
     filename = args[0]
     # Descargar archivo
@@ -608,9 +608,6 @@ except Exception as e:
 # Autenticación
 Response = client_login(ftp_socket, user, password)
 print(Response)
-# if "230" not in response:
-#     print("Error de autenticación")
-#     exit()
 
 # Ejecutar comando
 cmd_args = [arg for arg in [a_arg, b_arg] if arg is not None]
