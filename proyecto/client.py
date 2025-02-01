@@ -119,7 +119,7 @@ if __name__ == "__main__":
     parser.add_argument("-p", "--port", type=int, default=21, help="Puerto del servidor FTP")
     parser.add_argument("-u", "--username", required=True, help="Nombre de usuario")
     parser.add_argument("-w", "--password", required=True, help="Contraseña")
-    parser.add_argument("-c", "--command", required=True, help="Comando a ejecutar")
+    parser.add_argument("-c", "--command", required=False, help="Comando a ejecutar")
     parser.add_argument("-a", "--argument1", required=False, help="Primer argumento del comando")
     parser.add_argument("-b", "--argument2", required=False, help="Segundo argumento del comando")
     parser.add_argument("--use_tls", action="store_true", help="Usar TLS/SSL para la conexión")
