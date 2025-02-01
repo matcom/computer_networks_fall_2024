@@ -2,6 +2,7 @@ import socket
 import ssl
 import argparse
 import json
+import re
 
 def connect_to_server(server, port, use_tls=False):
     """
@@ -27,6 +28,17 @@ def send_command(client_socket, command):
     response = client_socket.recv(1024).decode().strip()
     status_code = response.split(" ")[0]  # Extrae el código de estado
     return json.dumps({"status": status_code, "message": response}, indent=4)
+
+def parse_pasv_response(response):
+    """
+    Extrae la dirección IP y el puerto de la respuesta PASV.
+    """
+    match = re.search(r"(\d+),(\d+),(\d+),(\d+),(\d+),(\d+)", response)
+    if match:
+        ip = ".".join(match.groups()[:4])
+        port = int(match.groups()[4]) * 256 + int(match.groups()[5])
+        return ip, port
+    return None, None
 
 def ftp_client(argvs):
     """
@@ -57,7 +69,7 @@ def ftp_client(argvs):
         "STRU": lambda: f"STRU {argument1}\r\n",
         "MODE": lambda: f"MODE {argument1}\r\n",
         "RETR": lambda: f"RETR {argument1}\r\n",
-        "STOR": lambda: f"STOR {argument1} {argument2}\r\n",
+        "STOR": lambda: f"STOR {argument1}\r\n",
         "STOU": lambda: f"STOU\r\n",
         "APPE": lambda: f"APPE {argument1}\r\n",
         "ALLO": lambda: f"ALLO {argument1}\r\n",
@@ -96,13 +108,42 @@ def ftp_client(argvs):
 
         # Verifica si la autenticación fue exitosa
         if "230" in pass_response:  # Código 230: Usuario autenticado
-            # Ejecuta el comando solicitado
-            if command in command_delegates:
-                command_response = send_command(client_socket, command_delegates[command]())
-            else:
-                command_response = json.dumps({"status": "500", "message": "Comando no soportado"}, indent=4)
+            # Si el comando es RETR, envía PASV primero
+            if command == "RETR":
+                pasv_response = send_command(client_socket, "PASV\r\n")
+                print(pasv_response)
 
-            print(command_response)
+                if "227" in pasv_response:  # Código 227: Entrando en modo pasivo
+                    ip, port = parse_pasv_response(pasv_response)
+                    if ip and port:
+                        # Establece la conexión de datos
+                        data_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                        data_socket.connect((ip, port))
+
+                        # Ejecuta el comando RETR
+                        retr_response = send_command(client_socket, f"RETR {argument1}\r\n")
+                        print(retr_response)
+
+                        # Recibe los datos del archivo
+                        file_data = data_socket.recv(1024)
+                        while file_data:
+                            print(file_data.decode(), end="")
+                            file_data = data_socket.recv(1024)
+
+                        # Cierra la conexión de datos
+                        data_socket.close()
+                    else:
+                        print(json.dumps({"status": "500", "message": "Error al procesar la respuesta PASV"}, indent=4))
+                else:
+                    print(json.dumps({"status": "500", "message": "Error al entrar en modo PASV"}, indent=4))
+            else:
+                # Ejecuta otros comandos
+                if command in command_delegates:
+                    command_response = send_command(client_socket, command_delegates[command]())
+                else:
+                    command_response = json.dumps({"status": "500", "message": "Comando no soportado"}, indent=4)
+
+                print(command_response)
         else:
             print(json.dumps({"status": "530", "message": "Error de autenticación. Verifica las credenciales."}, indent=4))
 
