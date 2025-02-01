@@ -26,6 +26,7 @@ def client_connects_to_server(sock, server_addr, port):
 
 def send(socket, message):
     socket.sendall(f"{message}\r\n".encode())
+    print("MENSAJE ENVIADO, RECIBIENDO RESPUESTA")
     return response(socket)
 
 def default_login(socket):
