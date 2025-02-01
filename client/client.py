@@ -639,12 +639,12 @@ if not all([host, port, user, password]):
     exit()
 
 # Conexión al servidor
-# ftp_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-# try:
-#     print(client_connects_to_server(ftp_socket, host, port))
-# except Exception as e:
-#     print(f"Error al conectar con el servidor: {e}")
-#     exit()
+ftp_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+try:
+    print(client_connects_to_server(ftp_socket, host, port))
+except Exception as e:
+    print(f"Error al conectar con el servidor: {e}")
+    exit()
 
 # Autenticación
 response = client_login(ftp_socket, user, password)
