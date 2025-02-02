@@ -117,7 +117,7 @@ def generic_command_by_type(socket, *args, command, command_type):
 
     return response
 
-def cmd_STOR_APPE(socket, *args, command):
+def cmd_STOR_APPE_STOU(socket, *args, command):
     args_len = len(args)
     response = argument_handler(1,2,args_len)
     print(response)
@@ -285,47 +285,6 @@ def cmd_PASV(comm_socket, *args):
         print(f'No se pudo establecer el modo pasivo: {e}')
     return None
 
-# Otros comandos:
-
-def cmd_STOU(socket, *args):
-    """Envía un archivo al servidor FTP y solicita que el servidor genere un nombre de archivo único."""
-    args_len = len(args)
-    response = argument_handler(1,1,args_len)
-    print(response)
-
-    # Verificar si el archivo existe
-    if not os.path.exists(args[0]):
-        print(f"La ruta {args[0]} no es una ruta válida.")
-        return
-    # Verificar tipo de archivo para configurar permisos de lectura
-    if TYPE == 'A':
-        r_mode = 'r'
-    else:
-        r_mode = 'rb'
-    # Extraer el nombre del archivo de la ruta completa
-    filename = os.path.basename(args[0])
-
-    # Conectar para recibir el archivo
-    data_socket = get_socket()
-
-    try:
-        # Enviar el comando STOU
-        send(socket, f'STOU {filename}')
-
-        # Abrir el archivo en modo binario para leer y enviar su contenido
-        with open(args[0], r_mode) as file:
-            while True:
-                chunk = file.read(BUFFER_SIZE)
-                if not chunk:
-                    break # Se sale del bucle cuando no hay más datos para enviar
-                data_socket.sendall(chunk.encode())
-    finally:
-        # Asegurarse de que el socket de datos se cierre correctamente
-        data_socket.close()
-
-    # Leer y retornar la respuesta del servidor
-    return get_response(socket)
-
 # Ejecución principal del cliente ---------------------------------------------------------------------------------------------
 
 # Obteniendo variabes de parámetros pasados al programa
@@ -391,9 +350,9 @@ try:
     elif command == 'RETR':
         print(cmd_RETR(ftp_socket, *cmd_args))
     elif command == 'STOR': # Almacena un archivo en el servidor
-        print(cmd_STOR_APPE(ftp_socket, *cmd_args, command=command))
+        print(cmd_STOR_APPE_STOU(ftp_socket, *cmd_args, command=command))
     elif command == 'APPE': # Agrega información al final de un archivo en el servidor
-        print(cmd_STOR_APPE(ftp_socket, *cmd_args, command=command))
+        print(cmd_STOR_APPE_STOU(ftp_socket, *cmd_args, command=command))
     elif command == 'DELE': # Elimina el directorio especificado
         print(generic_command_by_type(ftp_socket, *cmd_args, command=command, command_type='A'))
     elif command == 'LIST': # Recibe una lista de archivos en un directorio especificado
@@ -424,8 +383,8 @@ try:
         print(generic_command_by_type(ftp_socket, *cmd_args, command=command, command_type='A'))
     elif command == 'NOOP': # Envía un comando NOOP al servidor FTP, no es muy útil excepto si quieres mantener la conexión activa
         print(generic_command_by_type(ftp_socket, *cmd_args, command=command, command_type='B'))
-    elif command == 'STOU':
-        print(cmd_STOU(ftp_socket, *cmd_args))
+    elif command == 'STOU': # Envía un archivo al servidor y solicita que se le genere un nombre único
+        print(cmd_STOR_APPE_STOU(ftp_socket, *cmd_args, command=command))
     elif command == 'ALLO': # Indica al servidor FTP que el cliente está listo para recibir datos
         print(generic_command_by_type(ftp_socket, *cmd_args, command=command, command_type='A'))
     elif command == 'REST': # Especifica un punto de inicio para la transferencia de datos
