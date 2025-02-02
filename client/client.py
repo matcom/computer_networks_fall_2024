@@ -330,7 +330,7 @@ cmd_args = [arg for arg in [a_arg, b_arg] if arg is not None]
 
 # Llevando a mayúsculas
 if command:
-    command = command.upper
+    command = command.upper()
 
 try:
     if command == 'USER':   # Comando usado para autenticarse en el servidor
