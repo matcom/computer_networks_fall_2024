@@ -181,8 +181,6 @@ def cmd_RETR(socket, *args):
         print("3- A punto de enviar el comando RETR junto al filename args[0]")
         response = send(socket, f'RETR {filename}')
         print(f"4- Recibida respuesta de RETR: {response}")
-        if response.split()[0] == '550':
-            return '550: Archivo no encontrado'
         
         # Recibir el archivo y guardarlo en la carpeta Downloads
         with open(f'Downloads/{filename}', w_mode) as file:
