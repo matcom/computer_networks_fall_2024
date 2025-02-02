@@ -646,28 +646,28 @@ cmd_args = [arg for arg in [a_arg, b_arg] if arg is not None]
 
 try:
     if command == 'USER':
-        print(generic_command_by_type(ftp_socket, *cmd_args, command, 'A'))
+        print(generic_command_by_type(ftp_socket, *cmd_args, command=command, command_type='A'))
     elif command == 'PASS':
-        print(generic_command_by_type(ftp_socket, *cmd_args, command, 'A'))
+        print(generic_command_by_type(ftp_socket, *cmd_args, command=command, command_type='A'))
     elif command == 'ACCT':
-        print(generic_command_by_type(ftp_socket, *cmd_args, command, 'A'))
+        print(generic_command_by_type(ftp_socket, *cmd_args, command=command, command_type='A'))
     elif command == 'SMNT':
-        print(generic_command_by_type(ftp_socket, *cmd_args, command, 'A'))
+        print(generic_command_by_type(ftp_socket, *cmd_args, command=command, command_type='A'))
     elif command == 'REIN':
-        print(generic_command_by_type(ftp_socket, *cmd_args, command, 'B'))
+        print(generic_command_by_type(ftp_socket, *cmd_args, command=command, command_type='B'))
     elif command == 'QUIT':
-        print(generic_command_by_type(ftp_socket, *cmd_args, command, 'B'))
+        print(generic_command_by_type(ftp_socket, *cmd_args, command=command, command_type='B'))
         ftp_socket.close()
     elif command == 'PWD':
-        print(generic_command_by_type(ftp_socket, *cmd_args, command, 'B'))
+        print(generic_command_by_type(ftp_socket, *cmd_args, command=command, command_type='B'))
     elif command == 'CWD':
-        print(generic_command_by_type(ftp_socket, *cmd_args, command, 'A'))
+        print(generic_command_by_type(ftp_socket, *cmd_args, command=command, command_type='A'))
     elif command == 'CDUP':
-        print(generic_command_by_type(ftp_socket, *cmd_args, command, 'B'))
+        print(generic_command_by_type(ftp_socket, *cmd_args, command=command, command_type='B'))
     elif command == 'MKD':
-        print(generic_command_by_type(ftp_socket, *cmd_args, command, 'A'))
+        print(generic_command_by_type(ftp_socket, *cmd_args, command=command, command_type='A'))
     elif command == 'RMD':
-        print(generic_command_by_type(ftp_socket, *cmd_args, command, 'A'))
+        print(generic_command_by_type(ftp_socket, *cmd_args, command=command, command_type='A'))
     elif command == 'RETR':
         print(cmd_RETR(ftp_socket, *cmd_args))
     elif command == 'STOR':
@@ -675,43 +675,43 @@ try:
     elif command == 'APPE':
         print(cmd_APPE(ftp_socket, *cmd_args))
     elif command == 'DELE':
-        print(generic_command_by_type(ftp_socket, *cmd_args, command, 'A'))
+        print(generic_command_by_type(ftp_socket, *cmd_args, command=command, command_type='A'))
     elif command == 'LIST':
         print(cmd_LIST(ftp_socket, *cmd_args))
     elif command == 'NLST':
         print(cmd_NLST(ftp_socket, *cmd_args))
     elif command == 'ABOR':
-        print(generic_command_by_type(ftp_socket, *cmd_args, command, 'B'))
+        print(generic_command_by_type(ftp_socket, *cmd_args, command=command, command_type='B'))
     elif command == 'TYPE':
-        print(generic_command_by_type(ftp_socket, *cmd_args, command, 'A'))
+        print(generic_command_by_type(ftp_socket, *cmd_args, command=command, command_type='A'))
     elif command == 'MODE':
-        print(generic_command_by_type(ftp_socket, *cmd_args, command, 'A'))
+        print(generic_command_by_type(ftp_socket, *cmd_args, command=command, command_type='A'))
     elif command == 'STRU':
-        print(generic_command_by_type(ftp_socket, *cmd_args, command, 'A'))
+        print(generic_command_by_type(ftp_socket, *cmd_args, command=command, command_type='A'))
     elif command == 'PORT':
         print(cmd_PORT(ftp_socket, *cmd_args))
     elif command == 'PASV':
         PASV_SOCKET = cmd_PASV(ftp_socket, *cmd_args)
     elif command == 'SYST':
-        print(generic_command_by_type(ftp_socket, *cmd_args, command, 'B'))
+        print(generic_command_by_type(ftp_socket, *cmd_args, command=command, command_type='B'))
     elif command == 'STAT':
-        print(generic_command_by_type(ftp_socket, *cmd_args, command, 'C'))
+        print(generic_command_by_type(ftp_socket, *cmd_args, command=command, command_type='C'))
     elif command == 'HELP':
-        print(generic_command_by_type(ftp_socket, *cmd_args, command, 'C'))
+        print(generic_command_by_type(ftp_socket, *cmd_args, command=command, command_type='C'))
     elif command == 'RNFR':
-        print(generic_command_by_type(ftp_socket, *cmd_args, command, 'None'))
+        print(generic_command_by_type(ftp_socket, *cmd_args, command=command, command_type='None'))
     elif command == 'RNTO':
-        print(generic_command_by_type(ftp_socket, *cmd_args, command, 'A'))
+        print(generic_command_by_type(ftp_socket, *cmd_args, command=command, command_type='A'))
     elif command == 'NOOP':
-        print(generic_command_by_type(ftp_socket, *cmd_args, command, 'B'))
+        print(generic_command_by_type(ftp_socket, *cmd_args, command=command, command_type='B'))
     elif command == 'STOU':
         print(cmd_STOU(ftp_socket, *cmd_args))
     elif command == 'ALLO':
-        print(generic_command_by_type(ftp_socket, *cmd_args, command, 'A'))
+        print(generic_command_by_type(ftp_socket, *cmd_args, command=command, command_type='A'))
     elif command == 'REST':
-        print(generic_command_by_type(ftp_socket, *cmd_args, command, 'A'))
+        print(generic_command_by_type(ftp_socket, *cmd_args, command=command, command_type='A'))
     elif command == 'SITE':
-        print(generic_command_by_type(ftp_socket, *cmd_args, command, 'A'))
+        print(generic_command_by_type(ftp_socket, *cmd_args, command=command, command_type='A'))
     else:
         print("Comando no reconocido, por favor intente de nuevo.")
 except Exception as e:
