@@ -6,7 +6,6 @@ import sys
 BUFFER_SIZE = 1024
 TYPE = 'A'
 PASV_MODE = 0                       # Indicador de modo pasivo (0=inactivo   1=activo)
-PASV_SOCKET = None                  # Socket de transferencia utilizado en modo pasivo
 DATA_SOCKET = None                  # Socket de transferencia utilizado para transferencia de datos
 
 # Funciones -------------------------------------------------------------------------------------------------------------------
@@ -170,14 +169,18 @@ def cmd_RETR(socket, *args):
     if data_socket is None:
         print("No existe una conexión abierta en este momento, intentando iniciar en modo pasivo")
         response = cmd_PASV(socket, [])
+        print("1- Retornado el socket")
         if response is None:
             return f"La conexión no se ha podido establecer"
         data_socket = response
+        print("2- El socket no era none")
     filename = args[0]
     # Descargar archivo
     try:
         # Enviar el comando RETR
+        print("3- A punto de enviar el comando RETR junto al filename args[0]")
         response = send(socket, f'RETR {filename}')
+        print(f"4- Recibida respuesta de RETR: {response}")
         if response.split()[0] == '550':
             return '550: Archivo no encontrado'
         
@@ -441,11 +444,12 @@ def cmd_PASV(comm_socket, *args):
             port = int(match.group(5)) * 256 + int(match.group(6))
             data_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             data_socket.connect((socket.inet_ntoa(bytes(ip_parts)), port))
-            print('225: Conexión establecida, sin transferencia en proceso.')
+            print(f'Socket: {data_socket}')
             PASV_MODE = 1
+            print("5- Activé PASV_MODE. Retornando data_socket a RETR")
             return data_socket
         else:
-            print('425: No se ha podido establecer una conexión de transferencia de datos con el Host.')
+            print('No se ha podido establecer una conexión de transferencia de datos con el Host: ')
             print(match)
             return None
     except Exception as e:
