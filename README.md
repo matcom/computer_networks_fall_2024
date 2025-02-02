@@ -30,10 +30,10 @@ La forma de comprobación es similar a todos los protocolos y se requiere que el
 1. -p port. Ej. `25`
 2. -u host. Ej `127.0.0.1`
 3. -f from_mail. Ej. `user1@uh.cu`
-4. -f to_mail. Ej. `user2@uh.cu`
+4. -f to_mail. Ej. `["user2@uh.cu", "user3@uh.cu"]`
 5. -s subject. Ej `"Email for testing purposes"`
 6. -b body. Ej `"Body content"`
-7. -h header. Ej `{}` o ```{\\"CC\\":\\ \\"cc@examplecom\\"}```
+7. -h header. Ej `{}` o ```{"CC": "cc@examplecom"}```
 
 #### FTP:
 1. -p port. Ej. `21`
