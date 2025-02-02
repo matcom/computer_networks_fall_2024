@@ -12,14 +12,12 @@ DATA_SOCKET = None                  # Socket de transferencia utilizado para tra
 # Funciones -------------------------------------------------------------------------------------------------------------------
 
 def get_response(socket):
-    print("ENTRANDO AL BUCLE DE RECIBIDO")
     response = ''
     while True:
         data = socket.recv(BUFFER_SIZE).decode()
         response += data
         if data.endswith('\r\n') or len(data) < BUFFER_SIZE:
             break
-    print(f"SALIDA DEL BUCLE DE RECIBIDO. RESPUESTA: {response}")
     return response
 
 def client_connects_to_server(sock, server_addr, port):
@@ -28,19 +26,14 @@ def client_connects_to_server(sock, server_addr, port):
 
 def send(socket, message):
     socket.sendall(f"{message}\r\n".encode())
-    print("MENSAJE ENVIADO, RECIBIENDO RESPUESTA")
     response = get_response(socket)
     return response
 
 def default_login(socket):
     send(socket, f"USER anonymous")
     response = send(socket, "PASS anonymous")
-
-    if "230" in response: 
-        print("Autenticado como usuario anónimo.")
-        return response
-    else:
-        return (f"Error de autenticación: {response}")
+    print("Autenticado como usuario anónimo.")
+    return response
 
 def client_login(sock, username, password):
     sock.sendall(f"USER {username}\r\n".encode())
@@ -173,7 +166,7 @@ def cmd_RETR(socket, *args):
         print("No existe una conexión abierta en este momento, intentando iniciar en modo pasivo")
         response = cmd_PASV(socket, [])
         if response is None:
-            return f"La conexión no se ha podido establecer: {response}"
+            return f"La conexión no se ha podido establecer"
         data_socket = response
     filename = args[0]
     # Descargar archivo
@@ -438,6 +431,7 @@ def cmd_PASV(socket, *args):
         print("3- Response impresa, proximo paso buscar match\n")
         match = re.search(r'(\d+),(\d+),(\d+),(\d+),(\d+),(\d+)', response)
         if match:
+            print(f"4- Encontré match: {match}")
             ip_parts = [int(x) for x in match.groups()[:4]]
             port = int(match.group(5)) * 256 + int(match.group(6))
             data_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -447,6 +441,7 @@ def cmd_PASV(socket, *args):
             return data_socket
         else:
             print('425: No se ha podido establecer una conexión de transferencia de datos con el Host.')
+            print(match)
             return None
     except Exception as e:
         print(f'No se pudo establecer el modo pasivo: {e}')
