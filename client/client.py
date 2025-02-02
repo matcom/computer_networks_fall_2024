@@ -5,7 +5,6 @@ import sys
 
 BUFFER_SIZE = 1024
 TYPE = 'A'
-PASV_MODE = 0                       # Indicador de modo pasivo (0=inactivo   1=activo)
 DATA_SOCKET = None                  # Socket de transferencia utilizado para transferencia de datos
 
 # Funciones -------------------------------------------------------------------------------------------------------------------
@@ -417,7 +416,6 @@ def cmd_PORT(comm_socket, *args):
         if DATA_SOCKET is not None:
             DATA_SOCKET.close()
             DATA_SOCKET = None
-            PASV_MODE = 0
     # Si el servidor responde con un código de éxito, proceder con la transferencia de datos
     print("Conexión activa establecida.")
     DATA_SOCKET = data_socket
@@ -578,6 +576,7 @@ def get_arg(flag):
 
 # Ejecución principal del cliente ---------------------------------------------------------------------------------------------
 
+# Obteniendo variabes de parámetros pasados al programa
 host = get_arg("-h")
 port = int(get_arg("-p"))
 user = get_arg("-u")
@@ -598,8 +597,12 @@ except Exception as e:
     print(f"Error al conectar con el servidor: {e}")
     exit()
 
+Response = "Intento de inicio de sesión"
 # Autenticación
-Response = client_login(ftp_socket, user, password)
+if user and password:
+    Response = client_login(ftp_socket, user, password)
+else:
+    Response = default_login(ftp_socket)
 print(Response)
 
 # Ejecutar comando
