@@ -244,7 +244,7 @@ def cmd_STOR(socket, *args):
                 if not chunk:
                     break # Se sale del bucle cuando no hay más datos para enviar
                 print("10- Mandando parte del archivo")
-                data_socket.sendall(chunk)
+                data_socket.sendall(chunk.encode())
         print("11- Enviado el archivo")
     finally:
         # Asegurarse de que el socket de datos se cierre correctamente
