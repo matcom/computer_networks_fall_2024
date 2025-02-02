@@ -67,8 +67,7 @@ def main(sys_args):
 
     # Prepare output JSON format
     output = {
-        #"status": response.code,
-        "status": dict(response.headers),
+        "status": response.code,
         "body": response.get_body_raw().decode('utf-8')  # Assuming body is in bytes and needs to be decoded
     }
 
