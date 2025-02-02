@@ -61,98 +61,134 @@ def start_pasv_socket():
 
 # Funciones para manejar comandos ---------------------------------------------------------------------------------------------
 
-# Control de acceso:
-def cmd_USER(socket, *args):
-    """Comando usado para autenticarse en el servidor"""
+def generic_command_by_type(socket, *args, command, command_type):
     args_len = len(args)
-    response = argument_handler(1,1,args_len)
-    print(response)
-    return send(socket, f'USER {args[0]}')
 
-def cmd_PASS(socket, *args):
-    """Comando usado para introducir la contraseña en el servidor"""
-    args_len = len(args)
-    response = argument_handler(1,1,args_len)
-    print(response)
-    return send(socket, f'PASS {args[0]}')
+    # Verificando validez de argumentos
+    response = 'Undefined command type'
 
-def cmd_ACCT(socket, *args):
-    """Comando usado para pasar al servidor información adicional de la cuenta"""
-    args_len = len(args)
-    response = argument_handler(1,1,args_len)
-    print(response)
-    return send(socket, f'ACCT {args[0]}')
+    if command_type == 'A':
+        response = argument_handler(1,1,args_len)
+        print(response)
+        response = send(socket, f'{command} {args[0]}')
+    if command_type == 'B':
+        response = argument_handler(0,0,args_len)
+        print(response)
+        response = send(socket, f'{command}')
+    if command_type == 'C':
+        response = argument_handler(0,1,args_len)
+        print(response)
+        if args_len == 1:
+            response = send(socket, f'{command} {args[0]}')
+        else:
+            response = send(socket, f'{command}')
+    if command == 'RNFR':
+        response = argument_handler(0,1,args_len)
+        print(response)
+        if args_len == 1:
+            response = send(socket, f'{command} {args[0]}')
+        else:
+            print(send(socket, f'RNFR {args[0]}'))
+            return send(socket, f'RNTO {args[1]}')
 
-def cmd_SMNT(socket, *args):
-    """Monta un sistema de archivos remoto en el servidor FTP."""
-    args_len = len(args)
-    response = argument_handler(1,1,args_len)
-    print(response)
-    return send(socket, f'SMNT {args[0]}')
+    if command == "QUIT":
+        if not socket is None:
+            socket.close()
 
-def cmd_REIN(socket, *args):
-    """Reinicia la sesión FTP actual."""
-    args_len = len(args)
-    response = argument_handler(0,0,args_len)
-    print(response)
-    return send(socket, f'REIN')
-
-def cmd_QUIT(socket, *args):
-    """Cierra la sesión y termina la ejecución del cliente"""
-    args_len = len(args)
-    response = argument_handler(0,0,args_len)
-    print(response)
-    response = send(socket, f'QUIT')
-    if not socket is None:
-        socket.close()
     return response
 
+# Control de acceso:
+# def cmd_USER(socket, *args):
+#     """Comando usado para autenticarse en el servidor"""
+#     args_len = len(args)
+#     response = argument_handler(1,1,args_len)
+#     print(response)
+#     return send(socket, f'USER {args[0]}')
+
+# def cmd_PASS(socket, *args):
+#     """Comando usado para introducir la contraseña en el servidor"""
+#     args_len = len(args)
+#     response = argument_handler(1,1,args_len)
+#     print(response)
+#     return send(socket, f'PASS {args[0]}')
+
+# def cmd_ACCT(socket, *args):
+#     """Comando usado para pasar al servidor información adicional de la cuenta"""
+#     args_len = len(args)
+#     response = argument_handler(1,1,args_len)
+#     print(response)
+#     return send(socket, f'ACCT {args[0]}')
+
+# def cmd_SMNT(socket, *args):
+#     """Monta un sistema de archivos remoto en el servidor FTP."""
+#     args_len = len(args)
+#     response = argument_handler(1,1,args_len)
+#     print(response)
+#     return send(socket, f'SMNT {args[0]}')
+
+# def cmd_REIN(socket, *args):
+#     """Reinicia la sesión FTP actual."""
+#     args_len = len(args)
+#     response = argument_handler(0,0,args_len)
+#     print(response)
+#     return send(socket, f'REIN')
+
+# def cmd_QUIT(socket, *args):
+#     """Cierra la sesión y termina la ejecución del cliente"""
+#     args_len = len(args)
+#     response = argument_handler(0,0,args_len)
+#     print(response)
+#     response = send(socket, f'QUIT')
+#     if not socket is None:
+#         socket.close()
+#     return response
+
 # Navegación:
-def cmd_PWD(sock, *args):
-    """Muestra el directorio de trabajo actual."""
+# def cmd_PWD(sock, *args):
+#     """Muestra el directorio de trabajo actual."""
     
-    # Verifica que no se envían argumentos adicionales
-    if args:
-        print("El comando PWD no acepta argumentos.")
+#     # Verifica que no se envían argumentos adicionales
+#     if args:
+#         print("El comando PWD no acepta argumentos.")
     
-    # Envía el comando PWD al servidor FTP
-    return send(sock, 'PWD')
+#     # Envía el comando PWD al servidor FTP
+#     return send(sock, 'PWD')
 
-def cmd_CWD(socket, *args):
-    """Cambia el directorio actual al especificado."""
-    args_len = len(args)
-    response = argument_handler(1,1,args_len)
-    print(response)
-    return send(socket, f'CWD {args[0]}')
+# def cmd_CWD(socket, *args):
+#     """Cambia el directorio actual al especificado."""
+#     args_len = len(args)
+#     response = argument_handler(1,1,args_len)
+#     print(response)
+#     return send(socket, f'CWD {args[0]}')
 
-def cmd_CDUP(socket, *args):
-    """Cambia al directorio padre del directorio de trabajo actual."""
-    args_len = len(args)
-    response = argument_handler(0,0,args_len)
-    print(response)
-    return send(socket, f'CDUP')
+# def cmd_CDUP(socket, *args):
+#     """Cambia al directorio padre del directorio de trabajo actual."""
+#     args_len = len(args)
+#     response = argument_handler(0,0,args_len)
+#     print(response)
+#     return send(socket, f'CDUP')
 
-def cmd_MKD(socket, *args):
-    """Crea un nuevo directorio con el nombre especificado."""
-    args_len = len(args)
-    response = argument_handler(1,1,args_len)
-    print(response)
-    return send(socket, f'MKD {args[0]}')
+# def cmd_MKD(socket, *args):
+#     """Crea un nuevo directorio con el nombre especificado."""
+#     args_len = len(args)
+#     response = argument_handler(1,1,args_len)
+#     print(response)
+#     return send(socket, f'MKD {args[0]}')
 
-def cmd_RMD(socket, *args):
-    """Elimina el directorio especificado."""
-    args_len = len(args)
-    response = argument_handler(1,1,args_len)
-    print(response)
-    return send(socket, f'RMD {args[0]}')
+# def cmd_RMD(socket, *args):
+#     """Elimina el directorio especificado."""
+#     args_len = len(args)
+#     response = argument_handler(1,1,args_len)
+#     print(response)
+#     return send(socket, f'RMD {args[0]}')
 
 # Transferencia de archivos:
-def cmd_DELE(socket, *args):
-    """Elimina el directorio especificado."""
-    args_len = len(args)
-    response = argument_handler(1,1,args_len)
-    print(response)
-    return send(socket, f'DELE {args[0]}')
+# def cmd_DELE(socket, *args):
+#     """Elimina el directorio especificado."""
+#     args_len = len(args)
+#     response = argument_handler(1,1,args_len)
+#     print(response)
+#     return send(socket, f'DELE {args[0]}')
 
 def cmd_RETR(socket, *args):  
     # Crear la carpeta Downloads si no existe
@@ -336,45 +372,45 @@ def cmd_NLST(socket, *args):
     decoded_data = data.decode()
     return decoded_data
 
-def cmd_ABOR(socket, *args):
-    """Cancela el comando actual en el servidor FTP."""
-    args_len = len(args)
-    response = argument_handler(0,0,args_len)
-    print(response)
-    return send(socket, f'ABOR')
+# def cmd_ABOR(socket, *args):
+#     """Cancela el comando actual en el servidor FTP."""
+#     args_len = len(args)
+#     response = argument_handler(0,0,args_len)
+#     print(response)
+#     return send(socket, f'ABOR')
 
 # Configuración de transferencia:
-def cmd_TYPE(socket, *args):
-    """Establece el tipo de transferencia de datos ('ASCII' o 'BINARY')."""
-    args_len = len(args)
-    response = argument_handler(1,1,args_len)
-    print(response)
+# def cmd_TYPE(socket, *args):
+#     """Establece el tipo de transferencia de datos ('ASCII' o 'BINARY')."""
+#     args_len = len(args)
+#     response = argument_handler(1,1,args_len)
+#     print(response)
 
-    if args[0].upper() not in ['A', 'I']:
-        raise ValueError("El modo debe ser A-ASCII o I-BINARY")
-    response = send(socket, f'TYPE {args[0]}')
-    TYPE = args[0].upper()
-    return response
+#     if args[0].upper() not in ['A', 'I']:
+#         raise ValueError("El modo debe ser A-ASCII o I-BINARY")
+#     response = send(socket, f'TYPE {args[0]}')
+#     TYPE = args[0].upper()
+#     return response
     
-def cmd_MODE(socket, *args):
-    """Establece el modo de transferencia de datos ('STREAM' o 'BLOCK')."""
-    args_len = len(args)
-    response = argument_handler(1,1,args_len)
-    print(response)
+# def cmd_MODE(socket, *args):
+#     """Establece el modo de transferencia de datos ('STREAM' o 'BLOCK')."""
+#     args_len = len(args)
+#     response = argument_handler(1,1,args_len)
+#     print(response)
 
-    if args[0].upper() not in ['S', 'B']:
-        raise ValueError("504: El modo debe ser STREAM o BLOCK")
-    return send(socket, f'MODE {args[0]}')
+#     if args[0].upper() not in ['S', 'B']:
+#         raise ValueError("504: El modo debe ser STREAM o BLOCK")
+#     return send(socket, f'MODE {args[0]}')
 
-def cmd_STRU(socket, *args):
-    """Establece la estructura de datos para la transferencia ('FILE' o 'RECORD')."""
-    args_len = len(args)
-    response = argument_handler(1,1,args_len)
-    print(response)
+# def cmd_STRU(socket, *args):
+#     """Establece la estructura de datos para la transferencia ('FILE' o 'RECORD')."""
+#     args_len = len(args)
+#     response = argument_handler(1,1,args_len)
+#     print(response)
     
-    if args[0].upper() not in ['F', 'R']:
-        raise ValueError("504: El modo debe ser FILE o RECORD")
-    return send(socket, f'STRU {args[0]}')
+#     if args[0].upper() not in ['F', 'R']:
+#         raise ValueError("504: El modo debe ser FILE o RECORD")
+#     return send(socket, f'STRU {args[0]}')
 
 # Control de conexión:
 def cmd_PORT(comm_socket, *args):
@@ -473,32 +509,32 @@ def cmd_HELP(socket, *args):
     return response(socket)
 
 # Control de archivos:
-def cmd_RNFR(socket, *args):
-    """Inicia el proceso de renombrar un archivo en el servidor FTP."""
-    args_len = len(args)
-    response = argument_handler(1,2,args_len)
-    print(response)
+# def cmd_RNFR(socket, *args):
+#     """Inicia el proceso de renombrar un archivo en el servidor FTP."""
+#     args_len = len(args)
+#     response = argument_handler(1,2,args_len)
+#     print(response)
 
-    if args_len == 1:
-        return send(socket, f'RNFR {args[0]}')
-    else:
-        print(send(socket, f'RNFR {args[0]}'))
-        return cmd_RNTO(socket, {args[1]})
+#     if args_len == 1:
+#         return send(socket, f'RNFR {args[0]}')
+#     else:
+#         print(send(socket, f'RNFR {args[0]}'))
+#         return cmd_RNTO(socket, {args[1]})
 
-def cmd_RNTO(socket, *args):
-    """Completa el proceso de renombrar un archivo en el servidor FTP."""
-    args_len = len(args)
-    response = argument_handler(1,1,args_len)
-    print(response)
-    return send(socket, f'RNTO {args[0]}')
+# def cmd_RNTO(socket, *args):
+#     """Completa el proceso de renombrar un archivo en el servidor FTP."""
+#     args_len = len(args)
+#     response = argument_handler(1,1,args_len)
+#     print(response)
+#     return send(socket, f'RNTO {args[0]}')
 
 # Otros comandos:
-def cmd_NOOP(socket, *args):
-    """Envía un comando NOOP al servidor FTP, no es muy útil excepto si quieres mantener la conexión activa."""
-    args_len = len(args)
-    response = argument_handler(0,0,args_len)
-    print(response)
-    return send(socket, f'NOOP')
+# def cmd_NOOP(socket, *args):
+#     """Envía un comando NOOP al servidor FTP, no es muy útil excepto si quieres mantener la conexión activa."""
+#     args_len = len(args)
+#     response = argument_handler(0,0,args_len)
+#     print(response)
+#     return send(socket, f'NOOP')
 
 def cmd_STOU(socket, *args):
     """Envía un archivo al servidor FTP y solicita que el servidor genere un nombre de archivo único."""
@@ -521,10 +557,10 @@ def cmd_STOU(socket, *args):
     # Conectar para recibir el archivo
     data_socket = DATA_SOCKET
     if data_socket is None:
-        print("421: No existe una conexión abierta en este momento, intentando conectar en modo pasivo")
+        print("No existe una conexión abierta en este momento, intentando conectar en modo pasivo")
         response = cmd_PASV(socket, [])
         if response is None:
-            return "550: La conexión no se ha podido establecer"
+            return "La conexión no se ha podido establecer"
         data_socket = response
 
     try:
@@ -532,39 +568,39 @@ def cmd_STOU(socket, *args):
         send(socket, f'STOU {filename}')
 
         # Abrir el archivo en modo binario para leer y enviar su contenido
-        with open(filepath, r_mode) as file:
+        with open(args[0], r_mode) as file:
             while True:
                 chunk = file.read(BUFFER_SIZE)
                 if not chunk:
                     break # Se sale del bucle cuando no hay más datos para enviar
-                data_socket.sendall(chunk)
+                data_socket.sendall(chunk.encode())
     finally:
         # Asegurarse de que el socket de datos se cierre correctamente
         data_socket.close()
 
     # Leer y retornar la respuesta del servidor
-    return response(socket)
+    return get_response(socket)
 
-def cmd_ALLO(socket, *args):
-    """Indica al servidor FTP que el cliente está listo para recibir datos."""
-    args_len = len(args)
-    response = argument_handler(1,1,args_len)
-    print(response)
-    return send(socket, f'ALLO {args[0]}')
+# def cmd_ALLO(socket, *args):
+#     """Indica al servidor FTP que el cliente está listo para recibir datos."""
+#     args_len = len(args)
+#     response = argument_handler(1,1,args_len)
+#     print(response)
+#     return send(socket, f'ALLO {args[0]}')
 
-def cmd_REST(socket, *args):
-    """Especifica un punto de inicio para la transferencia de datos."""
-    args_len = len(args)
-    response = argument_handler(1,1,args_len)
-    print(response)
-    return send(socket, f'REST {args[0]}')
+# def cmd_REST(socket, *args):
+#     """Especifica un punto de inicio para la transferencia de datos."""
+#     args_len = len(args)
+#     response = argument_handler(1,1,args_len)
+#     print(response)
+#     return send(socket, f'REST {args[0]}')
 
-def cmd_SITE(socket, *args):
-    """Envía un comando específico del sitio al servidor FTP."""
-    args_len = len(args)
-    response = argument_handler(1,1,args_len)
-    print(response)
-    return send(socket, f'SITE {args[0]}')
+# def cmd_SITE(socket, *args):
+#     """Envía un comando específico del sitio al servidor FTP."""
+#     args_len = len(args)
+#     response = argument_handler(1,1,args_len)
+#     print(response)
+#     return send(socket, f'SITE {args[0]}')
 
 # Obtener argumentos manualmente
 def get_arg(flag):
