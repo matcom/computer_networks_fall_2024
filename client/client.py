@@ -79,7 +79,7 @@ def get_socket(comm_socket):
     """Obtiene un socket, ya sea el configurado por PORT o uno nuevo configurado por PASV."""
     if DATA_SOCKET is None:
         print("No existe una conexión abierta en este momento, intentando conectar en modo pasivo")
-        response = cmd_PASV(comm_socket, [])
+        response = cmd_PASV(comm_socket)
         if response is None:
             print("La conexión no se ha podido establecer")
         return response
@@ -379,7 +379,7 @@ try:
     elif command == 'PORT': # Inicializa un socket y escucha en un puerto especificado, y envía la información al servidor para establecer la conexión
         print(cmd_PORT(ftp_socket, *cmd_args))
     elif command == 'PASV': # Inicializa un socket y se conecta al puerto que el servidor está escuchando
-        PASV_SOCKET = cmd_PASV(ftp_socket, *cmd_args)
+        PASV_SOCKET = cmd_PASV(ftp_socket)
     elif command == 'SYST': # Solicita información del sistema operativo del servidor FTP
         print(generic_command_by_type(ftp_socket, *cmd_args, command=command, command_type='B'))
     elif command == 'STAT': # Solicita el estado del servidor FTP o de un archivo específico
