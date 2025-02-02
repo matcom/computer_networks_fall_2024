@@ -11,6 +11,7 @@ DATA_SOCKET = None                  # Socket de transferencia utilizado para tra
 
 # Obtener una respuesta del servidor
 def get_response(socket):
+    """Método llamado al recibir un mensaje del servidor FTP."""
     response = ''
     while True:
         data = socket.recv(BUFFER_SIZE).decode()
@@ -21,35 +22,39 @@ def get_response(socket):
 
 # Iniciar la conexión con el servidor
 def client_connects_to_server(sock, server_addr, port):
+    """Método llamado al inicializar el programa para establecer una conexión con el servidor FTP."""
     sock.connect((server_addr, port))
     return sock.recv(BUFFER_SIZE).decode()
 
 # Enviar mensaje al servidor
 def send(socket, message):
+    """Método llamado al enviar un mensaje al servidor FTP."""
     socket.sendall(f"{message}\r\n".encode())
     response = get_response(socket)
     return response
 
 # Loguearse como usuario anónimo
 def default_login(socket):
-    send(socket, f"USER anonymous")
+    """Método llamado al inicializar el programa para autenticarse en el servidor FTP como un usuario anónimo (caso en que no se envían parámetros)."""
+    response = send(socket, f"USER anonymous")
+    print(response)
     response = send(socket, "PASS anonymous")
-    print("Autenticado como usuario anónimo.")
     return response
 
 # Loguearse (USER and PASS)
 def client_login(sock, username, password):
+    """Método llamado al inicializar el programa para autenticarse en el servidor FTP."""
     sock.sendall(f"USER {username}\r\n".encode())
     response = sock.recv(BUFFER_SIZE).decode()
-
+    print(response)
     if "331" in response:
         sock.sendall(f"PASS {password}\r\n".encode())
         response = sock.recv(BUFFER_SIZE).decode()
-    
     return response
 
 # Validar argumentos recibidos por el comando
 def argument_handler(min_required_args, max_required_args, given_args):
+    """Recibe la cantidad de argumentos de un comando y su rango de argumntos permitidos, y devuelve una descripción."""
     if min_required_args>given_args:
         if min_required_args==max_required_args:
             return f"Este comando requiere {min_required_args} argumentos, sin embargo {given_args} fueron recibidos."
@@ -62,6 +67,7 @@ def argument_handler(min_required_args, max_required_args, given_args):
 
 # Obtener argumentos manualmente
 def get_arg(flag):
+    """Obtiene los argumentos pasados al programa según la flag correspondiente."""
     try:
         index = sys.argv.index(flag)
         return sys.argv[index + 1]
@@ -70,6 +76,7 @@ def get_arg(flag):
 
 # Obtener un socket de conexión (Configurado con PORT o PASV)
 def get_socket():
+    """Obtiene un socket, ya sea el configurado por PORT o uno nuevo configurado por PASV."""
     if DATA_SOCKET is None:
         print("No existe una conexión abierta en este momento, intentando conectar en modo pasivo")
         response = cmd_PASV(socket, [])
@@ -82,6 +89,7 @@ def get_socket():
 # Funciones para manejar comandos ---------------------------------------------------------------------------------------------
 
 def generic_command_by_type(socket, *args, command, command_type):
+    """Envía el comando especificado al servidor FTP y recibe una respuesta."""
     args_len = len(args)
 
     # Verificando validez de argumentos
@@ -118,6 +126,7 @@ def generic_command_by_type(socket, *args, command, command_type):
     return response
 
 def cmd_STOR_APPE_STOU(socket, *args, command):
+    """Envía el comando STOR, APPE o STOU al servidor FTP para enviar un archivo al servidor."""
     args_len = len(args)
     response = argument_handler(1,2,args_len)
     print(response)
@@ -155,6 +164,7 @@ def cmd_STOR_APPE_STOU(socket, *args, command):
     return get_response(socket)
 
 def cmd_RETR(socket, *args):  
+    """Envía el comando RETR al servidor FTP para recibir un archivo espcificado."""
     # Crear la carpeta Downloads si no existe
     if not os.path.exists('Downloads'):
         os.makedirs('Downloads')
@@ -191,6 +201,7 @@ def cmd_RETR(socket, *args):
     return get_response(socket)
 
 def cmd_LIST_NLST(socket, *args, command):
+    """Envía el comando LIST o NLIST al servidor FTP recibir una lista de archivos en un directorio."""
     args_len = len(args)
     response = argument_handler(0,1,args_len)
     print(response)
@@ -217,8 +228,6 @@ def cmd_LIST_NLST(socket, *args, command):
         data_socket.close()
     decoded_data = data.decode()
     return decoded_data
-
-# Control de conexión:
 
 def cmd_PORT(comm_socket, *args):
     """Envía el comando PORT al servidor FTP para especificar el puerto de datos del cliente."""
@@ -347,7 +356,7 @@ try:
         print(generic_command_by_type(ftp_socket, *cmd_args, command=command, command_type='A'))
     elif command == 'RMD':  # Elimina el directorio especificado
         print(generic_command_by_type(ftp_socket, *cmd_args, command=command, command_type='A'))
-    elif command == 'RETR':
+    elif command == 'RETR': # Recibe un archivo especificado del servidor
         print(cmd_RETR(ftp_socket, *cmd_args))
     elif command == 'STOR': # Almacena un archivo en el servidor
         print(cmd_STOR_APPE_STOU(ftp_socket, *cmd_args, command=command))
@@ -367,9 +376,9 @@ try:
         print(generic_command_by_type(ftp_socket, *cmd_args, command=command, command_type='A'))
     elif command == 'STRU': # Establece la estructura de datos para la transferencia ('FILE' o 'RECORD')
         print(generic_command_by_type(ftp_socket, *cmd_args, command=command, command_type='A'))
-    elif command == 'PORT':
+    elif command == 'PORT': # Inicializa un socket y escucha en un puerto especificado, y envía la información al servidor para establecer la conexión
         print(cmd_PORT(ftp_socket, *cmd_args))
-    elif command == 'PASV':
+    elif command == 'PASV': # Inicializa un socket y se conecta al puerto que el servidor está escuchando
         PASV_SOCKET = cmd_PASV(ftp_socket, *cmd_args)
     elif command == 'SYST': # Solicita información del sistema operativo del servidor FTP
         print(generic_command_by_type(ftp_socket, *cmd_args, command=command, command_type='B'))
