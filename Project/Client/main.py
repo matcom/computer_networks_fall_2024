@@ -29,7 +29,6 @@ def main():
         
         # Iniciar el bucle de comandos
         print("\nFTP Client ready. Type 'QUIT' to exit.")
-        print("Available commands: LIST, STOR <filename>, RETR <filename>, QUIT")
         print("-" * 50)
         
         ftp_client.ftp_client()
