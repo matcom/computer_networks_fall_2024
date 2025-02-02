@@ -169,39 +169,28 @@ def cmd_RETR(socket, *args):
     if data_socket is None:
         print("No existe una conexión abierta en este momento, intentando iniciar en modo pasivo")
         response = cmd_PASV(socket, [])
-        print("1- Retornado el socket")
         if response is None:
             return f"La conexión no se ha podido establecer"
         data_socket = response
-        print("2- El socket no era none")
     filename = args[0]
     # Descargar archivo
     try:
         # Enviar el comando RETR
-        print("3- A punto de enviar el comando RETR junto al filename args[0]")
         response = send(socket, f'RETR {filename}')
-        print(f"4- Recibida respuesta de RETR: {response}")
         
         # Recibir el archivo y guardarlo en la carpeta Downloads
         with open(f'Downloads/{filename}', w_mode) as file:
-            print(f"5- Abierto el archivo en Downloads")
             while True:
                 try:
-                    print(f"6- Ciclo en curso")
                     chunk = data_socket.recv(BUFFER_SIZE)
                     if not chunk:
-                        print(f"7- Entré en if not chunk")
                         break
                     if TYPE == 'A':
-                        print(f"8- Entré en if TYPE == A")
                         file.write(chunk.decode())
                     else:
-                        print(f"9- Entré en el else")
                         file.write(chunk)
                 except socket.timeout:
-                    print(f"10- Entré en socket timeout")
                     break
-        print(f"11- Imprimiendo response")
         print(get_response(socket))
     finally:
         # Asegurarse de que el socket de datos se cierre correctamente
@@ -223,9 +212,12 @@ def cmd_STOR(socket, *args):
     else:
         r_mode = 'rb'
     # Extraer el nombre del archivo de la ruta completa
+    print("1- Antes de declarar filename")
     filename = os.path.basename(args[0])
+    print(f"2- Decarado filename: {filename}")
 
     # Conectar para recibir el archivo
+    print("3- Conectando socket")
     data_socket = DATA_SOCKET
     if data_socket is None:
         print("No existe una conexión abierta en este momento, intentando conectar en modo pasivo")
@@ -233,24 +225,28 @@ def cmd_STOR(socket, *args):
         if response is None:
             return f"La conexión no se ha podido establecer: {response}"
         data_socket = response
+    print("4- Socket listo")
 
     try:
         # Enviar el comando STOR
+        print("5- Mandando mensaje STOR con el filename")
         send(socket, f'STOR {filename}')
 
         # Abrir el archivo en modo binario para leer y enviar su contenido
-        with open(filepath, r_mode) as file:
+        print("6- Mandando archivo en el bucle")
+        with open(filename, r_mode) as file:
             while True:
                 chunk = file.read(BUFFER_SIZE)
                 if not chunk:
                     break # Se sale del bucle cuando no hay más datos para enviar
                 data_socket.sendall(chunk)
+        print("7- Enviado el archivo")
     finally:
         # Asegurarse de que el socket de datos se cierre correctamente
         data_socket.close()
 
     # Leer y retornar la respuesta del servidor
-    return response(socket)
+    return get_response(socket)
 
 def cmd_APPE(socket, *args):
     args_len = len(args)
@@ -436,22 +432,16 @@ def cmd_PORT(comm_socket, *args):
 def cmd_PASV(comm_socket, *args):
     """Envía el comando PASV al servidor FTP para establecer el modo pasivo (el servidor escucha conexiones y el cliente la inicia)."""
     try:
-        print("1- Intentando obtener response de enviar el comando PASV\n")
         response = send(comm_socket, 'PASV')
-        print("2- Response obtenida de enviar el comando PASV, proximo paso imprimir response\n")
         # Extraer la dirección IP y el puerto del servidor
         print(response)
-        print("3- Response impresa, proximo paso buscar match\n")
         match = re.search(r'(\d+),(\d+),(\d+),(\d+),(\d+),(\d+)', response)
         if match:
-            print(f"4- Encontré match: {match}")
             ip_parts = [int(x) for x in match.groups()[:4]]
             port = int(match.group(5)) * 256 + int(match.group(6))
             data_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             data_socket.connect((socket.inet_ntoa(bytes(ip_parts)), port))
             print(f'Socket: {data_socket}')
-            PASV_MODE = 1
-            print("5- Activé PASV_MODE. Retornando data_socket a RETR")
             return data_socket
         else:
             print('No se ha podido establecer una conexión de transferencia de datos con el Host: ')
