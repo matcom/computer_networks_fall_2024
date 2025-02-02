@@ -177,7 +177,8 @@ def cmd_RETR(socket, *args):
     try:
         # Enviar el comando RETR
         response = send(socket, f'RETR {filename}')
-        
+        print(response)
+
         # Recibir el archivo y guardarlo en la carpeta Downloads
         with open(f'Downloads/{filename}', w_mode) as file:
             while True:
@@ -229,7 +230,8 @@ def cmd_STOR(socket, *args):
     try:
         # Enviar el comando STOR
         print("5- Mandando mensaje STOR con el filename")
-        send(socket, f'STOR {filename}')
+        response = send(socket, f'STOR {filename}')
+        print(response)
 
         # Abrir el archivo en modo binario para leer y enviar su contenido
         print("6- Mandando archivo en el bucle")
