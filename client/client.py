@@ -68,6 +68,17 @@ def get_arg(flag):
     except (ValueError, IndexError):
         return None
 
+# Obtener un socket de conexión (Configurado con PORT o PASV)
+def get_socket():
+    if DATA_SOCKET is None:
+        print("No existe una conexión abierta en este momento, intentando conectar en modo pasivo")
+        response = cmd_PASV(socket, [])
+        if response is None:
+            print("La conexión no se ha podido establecer")
+        return response
+    else: 
+        return DATA_SOCKET
+
 # Funciones para manejar comandos ---------------------------------------------------------------------------------------------
 
 def generic_command_by_type(socket, *args, command, command_type):
@@ -118,22 +129,16 @@ def cmd_RETR(socket, *args):
     else:
         w_mode = 'wb'
     # Conectar pasivamente para recibir el archivo
-    data_socket = DATA_SOCKET
-    if data_socket is None:
-        print("No existe una conexión abierta en este momento, intentando iniciar en modo pasivo")
-        response = cmd_PASV(socket, [])
-        if response is None:
-            return f"La conexión no se ha podido establecer"
-        data_socket = response
-    filename = args[0]
+    data_socket = get_socket()
+
     # Descargar archivo
     try:
         # Enviar el comando RETR
-        response = send(socket, f'RETR {filename}')
+        response = send(socket, f'RETR {args[0]}')
         print(response)
 
         # Recibir el archivo y guardarlo en la carpeta Downloads
-        with open(f'Downloads/{filename}', w_mode) as file:
+        with open(f'Downloads/{args[0]}', w_mode) as file:
             while True:
                 try:
                     chunk = data_socket.recv(BUFFER_SIZE)
@@ -164,21 +169,13 @@ def cmd_STOR(socket, *args):
         r_mode = 'r'
     else:
         r_mode = 'rb'
-    # Extraer el nombre del archivo de la ruta completa
-    filename = os.path.basename(args[0])
 
     # Conectar para recibir el archivo
-    data_socket = DATA_SOCKET
-    if data_socket is None:
-        print("No existe una conexión abierta en este momento, intentando conectar en modo pasivo")
-        response = cmd_PASV(socket, [])
-        if response is None:
-            return f"La conexión no se ha podido establecer: {response}"
-        data_socket = response
+    data_socket = get_socket()
 
     try:
         # Enviar el comando STOR
-        response = send(socket, f'STOR {filename}')
+        response = send(socket, f'STOR {os.path.basename(args[0])}')
         print(response)
 
         # Abrir el archivo en modo binario para leer y enviar su contenido
@@ -201,13 +198,7 @@ def cmd_APPE(socket, *args):
     print(response)
 
     # Conectar para recibir el archivo
-    data_socket = DATA_SOCKET
-    if data_socket is None:
-        print("421: No existe una conexión abierta en este momento, intentando conectar en modo pasivo")
-        response = cmd_PASV(socket, [])
-        if response is None:
-            return "550: La conexión no se ha podido establecer"
-        data_socket = response
+    data_socket = get_socket()
     try:
         ans = send(socket, f'APPE {args[0]}')
         print(ans)
@@ -228,13 +219,7 @@ def cmd_LIST(socket, *args):
     print(response)
 
     # Conectar para recibir el archivo
-    data_socket = DATA_SOCKET
-    if data_socket is None:
-        print("No existe una conexión abierta en este momento, intentando conectar en modo pasivo")
-        response = cmd_PASV(socket, [])
-        if response is None:
-            return "La conexión no se ha podido establecer"
-        data_socket = response
+    data_socket = get_socket()
     try:
         if args_len == 0:
             send(socket, 'LIST')
@@ -262,13 +247,7 @@ def cmd_NLST(socket, *args):
     print(response)
 
     # Conectar para recibir el archivo
-    data_socket = DATA_SOCKET
-    if data_socket is None:
-        print("No existe una conexión abierta en este momento, intentando conectar en modo pasivo")
-        response = cmd_PASV(socket, [])
-        if response is None:
-            return "La conexión no se ha podido establecer"
-        data_socket = response
+    data_socket = get_socket()
     try:
         if args_len == 0:
             send(socket, 'NLST')
@@ -348,7 +327,6 @@ def cmd_PASV(comm_socket, *args):
             port = int(match.group(5)) * 256 + int(match.group(6))
             data_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             data_socket.connect((socket.inet_ntoa(bytes(ip_parts)), port))
-            print(f'Socket: {data_socket}')
             return data_socket
         else:
             print('No se ha podido establecer una conexión de transferencia de datos con el Host: ')
@@ -379,14 +357,8 @@ def cmd_STOU(socket, *args):
     filename = os.path.basename(args[0])
 
     # Conectar para recibir el archivo
-    data_socket = DATA_SOCKET
-    if data_socket is None:
-        print("No existe una conexión abierta en este momento, intentando conectar en modo pasivo")
-        response = cmd_PASV(socket, [])
-        if response is None:
-            return "La conexión no se ha podido establecer"
-        data_socket = response
-
+    data_socket = get_socket()
+    
     try:
         # Enviar el comando STOU
         send(socket, f'STOU {filename}')
@@ -404,8 +376,6 @@ def cmd_STOU(socket, *args):
 
     # Leer y retornar la respuesta del servidor
     return get_response(socket)
-
-
 
 # Ejecución principal del cliente ---------------------------------------------------------------------------------------------
 
