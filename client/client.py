@@ -191,11 +191,10 @@ def cmd_RETR(socket, *args):
                         file.write(chunk)
                 except socket.timeout:
                     break
-        print(get_response(socket))
     finally:
         # Asegurarse de que el socket de datos se cierre correctamente
         data_socket.close()
-    return f"226: Archivo {filename} descargado en la carpeta Downloads. Cerrando conexión."
+    return get_response(socket)
 
 def cmd_STOR(socket, *args):
     args_len = len(args)
@@ -234,7 +233,7 @@ def cmd_STOR(socket, *args):
 
         # Abrir el archivo en modo binario para leer y enviar su contenido
         print("6- Mandando archivo en el bucle")
-        with open(filename, r_mode) as file:
+        with open(args[0], r_mode) as file:
             while True:
                 chunk = file.read(BUFFER_SIZE)
                 if not chunk:
