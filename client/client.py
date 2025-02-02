@@ -75,11 +75,11 @@ def get_arg(flag):
         return None
 
 # Obtener un socket de conexión (Configurado con PORT o PASV)
-def get_socket():
+def get_socket(comm_socket):
     """Obtiene un socket, ya sea el configurado por PORT o uno nuevo configurado por PASV."""
     if DATA_SOCKET is None:
         print("No existe una conexión abierta en este momento, intentando conectar en modo pasivo")
-        response = cmd_PASV(socket, [])
+        response = cmd_PASV(comm_socket, [])
         if response is None:
             print("La conexión no se ha podido establecer")
         return response
@@ -142,7 +142,7 @@ def cmd_STOR_APPE_STOU(socket, *args, command):
         r_mode = 'rb'
 
     # Conectar para recibir el archivo
-    data_socket = get_socket()
+    data_socket = get_socket(socket)
 
     try:
         # Enviar el comando STOR o APPE
@@ -174,7 +174,7 @@ def cmd_RETR(socket, *args):
     else:
         w_mode = 'wb'
     # Conectar pasivamente para recibir el archivo
-    data_socket = get_socket()
+    data_socket = get_socket(socket)
 
     # Descargar archivo
     try:
@@ -207,7 +207,7 @@ def cmd_LIST_NLST(socket, *args, command):
     print(response)
 
     # Conectar para recibir el archivo
-    data_socket = get_socket()
+    data_socket = get_socket(socket)
     try:
         if args_len == 0:
             send(socket, command)
@@ -273,7 +273,7 @@ def cmd_PORT(comm_socket, *args):
     DATA_SOCKET = data_socket
     return response
 
-def cmd_PASV(comm_socket, *args):
+def cmd_PASV(comm_socket):
     """Envía el comando PASV al servidor FTP para establecer el modo pasivo (el servidor escucha conexiones y el cliente la inicia)."""
     try:
         response = send(comm_socket, 'PASV')
