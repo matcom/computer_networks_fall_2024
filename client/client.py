@@ -190,14 +190,19 @@ def cmd_RETR(socket, *args):
                     print(f"6- Ciclo en curso")
                     chunk = data_socket.recv(BUFFER_SIZE)
                     if not chunk:
+                        print(f"7- Entré en if not chunk")
                         break
                     if TYPE == 'A':
+                        print(f"8- Entré en if TYPE == A")
                         file.write(chunk.decode())
                     else:
+                        print(f"9- Entré en el else")
                         file.write(chunk)
                 except socket.timeout:
+                    print(f"10- Entré en socket timeout")
                     break
-        print(response(socket))
+        print(f"11- Imprimiendo response")
+        print(get_response(socket))
     finally:
         # Asegurarse de que el socket de datos se cierre correctamente
         data_socket.close()
