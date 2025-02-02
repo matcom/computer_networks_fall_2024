@@ -56,6 +56,11 @@ def argument_handler(min_required_args, max_required_args, given_args):
     else:
         return "Argumentos recibidos correctamente"
 
+def start_pasv_socket():
+    global PASV_SOCKET
+
+    socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
 # Funciones para manejar comandos ---------------------------------------------------------------------------------------------
 
 # Control de acceso:
@@ -375,7 +380,7 @@ def cmd_STRU(socket, *args):
     return send(socket, f'STRU {args[0]}')
 
 # Control de conexión:
-def cmd_PORT(socket, *args):
+def cmd_PORT(comm_socket, *args):
     """Envía el comando PORT al servidor FTP para especificar el puerto de datos del cliente."""
     args_len = len(args)
     response = argument_handler(2,2,args_len)
@@ -408,7 +413,7 @@ def cmd_PORT(socket, *args):
     command = f"PORT {','.join(ip_parts)},{port_str}"
 
     # Verificando respuesta esperada
-    response = send(socket, command)
+    response = send(comm_socket, command)
     if response.startswith('227'):
     # Cerrar el socket pasivo si está abierto
         if DATA_SOCKET is not None:
@@ -420,11 +425,11 @@ def cmd_PORT(socket, *args):
     DATA_SOCKET = data_socket
     return response
 
-def cmd_PASV(socket, *args):
+def cmd_PASV(comm_socket, *args):
     """Envía el comando PASV al servidor FTP para establecer el modo pasivo (el servidor escucha conexiones y el cliente la inicia)."""
     try:
         print("1- Intentando obtener response de enviar el comando PASV\n")
-        response = send(socket, 'PASV')
+        response = send(comm_socket, 'PASV')
         print("2- Response obtenida de enviar el comando PASV, proximo paso imprimir response\n")
         # Extraer la dirección IP y el puerto del servidor
         print(response)
