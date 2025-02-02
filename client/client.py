@@ -236,12 +236,16 @@ def cmd_STOR(socket, *args):
         # Abrir el archivo en modo binario para leer y enviar su contenido
         print("6- Mandando archivo en el bucle")
         with open(args[0], r_mode) as file:
+            print("7- A punto de entrar en el bucle")
             while True:
+                print("8- Haciendo lectura del archivo")
                 chunk = file.read(BUFFER_SIZE)
+                print("9- Verificando si el archivo está completado")
                 if not chunk:
                     break # Se sale del bucle cuando no hay más datos para enviar
+                print("10- Mandando parte del archivo")
                 data_socket.sendall(chunk)
-        print("7- Enviado el archivo")
+        print("11- Enviado el archivo")
     finally:
         # Asegurarse de que el socket de datos se cierre correctamente
         data_socket.close()
