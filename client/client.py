@@ -227,12 +227,12 @@ def cmd_PORT(comm_socket, *args):
     print(response)
     
     if not isinstance(args[1], int):
-        raise TypeError("504: El argumento 'PORT' debe ser un entero.")
+        raise TypeError("El argumento 'PORT' debe ser un entero.")
     if not isinstance(ip, str):
         raise TypeError("El argumento 'IP' debe ser una cadena.")
     # Validando puerto
     if args[1] < 1 or args[1] > 65535:
-        raise ValueError("504: El puerto debe estar en el rango de 1 a 65535.")
+        raise ValueError("El puerto debe estar en el rango de 1 a 65535.")
     # Validando IP
     ip_parts = args[0].split('.')
     if len(ip_parts) != 4:
@@ -254,7 +254,7 @@ def cmd_PORT(comm_socket, *args):
 
     # Verificando respuesta esperada
     response = send(comm_socket, command)
-    if response.startswith('227'):
+    if response.startswith('2'):
     # Cerrar el socket pasivo si está abierto
         if DATA_SOCKET is not None:
             DATA_SOCKET.close()
