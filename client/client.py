@@ -212,12 +212,9 @@ def cmd_STOR(socket, *args):
     else:
         r_mode = 'rb'
     # Extraer el nombre del archivo de la ruta completa
-    print("1- Antes de declarar filename")
     filename = os.path.basename(args[0])
-    print(f"2- Decarado filename: {filename}")
 
     # Conectar para recibir el archivo
-    print("3- Conectando socket")
     data_socket = DATA_SOCKET
     if data_socket is None:
         print("No existe una conexión abierta en este momento, intentando conectar en modo pasivo")
@@ -225,27 +222,19 @@ def cmd_STOR(socket, *args):
         if response is None:
             return f"La conexión no se ha podido establecer: {response}"
         data_socket = response
-    print("4- Socket listo")
 
     try:
         # Enviar el comando STOR
-        print("5- Mandando mensaje STOR con el filename")
         response = send(socket, f'STOR {filename}')
         print(response)
 
         # Abrir el archivo en modo binario para leer y enviar su contenido
-        print("6- Mandando archivo en el bucle")
         with open(args[0], r_mode) as file:
-            print("7- A punto de entrar en el bucle")
             while True:
-                print("8- Haciendo lectura del archivo")
                 chunk = file.read(BUFFER_SIZE)
-                print("9- Verificando si el archivo está completado")
                 if not chunk:
                     break # Se sale del bucle cuando no hay más datos para enviar
-                print("10- Mandando parte del archivo")
                 data_socket.sendall(chunk.encode())
-        print("11- Enviado el archivo")
     finally:
         # Asegurarse de que el socket de datos se cierre correctamente
         data_socket.close()
