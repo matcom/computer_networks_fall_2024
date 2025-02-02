@@ -154,9 +154,6 @@ def cmd_STOR_APPE(socket, *args, command):
     # Leer y retornar la respuesta del servidor
     return get_response(socket)
 
-
-
-
 def cmd_RETR(socket, *args):  
     # Crear la carpeta Downloads si no existe
     if not os.path.exists('Downloads'):
@@ -193,8 +190,7 @@ def cmd_RETR(socket, *args):
         data_socket.close()
     return get_response(socket)
 
-
-def cmd_LIST(socket, *args):
+def cmd_LIST_NLST(socket, *args, command):
     args_len = len(args)
     response = argument_handler(0,1,args_len)
     print(response)
@@ -203,37 +199,9 @@ def cmd_LIST(socket, *args):
     data_socket = get_socket()
     try:
         if args_len == 0:
-            send(socket, 'LIST')
+            send(socket, command)
         else:
-            send(socket, f'LIST {args[0]}')
-        data = b''
-        while True:
-            try:
-                chunk = data_socket.recv(BUFFER_SIZE)
-                if not chunk:
-                    break # Se sale del bucle cuando no hay más datos para recibir
-                data += chunk
-            except socket.timeout:
-                break
-        print(response(socket))
-    finally:
-        # Asegurarse de que el socket de datos se cierre correctamente
-        data_socket.close()
-    decoded_data = data.decode()
-    return decoded_data
-
-def cmd_NLST(socket, *args):
-    args_len = len(args)
-    response = argument_handler(0,1,args_len)
-    print(response)
-
-    # Conectar para recibir el archivo
-    data_socket = get_socket()
-    try:
-        if args_len == 0:
-            send(socket, 'NLST')
-        else:
-            send(socket, f'NLST {args[0]}')
+            send(socket, f'{command} {args[0]}')
         data = b''
         while True:
             try:
@@ -428,10 +396,10 @@ try:
         print(cmd_STOR_APPE(ftp_socket, *cmd_args, command=command))
     elif command == 'DELE': # Elimina el directorio especificado
         print(generic_command_by_type(ftp_socket, *cmd_args, command=command, command_type='A'))
-    elif command == 'LIST':
-        print(cmd_LIST(ftp_socket, *cmd_args))
-    elif command == 'NLST':
-        print(cmd_NLST(ftp_socket, *cmd_args))
+    elif command == 'LIST': # Recibe una lista de archivos en un directorio especificado
+        print(cmd_LIST_NLST(ftp_socket, *cmd_args, command=command))
+    elif command == 'NLST': # Recibe una lista de nombres de archivos en un directorio especificado
+        print(cmd_LIST_NLST(ftp_socket, *cmd_args, command=command))
     elif command == 'ABOR': # Cancela el comando actual en el servidor FTP
         print(generic_command_by_type(ftp_socket, *cmd_args, command=command, command_type='B'))
     elif command == 'TYPE': # Establece el tipo de transferencia de datos ('ASCII' o 'BINARY')
