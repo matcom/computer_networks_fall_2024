@@ -117,7 +117,45 @@ def generic_command_by_type(socket, *args, command, command_type):
 
     return response
 
-# Navegación:
+def cmd_STOR_APPE(socket, *args, command):
+    args_len = len(args)
+    response = argument_handler(1,2,args_len)
+    print(response)
+
+    # Verificar si el archivo existe
+    if not os.path.exists(args[0]):
+        print(f"La ruta {args[0]} no es una ruta válida.")
+        return
+    # Verificar tipo de archivo para configurar permisos de lectura
+    if TYPE == 'A':
+        r_mode = 'r'
+    else:
+        r_mode = 'rb'
+
+    # Conectar para recibir el archivo
+    data_socket = get_socket()
+
+    try:
+        # Enviar el comando STOR o APPE
+        response = send(socket, f'{command} {os.path.basename(args[0])}')
+        print(response)
+
+        # Abrir el archivo en modo binario para leer y enviar su contenido
+        with open(args[0], r_mode) as file:
+            while True:
+                chunk = file.read(BUFFER_SIZE)
+                if not chunk:
+                    break # Se sale del bucle cuando no hay más datos para enviar
+                data_socket.sendall(chunk.encode())
+    finally:
+        # Asegurarse de que el socket de datos se cierre correctamente
+        data_socket.close()
+
+    # Leer y retornar la respuesta del servidor
+    return get_response(socket)
+
+
+
 
 def cmd_RETR(socket, *args):  
     # Crear la carpeta Downloads si no existe
@@ -155,63 +193,6 @@ def cmd_RETR(socket, *args):
         data_socket.close()
     return get_response(socket)
 
-def cmd_STOR(socket, *args):
-    args_len = len(args)
-    response = argument_handler(1,2,args_len)
-    print(response)
-
-    # Verificar si el archivo existe
-    if not os.path.exists(args[0]):
-        print(f"La ruta {args[0]} no es una ruta válida.")
-        return
-    # Verificar tipo de archivo para configurar permisos de lectura
-    if TYPE == 'A':
-        r_mode = 'r'
-    else:
-        r_mode = 'rb'
-
-    # Conectar para recibir el archivo
-    data_socket = get_socket()
-
-    try:
-        # Enviar el comando STOR
-        response = send(socket, f'STOR {os.path.basename(args[0])}')
-        print(response)
-
-        # Abrir el archivo en modo binario para leer y enviar su contenido
-        with open(args[0], r_mode) as file:
-            while True:
-                chunk = file.read(BUFFER_SIZE)
-                if not chunk:
-                    break # Se sale del bucle cuando no hay más datos para enviar
-                data_socket.sendall(chunk.encode())
-    finally:
-        # Asegurarse de que el socket de datos se cierre correctamente
-        data_socket.close()
-
-    # Leer y retornar la respuesta del servidor
-    return get_response(socket)
-
-def cmd_APPE(socket, *args):
-    args_len = len(args)
-    response = argument_handler(1,1,args_len)
-    print(response)
-
-    # Conectar para recibir el archivo
-    data_socket = get_socket()
-    try:
-        ans = send(socket, f'APPE {args[0]}')
-        print(ans)
-        if ans.startswith('150'):
-            # Enviar los datos especificados
-            data_socket.sendall(data.encode())
-            data_socket.close()
-            return response(socket)
-        else:
-            print("Permisos insuficientes o error en la operación")
-    finally:
-        # Asegurarse de que el socket de datos se cierre correctamente
-        data_socket.close()
 
 def cmd_LIST(socket, *args):
     args_len = len(args)
@@ -358,7 +339,7 @@ def cmd_STOU(socket, *args):
 
     # Conectar para recibir el archivo
     data_socket = get_socket()
-    
+
     try:
         # Enviar el comando STOU
         send(socket, f'STOU {filename}')
@@ -411,6 +392,10 @@ print(Response)
 # Ejecutar comando
 cmd_args = [arg for arg in [a_arg, b_arg] if arg is not None]
 
+# Llevando a mayúsculas
+if command:
+    command = command.upper
+
 try:
     if command == 'USER':   # Comando usado para autenticarse en el servidor
         print(generic_command_by_type(ftp_socket, *cmd_args, command=command, command_type='A'))
@@ -437,10 +422,10 @@ try:
         print(generic_command_by_type(ftp_socket, *cmd_args, command=command, command_type='A'))
     elif command == 'RETR':
         print(cmd_RETR(ftp_socket, *cmd_args))
-    elif command == 'STOR':
-        print(cmd_STOR(ftp_socket, *cmd_args))
-    elif command == 'APPE':
-        print(cmd_APPE(ftp_socket, *cmd_args))
+    elif command == 'STOR': # Almacena un archivo en el servidor
+        print(cmd_STOR_APPE(ftp_socket, *cmd_args, command=command))
+    elif command == 'APPE': # Agrega información al final de un archivo en el servidor
+        print(cmd_STOR_APPE(ftp_socket, *cmd_args, command=command))
     elif command == 'DELE': # Elimina el directorio especificado
         print(generic_command_by_type(ftp_socket, *cmd_args, command=command, command_type='A'))
     elif command == 'LIST':
