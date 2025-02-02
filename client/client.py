@@ -184,8 +184,10 @@ def cmd_RETR(socket, *args):
         
         # Recibir el archivo y guardarlo en la carpeta Downloads
         with open(f'Downloads/{filename}', w_mode) as file:
+            print(f"5- Abierto el archivo en Downloads")
             while True:
                 try:
+                    print(f"6- Ciclo en curso")
                     chunk = data_socket.recv(BUFFER_SIZE)
                     if not chunk:
                         break
