@@ -1,6 +1,8 @@
 import io  # Import the io module for handling input/output streams.
-import socket  # Import the socket module for network communication.
+import socket 
+import logging  # Import the socket module for network communication.
 
+logger = logging.getLogger(__name__)
 class PicoHTTPRequestHandler:
     '''
     A simple HTTP request handler that serves static files as-is.
@@ -9,20 +11,24 @@ class PicoHTTPRequestHandler:
     - Other HTTP methods return a 405 METHOD NOT ALLOWED response.
     Supports HTTP/1.1 protocol.
     '''
+    
 
     def __init__(
-        self, 
-        request_stream: io.BufferedIOBase,  # Input stream to read the incoming HTTP request.
-        client_address: tuple[str, int],   # Tuple containing the client's IP address and port.
-        client: socket.socket              # Socket object representing the client connection.
+         self, 
+        request_stream: io.BufferedIOBase, 
+        response_stream: io.BufferedIOBase
     ):
-        '''
-        Constructor for initializing the HTTP request handler.
-        - request_stream: A buffered input/output stream to read the HTTP request data.
-        - client_address: A tuple (IP, port) representing the client's address.
-        - client: The socket object used for communicating with the client.
-        '''
-        pass  # Placeholder for initialization logic.
+        self.request_stream = request_stream
+        self.client = client #pending to define client.py
+        self.command = ''
+        self.path = ''
+        self.headers = {
+            'Content-Type': 'text/html',
+            'Content-Length': '0',
+            'Connection': 'close'
+        }
+        self.data = ''
+        self.handle()
 
     def handle(self) -> None:
         '''
@@ -30,7 +36,26 @@ class PicoHTTPRequestHandler:
         This method should parse the request, determine the HTTP method,
         and call the appropriate handler (e.g., handle_GET, handle_HEAD).
         '''
-        pass  # Placeholder for the request handling logic.
+        self._parse_request()
+
+    def _parse_request(self) -> None:
+        logger.info('Parsing request line')
+        requestline = self.request_stream.readline().decode()
+        requestline = requestline.rstrip('\r\n')
+        logger.info(requestline)
+
+        self.command = requestline.split(' ')[0]
+        self.path = requestline.split(' ')[1]
+
+        # parse the headers
+        headers = {} 
+        line = self.request_stream.readline().decode()
+        while line not in ('\r\n', '\n', '\r', ''):
+            header = line.rstrip('\r\n').split(': ')
+            headers[header[0]] = header[1]
+            line = self.request_stream.readline().decode()
+
+        logger.info(headers)
 
     def handle_GET(self) -> None:
         '''
