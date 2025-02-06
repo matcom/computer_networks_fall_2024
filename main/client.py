@@ -75,6 +75,59 @@ class FTPClient:
     def appe(self, filename):
         return self.send_command(f'APPE {filename}')
 
+    def allo(self, size, record_size=None):
+        if record_size:
+            return self.send_command(f'ALLO {size} R {record_size}')
+        return self.send_command(f'ALLO {size}')
+
+    def rest(self, marker):
+        return self.send_command(f'REST {marker}')
+
+    def rnfr(self, old_path):
+        return self.send_command(f'RNFR {old_path}')
+
+    def rnto(self, new_path):
+        return self.send_command(f'RNTO {new_path}')
+
+    def abor(self):
+        return self.send_command('ABOR')
+
+    def dele(self, path):
+        return self.send_command(f'DELE {path}')
+
+    def rmd(self, path):
+        return self.send_command(f'RMD {path}')
+
+    def mkd(self, path):
+        return self.send_command(f'MKD {path}')
+
+    def pwd(self):
+        return self.send_command('PWD')
+
+    def nlst(self, path=None):
+        if path:
+            return self.send_command(f'NLST {path}')
+        return self.send_command('NLST')
+
+    def site(self, parameters):
+        return self.send_command(f'SITE {parameters}')
+
+    def syst(self):
+        return self.send_command('SYST')
+
+    def stat(self, path=None):
+        if path:
+            return self.send_command(f'STAT {path}')
+        return self.send_command('STAT')
+
+    def help(self, command=None):
+        if command:
+            return self.send_command(f'HELP {command}')
+        return self.send_command('HELP')
+
+    def noop(self):
+        return self.send_command('NOOP')
+
 
 def main():
     if len(sys.argv) != 3:
