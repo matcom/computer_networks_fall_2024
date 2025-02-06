@@ -33,6 +33,48 @@ class FTPClient:
         self.control_socket.close()
         print("Conexión cerrada.")
 
+    def acct(self, account):
+        return self.send_command(f'ACCT {account}')
+
+    def cwd(self, path):
+        return self.send_command(f'CWD {path}')
+
+    def cdup(self):
+        return self.send_command('CDUP')
+
+    def smnt(self, path):
+        return self.send_command(f'SMNT {path}')
+
+    def rein(self):
+        return self.send_command('REIN')
+
+    def port(self, host_port):
+        return self.send_command(f'PORT {host_port}')
+
+    def pasv(self):
+        return self.send_command('PASV')
+
+    def type(self, type_code):
+        return self.send_command(f'TYPE {type_code}')
+
+    def stru(self, structure):
+        return self.send_command(f'STRU {structure}')
+
+    def mode(self, mode_code):
+        return self.send_command(f'MODE {mode_code}')
+
+    def retr(self, filename):
+        return self.send_command(f'RETR {filename}')
+
+    def stor(self, filename):
+        return self.send_command(f'STOR {filename}')
+
+    def stou(self):
+        return self.send_command('STOU')
+
+    def appe(self, filename):
+        return self.send_command(f'APPE {filename}')
+
 
 def main():
     if len(sys.argv) != 3:
