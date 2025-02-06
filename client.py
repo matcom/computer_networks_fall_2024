@@ -2,7 +2,7 @@ import socket
 
 class HTTPClient:
     
-    def parse_url(url):
+    def parse_url(self, url):
         """Parses the URL and returns (host, port, path)."""
         # Remove the scheme (http:// or https://)
         if url.startswith("http://"):
