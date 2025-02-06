@@ -27,6 +27,10 @@ class HTTPClient:
 
     def http_request(self, method, url, body=None, headers=None):
         """Performs an HTTP request and returns (status_code, body)."""
+        
+        if method.upper() == "HEAD" and body is not None:
+            raise ValueError("Las solicitudes HEAD no pueden incluir un cuerpo.")
+
         # Parse the URL to get the host, port, and path
         host, port, path = self.parse_url(url)
         
@@ -83,3 +87,7 @@ class HTTPClient:
         
         # Return the status code and the body of the response
         return status_code, body.decode("utf-8", errors="ignore")
+    
+    def head(self, url, headers=None):
+        """Carry oout a HEAD request and returns status_code and empty body."""
+        return self.http_request("HEAD", url, headers=headers)

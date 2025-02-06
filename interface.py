@@ -11,7 +11,7 @@ st.title("HTTP Client with Sockets 🔌")
 # HTTP method and URL selector
 col1, col2 = st.columns([1, 4])
 with col1:
-    http_method = st.selectbox("HTTP Method", ["GET", "POST"])
+    http_method = st.selectbox("HTTP Method", ["GET", "POST", "HEAD"])
 with col2:
     url = st.text_input("URL", "http://httpbin.org/post")
 
@@ -38,6 +38,8 @@ with st.expander("Headers"):
 body = ""
 if http_method == "POST":
     body = st.text_area("Body (plain text or JSON)", height=200, value='{\n    "key": "value"\n}')
+else :
+    body = None
 
 # Send request button
 if st.button("Send Request"):
@@ -59,7 +61,11 @@ if st.button("Send Request"):
         st.markdown(f"**Status Code:** `{status_code}`")
         
         st.subheader("Response Body")
+        
+        if http_method == "HEAD":
+            st.warning("HEAD responses don't have a body by specification")
         st.text_area("Content", response_body, height=400)
+        
         
     except Exception as e:
         # Display error message
