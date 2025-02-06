@@ -11,7 +11,7 @@ st.title("HTTP Client with Sockets 🔌")
 # HTTP method and URL selector
 col1, col2 = st.columns([1, 4])
 with col1:
-    http_method = st.selectbox("HTTP Method", ["GET", "POST", "HEAD"])
+    http_method = st.selectbox("HTTP Method", ["GET", "POST", "HEAD", "DELETE"])
 with col2:
     url = st.text_input("URL", "http://httpbin.org/post")
 
@@ -36,43 +36,52 @@ with st.expander("Headers"):
 
 # Body for POST requests
 body = ""
-if http_method == "POST":
+
+if http_method in ["POST", "DELETE"]:  #Allow body for DELETE
     body = st.text_area("Body (plain text or JSON)", height=200, value='{\n    "key": "value"\n}')
-else :
-    body = None
+else:
+    body = None 
 
 # Send request button
 if st.button("Send Request"):
     try:
-        # Validate URL
         if not url.startswith("http://"):
             raise ValueError("Only HTTP URLs are supported (not HTTPS)")
         
-        # Make the HTTP request
-        status_code, response_body = client.http_request(
-            method=http_method,
-            url=url,
-            body=body,
-            headers=headers
-        )
+        # Manage HEAD, DELETE and other requests
+        if http_method == "HEAD":
+            status_code, response_body = client.head(url, headers=headers)
+        elif http_method == "DELETE":
+            status_code, response_body = client.delete(url, body=body, headers=headers)
+        else:
+            status_code, response_body = client.http_request(
+                method=http_method,
+                url=url,
+                body=body,
+                headers=headers
+            )
         
-        # Display the response
         st.subheader("Response")
         st.markdown(f"**Status Code:** `{status_code}`")
         
         st.subheader("Response Body")
-        
+        # Show warning for HEAD
         if http_method == "HEAD":
             st.warning("HEAD responses don't have a body by specification")
         st.text_area("Content", response_body, height=400)
         
-        
     except Exception as e:
-        # Display error message
         st.error(f"Error: {str(e)}")
 
 # Examples section
 st.markdown("---")
-st.info("💡 Example POST:\n"
+st.info("💡 Examples:\n"
+        "**GET/POST:**\n"
+        "- URL: http://httpbin.org/get\n"
         "- URL: http://httpbin.org/post\n"
-        "- Body: {\n    'name': 'Ada',\n    'profession': 'Programmer'\n}")
+        "- Body example: {\n    'name': 'Ada'\n}\n\n"
+        "**HEAD:**\n"
+        "- URL: http://httpbin.org/headers\n\n"
+        "**DELETE:**\n"
+        "- URL: http://httpbin.org/delete\n"
+        "- Body example: {\n    'id': 123\n}")

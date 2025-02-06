@@ -89,5 +89,9 @@ class HTTPClient:
         return status_code, body.decode("utf-8", errors="ignore")
     
     def head(self, url, headers=None):
-        """Carry oout a HEAD request and returns status_code and empty body."""
-        return self.http_request("HEAD", url, headers=headers)
+        """Carry out a HEAD request and returns status_code and empty body."""
+        return self.http_request("HEAD", url, headers=headers)\
+        
+    def delete(self, url, body=None, headers=None):
+        """Carry out a DELETE request and returns status_code and body."""
+        return self.http_request("DELETE", url, body=body, headers=headers)
