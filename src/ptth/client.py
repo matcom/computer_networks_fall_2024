@@ -6,81 +6,12 @@ import logging
 from collections.abc import Callable, Mapping, MutableMapping
 
 from parse_http_url import parse_http_url, BadUrlError
+from utils import CaseInsensitiveDict, readline
 
 logging.basicConfig(
     level=logging.WARNING,
     format='%(asctime)s - %(levelname)s - %(message)s'
 )
-
-# stolen from requests
-class CaseInsensitiveDict(MutableMapping):
-    """A case-insensitive ``dict``-like object.
-
-    Implements all methods and operations of
-    ``MutableMapping`` as well as dict's ``copy``. Also
-    provides ``lower_items``.
-
-    All keys are expected to be strings. The structure remembers the
-    case of the last key to be set, and ``iter(instance)``,
-    ``keys()``, ``items()``, ``iterkeys()``, and ``iteritems()``
-    will contain case-sensitive keys. However, querying and contains
-    testing is case insensitive::
-
-        cid = CaseInsensitiveDict()
-        cid['Accept'] = 'application/json'
-        cid['aCCEPT'] == 'application/json'  # True
-        list(cid) == ['Accept']  # True
-
-    For example, ``headers['content-encoding']`` will return the
-    value of a ``'Content-Encoding'`` response header, regardless
-    of how the header name was originally stored.
-
-    If the constructor, ``.update``, or equality comparison
-    operations are given keys that have equal ``.lower()``s, the
-    behavior is undefined.
-    """
-
-    def __init__(self, data=None, **kwargs):
-        self._store = {}
-        if data is None:
-            data = {}
-        self.update(data, **kwargs)
-
-    def __setitem__(self, key, value):
-        # Use the lowercased key for lookups, but store the actual
-        # key alongside the value.
-        self._store[key.lower()] = (key, value)
-
-    def __getitem__(self, key):
-        return self._store[key.lower()][1]
-
-    def __delitem__(self, key):
-        del self._store[key.lower()]
-
-    def __iter__(self):
-        return (casedkey for casedkey, mappedvalue in self._store.values())
-
-    def __len__(self):
-        return len(self._store)
-
-    def lower_items(self):
-        """Like iteritems(), but with all lowercase keys."""
-        return ((lowerkey, keyval[1]) for (lowerkey, keyval) in self._store.items())
-
-    def __eq__(self, other):
-        if isinstance(other, Mapping):
-            other = CaseInsensitiveDict(other)
-        else:
-            return NotImplemented
-        # Compare insensitively
-        return dict(self.lower_items()) == dict(other.lower_items())
-
-    # Copy is required
-    def copy(self):
-        return CaseInsensitiveDict(self._store.values())
-
-    def __repr__(self):
-        return str(dict(self.items()))
 
 
 class NotConnected(Exception):
@@ -111,14 +42,6 @@ class HTTPResponse:
     def __str__(self):
         return f"<{self.__class__.__name__} [{self.code}]>"
 
-def readline(connection, index=0):
-    buffer = b''
-    while (c := connection.receive(1)) != b'\n':
-        buffer += c
-        index += 1
-
-    return buffer, index
-
 def parse_response(method, conn):
     buffer, index = readline(conn)
     version, code, reason = map(str.strip, buffer.decode().split(" ", 2))
@@ -143,7 +66,7 @@ def parse_response(method, conn):
     # GET so it will hang as well
     # https://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.13
     while len(body) < cl and method != "HEAD":
-        body += conn.receive(cl - len(body))
+        body += conn.recv(cl - len(body))
 
     return HTTPResponse(
         version=version,
@@ -195,6 +118,9 @@ class HTTPConnection:
         # https://httpwg.org/specs/rfc9110.html#field.accept-encoding
         # no encoding
         headers["Accept-Encoding"] = headers.get("Accept", "identity")
+        # https://www.rfc-editor.org/rfc/rfc2616#section-14.10
+        # we do not support persistent connections
+        headers["Connection"] = "close"
 
         req = f"{method.upper()} {url} {self._version_str}\r\n"
         for header, value in headers.items():
@@ -221,7 +147,7 @@ def request(method="GET", url="/", headers=None, body=""):
     try:
         conn.connect()
         conn.request(method, abs_path + query, headers=headers, body=body)
-        data = parse_response(method, conn)
+        data = parse_response(method, conn.sock)
     finally:
         conn.close()
 
