@@ -128,7 +128,6 @@ class FTPClient:
     def noop(self):
         return self.send_command('NOOP')
 
-
 def main():
     if len(sys.argv) != 3:
         print("Uso: python client.py <servidor> <puerto>")
@@ -150,12 +149,102 @@ def main():
                 client.login(username, password)
             elif command == "list":
                 client.list_files()
-
+            elif command.startswith("acct"):
+                _, account = command.split()
+                client.acct(account)
+            elif command.startswith("cwd"):
+                _, path = command.split()
+                client.cwd(path)
+            elif command == "cdup":
+                client.cdup()
+            elif command.startswith("smnt"):
+                _, path = command.split()
+                client.smnt(path)
+            elif command == "rein":
+                client.rein()
+            elif command.startswith("port"):
+                _, host_port = command.split()
+                client.port(host_port)
+            elif command == "pasv":
+                client.pasv()
+            elif command.startswith("type"):
+                _, type_code = command.split()
+                client.type(type_code)
+            elif command.startswith("stru"):
+                _, structure = command.split()
+                client.stru(structure)
+            elif command.startswith("mode"):
+                _, mode_code = command.split()
+                client.mode(mode_code)
+            elif command.startswith("retr"):
+                _, filename = command.split()
+                client.retr(filename)
+            elif command.startswith("stor"):
+                _, filename = command.split()
+                client.stor(filename)
+            elif command == "stou":
+                client.stou()
+            elif command.startswith("appe"):
+                _, filename = command.split()
+                client.appe(filename)
+            elif command.startswith("allo"):
+                parts = command.split()
+                if len(parts) == 2:
+                    client.allo(parts[1])
+                elif len(parts) == 4:
+                    client.allo(parts[1], parts[3])
+            elif command.startswith("rest"):
+                _, marker = command.split()
+                client.rest(marker)
+            elif command.startswith("rnfr"):
+                _, old_path = command.split()
+                client.rnfr(old_path)
+            elif command.startswith("rnto"):
+                _, new_path = command.split()
+                client.rnto(new_path)
+            elif command == "abor":
+                client.abor()
+            elif command.startswith("dele"):
+                _, path = command.split()
+                client.dele(path)
+            elif command.startswith("rmd"):
+                _, path = command.split()
+                client.rmd(path)
+            elif command.startswith("mkd"):
+                _, path = command.split()
+                client.mkd(path)
+            elif command == "pwd":
+                client.pwd()
+            elif command.startswith("nlst"):
+                parts = command.split()
+                if len(parts) == 1:
+                    client.nlst()
+                else:
+                    client.nlst(parts[1])
+            elif command.startswith("site"):
+                _, parameters = command.split(maxsplit=1)
+                client.site(parameters)
+            elif command == "syst":
+                client.syst()
+            elif command.startswith("stat"):
+                parts = command.split()
+                if len(parts) == 1:
+                    client.stat()
+                else:
+                    client.stat(parts[1])
+            elif command.startswith("help"):
+                parts = command.split()
+                if len(parts) == 1:
+                    client.help()
+                else:
+                    client.help(parts[1])
+            elif command == "noop":
+                client.noop()
             elif command == "quit":
                 client.quit()
                 break
             else:
-                print("Comando no reconocido. Comandos disponibles: login, list, download, upload, quit")
+                print("Comando no reconocido. Usa 'help' para ver la lista de comandos.")
         except Exception as e:
             print(f"Error: {e}")
 
