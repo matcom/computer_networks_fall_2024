@@ -2,6 +2,7 @@ import os
 import socket
 import time
 import logging
+import gzip
 
 from collections.abc import Callable, Mapping, MutableMapping
 
@@ -59,14 +60,30 @@ def parse_response(method, conn):
     index += 1
 
     body = b''
-    cl = int(headers.get("Content-Length", 0))
-    # sometimes it sends an incomplete response
-    # it will hang if c-l is wrong
-    # NOTE HEAD request returns c-l as if it were a
-    # GET so it will hang as well
-    # https://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.13
-    while len(body) < cl and method != "HEAD":
-        body += conn.recv(cl - len(body))
+    if "Content-Length" in headers:
+        cl = int(headers.get("Content-Length", 0))
+        # sometimes it sends an incomplete response
+        # it will hang if c-l is wrong
+        # NOTE HEAD request returns c-l as if it were a
+        # GET so it will hang as well
+        # https://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.13
+        while len(body) < cl and method != "HEAD":
+            body += conn.recv(cl - len(body))
+    elif headers.get("Transfer-Encoding") == "chunked":
+        size, index = readline(conn, index)
+        size = int(size, base=16) + 2 # size in hex + carrier return + \n
+        body += conn.recv(size)
+        index += size
+        while size - 2:
+            size, index = readline(conn, index)
+            size = int(size, base=16) + 2 # size in hex + carrier return
+            body += conn.recv(size)
+            index += size
+
+    # decode if needed
+    # only gzip and identity are supported
+    if headers.get("Content-Encoding") == "gzip":
+        body = gzip.decompress(body)
 
     return HTTPResponse(
         version=version,
@@ -117,7 +134,7 @@ class HTTPConnection:
         headers["Content-Length"] = str(len(body))
         # https://httpwg.org/specs/rfc9110.html#field.accept-encoding
         # no encoding
-        headers["Accept-Encoding"] = headers.get("Accept", "identity")
+        headers["Accept-Encoding"] = headers.get("Accept-Encoding", "identity")
         # https://www.rfc-editor.org/rfc/rfc2616#section-14.10
         # we do not support persistent connections
         headers["Connection"] = "close"
@@ -156,10 +173,23 @@ def request(method="GET", url="/", headers=None, body=""):
     return data
 
 if __name__ == "__main__":
-    URL = "http://httpbin.org/"
-    #URL = "http://www.cubadebate.cu/"
+    #URL = "http://httpbin.org/"
+    URL = "http://www.cubadebate.cu/"
     #URL = "http://127.0.0.1:8000"
+    #URL = "http://anglesharp.azurewebsites.net/Chunked" # chunk
+    #URL = "http://www.whatsmyip.org/
 
+    # r
+    res = request("GET", URL, headers={"Accept-Encoding": "gzip"})
+    print(res)
+    res.visualise()
+
+    URL = "http://anglesharp.azurewebsites.net/Chunked" # chunk
+    res = request("GET", URL)
+    print(res)
+    res.visualise()
+
+    URL = "http://httpbin.org/"
     res = request("GET", URL, headers={"User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"})
     print(res)
     res.visualise()
