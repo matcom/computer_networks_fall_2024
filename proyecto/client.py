@@ -121,18 +121,37 @@ def ftp_client(argvs):
                         data_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                         data_socket.connect((ip, port))
 
-                        # Ejecuta el comando RETR
-                        retr_response = send_command(client_socket, f"RETR {argument1}\r\n")
-                        print(retr_response)
-
-                        # Recibe los datos del archivo
-                        file_data = data_socket.recv(1024)
-                        while file_data:
-                            print(file_data.decode(), end="")
+                        if command == "RETR":
+                            # Ejecuta el comando RETR
+                            retr_response = send_command(client_socket, f"RETR {argument1}\r\n")
+                            print(retr_response)
+    
+                            # Recibe los datos del archivo
                             file_data = data_socket.recv(1024)
+                            while file_data:
+                                print(file_data.decode(), end="")
+                                file_data = data_socket.recv(1024)
+    
+                            # Cierra la conexión de datos
+                            data_socket.close()
+                        elif command == "STOR":
+                            # Ejecuta el comando STOR
+                            stor_response = send_command(client_socket, f"STOR {argument2}\r\n")
+                            print(stor_response)
 
-                        # Cierra la conexión de datos
-                        data_socket.close()
+                            # Abre el archivo para leer y enviarlo al servidor
+                            with open(argument1, "rb") as f:
+                                file_data = f.read(1024)
+                                while file_data:
+                                    data_socket.sendall(file_data)
+                                    file_data = f.read(1024)
+
+                            # Cierra la conexión de datos
+                            data_socket.close()
+
+                            # Agrega verificación del mensaje 226
+                            completion_response = client_socket.recv(1024).decode().strip()
+                            print(json.dumps({"status": completion_response.split(" ")[0], "message": completion_response}, indent=4))
 
                         # Agrega verificación del mensaje 226
                         completion_response = client_socket.recv(1024).decode().strip()
