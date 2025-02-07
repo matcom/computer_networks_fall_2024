@@ -110,7 +110,7 @@ def ftp_client(argvs):
         # Verifica si la autenticación fue exitosa
         if "230" in pass_response:  # Código 230: Usuario autenticado
             # Si el comando es RETR, envía PASV primero
-            if command == "RETR":
+            if command == "RETR" or command == "STOR":
                 pasv_response = send_command(client_socket, "PASV\r\n")
                 print(pasv_response)
 
