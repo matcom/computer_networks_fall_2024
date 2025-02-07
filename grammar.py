@@ -30,11 +30,11 @@ class basic_rules :
     sp = ' '
     ht = '\t'
     crlf = cr + lf
-    separators = '()<>@,;:\\\"/[]?=\{\}' + sp + ht
+    separators = '()<>@,;:\\\"/[]?={}' + sp + ht
     
 class httpMessage:
-  def get_http_version(min, max):
-    return "HTTP" + "/" + min + '.' + max
+  def get_http_version(min: int, max: int):
+    return "HTTP" + "/" + str(min) + '.' + str(max)
   def get_host_port(url: str):
     if url.startswith("http://"):
         url = url[len("http://"):]
@@ -66,10 +66,10 @@ class httpMessage:
 class httpRequest:
   def is_valid_method(s: str) -> bool :
     return s in ["OPTIONS", "GET", "HEAD", "POST", "PUT", "DELETE", "TRACE", "CONNECT"]
-  def get_request_line(method: str, request_uri: str, http_version: str) :
+  def build_request_line(method: str, request_uri: str, http_version: str) :
     sp = basic_rules.sp
     crlf = basic_rules.crlf
     return method + sp + request_uri + sp + http_version + crlf
-  def build(self, method: str, uri:str, headers: str = None, body: str =None):
-    return self.get_request_line(method, uri, httpMessage.get_http_version(1, 1)) + headers + basic_rules.crlf + body
-  
+  def build_req(method: str, uri:str, headers: str = None, body: str =None):
+    return httpRequest.build_request_line(method, uri, httpMessage.get_http_version(1, 1)) + headers + basic_rules.crlf + body
+    
