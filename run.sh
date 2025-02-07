@@ -7,7 +7,7 @@
 source env.sh
 
 if [ "$PROTOCOL" -eq 1 ]; then
-    python3 src/http_client.py "$@"
+    python3 http_client.py "$@"
 else
     echo "Error: Protocolo no soportado en run.sh"
     exit 1
