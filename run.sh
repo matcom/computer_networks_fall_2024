@@ -4,7 +4,7 @@
 
 # echo $@
 
-source env.sh
+. ./env.sh
 
 if [ "$PROTOCOL" -eq 1 ]; then
     python3 http_client.py "$@"
