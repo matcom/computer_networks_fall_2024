@@ -29,12 +29,12 @@ def send_command(client_socket, command):
     status_code = response.split(" ")[0]  # Extrae el código de estado
     return json.dumps({"status": status_code, "message": response}, indent=4)
 
-def retrieve(client_socket):
+def retrieve(client_socket, argument):
     """
     Envía el comando RETR y descarga el archivo
     """
     # Ejecuta el comando RETR
-    retr_response = send_command(client_socket, f"RETR {argument1}\r\n")
+    retr_response = send_command(client_socket, f"RETR {argument}\r\n")
     print(retr_response)
 
     # Recibe los datos del archivo
@@ -139,7 +139,7 @@ def ftp_client(argvs):
                         data_socket.connect((ip, port))
 
                         # Ejecuta el comando RETR
-                        retr_response = retrieve(client_socket)
+                        retr_response = retrieve(client_socket, argument1)
                     else:
                         print(json.dumps({"status": "500", "message": "Error al procesar la respuesta PASV"}, indent=4))
                 else:
