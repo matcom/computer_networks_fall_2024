@@ -167,6 +167,14 @@ def ftp_client(argvs):
                         print(json.dumps({"status": "500", "message": "Error al procesar la respuesta PASV"}, indent=4))
                 else:
                     print(json.dumps({"status": "500", "message": "Error al entrar en modo PASV"}, indent=4))
+
+            elif command == "RNFR":
+                rnfr_response = send_command(client_socket, f"RNFR {argument1}\r\n")
+                print(rnfr_response)
+                
+                if "350" in rnfr_response:  # Código 350: Listo para RNTO
+                    rnto_response = send_command(client_socket, f"RNTO {argument2}\r\n")
+                    print(rnto_response)
             else:
                 # Ejecuta otros comandos
                 if command in command_delegates:
