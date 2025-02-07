@@ -152,11 +152,11 @@ def ftp_client(argvs):
                                 # Cierra la conexión de datos
                                 data_socket.close()
 
-        # Espera la confirmación del servidor (código 226)
-        completion_response = client_socket.recv(1024).decode().strip()
-        print(json.dumps({"status": completion_response.split(" ")[0], "message": completion_response}, indent=4))
-    else:
-        print(json.dumps({"status": "500", "message": "Error al iniciar la transferencia del archivo"}, indent=4))
+                                # Espera la confirmación del servidor (código 226)
+                                completion_response = client_socket.recv(1024).decode().strip()
+                                print(json.dumps({"status": completion_response.split(" ")[0], "message": completion_response}, indent=4))
+                            else:
+                                print(json.dumps({"status": "500", "message": "Error al iniciar la transferencia del archivo"}, indent=4))
 
                         # Agrega verificación del mensaje 226
                         completion_response = client_socket.recv(1024).decode().strip()
