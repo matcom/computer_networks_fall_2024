@@ -35,6 +35,33 @@ class basic_rules :
 class httpMessage:
   def get_http_version(min, max):
     return "HTTP" + "/" + min + '.' + max
+  def get_host_port(url: str):
+    if url.startswith("http://"):
+        url = url[len("http://"):]
+        default_port = 80
+    elif url.startswith("https://"):
+        url = url[len("https://"):]
+        default_port = 443
+    else:
+        default_port = 80
+
+    slash_i = url.find("/")
+    if slash_i == -1:
+        host_port = url
+    else:
+        host_port = url[:slash_i]
+        path = url[slash_i:]
+
+    colon_i = host_port.find(":")
+    if colon_i == -1:
+        host = host_port
+        port = default_port
+    else:
+        host = host_port[:colon_i]
+        port = int(host_port[colon_i + 1:])
+
+    return host, port
+      
 
 class httpRequest:
   def is_valid_method(s: str) -> bool :
