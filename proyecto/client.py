@@ -134,24 +134,29 @@ def ftp_client(argvs):
     
                             # Cierra la conexión de datos
                             data_socket.close()
+                            
                         elif command == "STOR":
                             # Ejecuta el comando STOR
                             stor_response = send_command(client_socket, f"STOR {argument2}\r\n")
                             print(stor_response)
-
-                            # Abre el archivo para leer y enviarlo al servidor
-                            with open(argument1, "rb") as f:
-                                file_data = f.read(1024)
-                                while file_data:
-                                    data_socket.sendall(file_data)
+                        
+                            # Verifica si el servidor está listo para recibir el archivo (código 150)
+                            if "150" in stor_response:
+                                # Abre el archivo para leer y enviarlo al servidor
+                                with open(argument1, "rb") as f:
                                     file_data = f.read(1024)
+                                    while file_data:
+                                        data_socket.sendall(file_data)
+                                        file_data = f.read(1024)
+                        
+                                # Cierra la conexión de datos
+                                data_socket.close()
 
-                            # Cierra la conexión de datos
-                            data_socket.close()
-
-                            # Agrega verificación del mensaje 226
-                            completion_response = client_socket.recv(1024).decode().strip()
-                            print(json.dumps({"status": completion_response.split(" ")[0], "message": completion_response}, indent=4))
+        # Espera la confirmación del servidor (código 226)
+        completion_response = client_socket.recv(1024).decode().strip()
+        print(json.dumps({"status": completion_response.split(" ")[0], "message": completion_response}, indent=4))
+    else:
+        print(json.dumps({"status": "500", "message": "Error al iniciar la transferencia del archivo"}, indent=4))
 
                         # Agrega verificación del mensaje 226
                         completion_response = client_socket.recv(1024).decode().strip()
