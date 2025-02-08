@@ -41,12 +41,12 @@ class httpMessage:
   def get_url_info(url: str):
     if url.startswith("http://"):
         url = url[len("http://"):]
-        default_port = 8080
+        default_port = 80
     elif url.startswith("https://"):
         url = url[len("https://"):]
         default_port = 443
     else:
-        default_port = 8080
+        default_port = 80
 
     slash_i = url.find("/")
     if slash_i == -1:
