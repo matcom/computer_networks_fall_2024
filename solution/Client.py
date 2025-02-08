@@ -129,7 +129,7 @@ class IRCClient:
         """Sale del servidor IRC enviando el comando QUIT."""
         self.send_command("QUIT :Saliendo del servidor")
         self.sock.close()
-        return "🔌 Desconectado del servidor IRC"
+        return "Desconectado del servidor"
 
 def parse_arguments():
     parser = argparse.ArgumentParser(description="Parser de pruebas para cliente IRC")
@@ -152,4 +152,4 @@ if __name__ == "__main__":
     response = client.handle_command(args.c, args.a)
 
     # Mostrar la respuesta del servidor
-    print(response)
+    # print(response)
