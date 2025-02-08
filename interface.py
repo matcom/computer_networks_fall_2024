@@ -11,7 +11,7 @@ st.title("HTTP Client with Sockets 🔌")
 # HTTP method and URL selector
 col1, col2 = st.columns([1, 4])
 with col1:
-    http_method = st.selectbox("HTTP Method", ["GET", "POST", "HEAD", "DELETE"])
+    http_method = st.selectbox("HTTP Method", ["GET", "POST", "HEAD", "DELETE", "PATCH", "PUT"])
 with col2:
     url = st.text_input("URL", "http://httpbin.org/post")
 
@@ -37,7 +37,7 @@ with st.expander("Headers"):
 # Body for POST requests
 body = ""
 
-if http_method in ["POST", "DELETE"]:  #Allow body for DELETE
+if http_method in ["POST", "DELETE", "PATCH", "PUT"]:  #Allow body for DELETE
     body = st.text_area("Body (plain text or JSON)", height=200, value='{\n    "key": "value"\n}')
 else:
     body = None 
@@ -48,11 +48,15 @@ if st.button("Send Request"):
         if not url.startswith("http://"):
             raise ValueError("Only HTTP URLs are supported (not HTTPS)")
         
-        # Manage HEAD, DELETE and other requests
+        # Manage requests
         if http_method == "HEAD":
             status_code, response_body = client.head(url, headers=headers)
         elif http_method == "DELETE":
             status_code, response_body = client.delete(url, body=body, headers=headers)
+        elif http_method == "PATCH":
+            status_code, response_body = client.patch(url, body=body, headers=headers)
+        elif http_method == "PUT":
+            status_code, response_body = client.put(url, body=body, headers=headers)
         else:
             status_code, response_body = client.http_request(
                 method=http_method,
@@ -84,4 +88,10 @@ st.info("💡 Examples:\n"
         "- URL: http://httpbin.org/headers\n\n"
         "**DELETE:**\n"
         "- URL: http://httpbin.org/delete\n"
-        "- Body example: {\n    'id': 123\n}")
+        "- Body example: {\n    'id': 123\n}\n\n"
+        "**PATCH:**\n"
+        "- URL: http://httpbin.org/patch\n"
+        "- Body example: {\n    'key': 'updated_value'\n}\n\n"
+        "**PUT:**\n"
+        "- URL: http://httpbin.org/put\n"
+        "- Body example: {\n    'key': 'new_value'\n}")

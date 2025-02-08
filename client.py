@@ -90,8 +90,16 @@ class HTTPClient:
     
     def head(self, url, headers=None):
         """Carry out a HEAD request and returns status_code and empty body."""
-        return self.http_request("HEAD", url, headers=headers)\
-        
+        return self.http_request("HEAD", url, headers=headers)
+    
     def delete(self, url, body=None, headers=None):
         """Carry out a DELETE request and returns status_code and body."""
         return self.http_request("DELETE", url, body=body, headers=headers)
+    
+    def patch(self, url, body=None, headers=None):
+        """Carry out a PATCH request and returns status_code and body."""
+        return self.http_request("PATCH", url, body=body, headers=headers)
+    
+    def put(self, url, body=None, headers=None):
+        """Carry out a PUT request and returns status_code and body."""
+        return self.http_request("PUT", url, body=body, headers=headers)
