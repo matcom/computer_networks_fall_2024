@@ -41,6 +41,66 @@ def parse_pasv_response(response, server_ip):
         return ip, port
     return server_ip, None  # Usa la dirección IP del servidor si la respuesta no es válida
 
+def stor_retr_files(command, pasv_response, server, client_socket, argument1,argument2):
+    if "227" in pasv_response:  # Código 227: Entrando en modo pasivo
+        ip, port = parse_pasv_response(pasv_response, server)  # Pasa la dirección IP del servidor
+        if ip and port:
+            # Establece la conexión de datos
+            data_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            data_socket.connect((ip, port))
+
+            if command == "RETR":
+                # Ejecuta el comando RETR
+                retr_response = send_command(client_socket, f"RETR {argument1}\r\n")
+                print(retr_response)
+
+                # Recibe los datos del archivo
+                file_data = data_socket.recv(1024)
+                while file_data:
+                    print(file_data.decode(), end="")
+                    file_data = data_socket.recv(1024)
+
+                # Cierra la conexión de datos
+                data_socket.close()
+
+                # Agrega verificación del mensaje 226
+                completion_response = client_socket.recv(1024).decode().strip()
+                print(json.dumps({"status": completion_response.split(" ")[0], "message": completion_response}, indent=4))
+                
+            elif command == "STOR":
+                # Ejecuta el comando STOR
+                stor_response = send_command(client_socket, f"STOR {argument2}\r\n")
+                print(stor_response)
+
+                # Verificación adicional antes de enviar datos
+                if "150" in stor_response:
+                    print("Enviando archivo...")
+                    
+                    # Abre el archivo para leer y enviarlo al servidor
+                    with open(argument1, "rb") as f:
+                        file_data = f.read(1024)
+                        while file_data:
+                            data_socket.sendall(file_data)
+                            file_data = f.read(1024)
+                            print("Enviando chunk de datos...")
+
+                    # Cierra la conexión de datos
+                    data_socket.shutdown(socket.SHUT_WR)
+                    data_socket.close()
+
+                    # Agrega verificación del mensaje 226
+                    completion_response = client_socket.recv(1024).decode().strip()
+                    print(json.dumps({"status": completion_response.split(" ")[0], "message": completion_response}, indent=4))
+        else:
+            print(json.dumps({"status": "500", "message": "Error al procesar la respuesta PASV"}, indent=4))
+    else:
+        print(json.dumps({"status": "500", "message": "Error al entrar en modo PASV"}, indent=4))
+
+def rename_file(rnfr_response, client_socket, argument):
+    if "350" in rnfr_response:
+        rnto_response = send_command(client_socket, f"RNTO {argument}\r\n")
+        print(rnto_response)
+
 def ftp_client(argvs):
     """
     Función principal del cliente FTP.
@@ -59,7 +119,7 @@ def ftp_client(argvs):
         "USER": lambda: f"USER {argument1}\r\n",
         "PASS": lambda: f"PASS {argument1}\r\n",
         "ACCT": lambda: f"ACCT {argument1}\r\n",
-        "CWD": lambda: f"CWD {argument1}\r\n",
+        "CWD" : lambda: f"CWD {argument1}\r\n",
         "CDUP": lambda: f"CDUP\r\n",
         "SMNT": lambda: f"SMNT {argument1}\r\n",
         "REIN": lambda: f"REIN\r\n",
@@ -79,9 +139,9 @@ def ftp_client(argvs):
         "RNTO": lambda: f"RNTO {argument2}\r\n",
         "ABOR": lambda: f"ABOR\r\n",
         "DELE": lambda: f"DELE {argument1}\r\n",
-        "RMD": lambda: f"RMD {argument1}\r\n",
-        "MKD": lambda: f"MKD {argument1}\r\n",
-        "PWD": lambda: f"PWD\r\n",
+        "RMD" : lambda: f"RMD {argument1}\r\n",
+        "MKD" : lambda: f"MKD {argument1}\r\n",
+        "PWD" : lambda: f"PWD\r\n",
         "LIST": lambda: f"LIST {argument1}\r\n",
         "NLST": lambda: f"NLST {argument1}\r\n",
         "SITE": lambda: f"SITE {argument1}\r\n",
@@ -113,68 +173,13 @@ def ftp_client(argvs):
             if command == "RETR" or command == "STOR":
                 pasv_response = send_command(client_socket, "PASV\r\n")
                 print(pasv_response)
-
-                if "227" in pasv_response:  # Código 227: Entrando en modo pasivo
-                    ip, port = parse_pasv_response(pasv_response, server)  # Pasa la dirección IP del servidor
-                    if ip and port:
-                        # Establece la conexión de datos
-                        data_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                        data_socket.connect((ip, port))
-
-                        if command == "RETR":
-                            # Ejecuta el comando RETR
-                            retr_response = send_command(client_socket, f"RETR {argument1}\r\n")
-                            print(retr_response)
-    
-                            # Recibe los datos del archivo
-                            file_data = data_socket.recv(1024)
-                            while file_data:
-                                print(file_data.decode(), end="")
-                                file_data = data_socket.recv(1024)
-    
-                            # Cierra la conexión de datos
-                            data_socket.close()
-
-                            # Agrega verificación del mensaje 226
-                            completion_response = client_socket.recv(1024).decode().strip()
-                            print(json.dumps({"status": completion_response.split(" ")[0], "message": completion_response}, indent=4))
-                            
-                        elif command == "STOR":
-                            # Ejecuta el comando STOR
-                            stor_response = send_command(client_socket, f"STOR {argument2}\r\n")
-                            print(stor_response)
-
-                            # Verificación adicional antes de enviar datos
-                            if "150" in stor_response:
-                                print("Enviando archivo...")
-                                
-                                # Abre el archivo para leer y enviarlo al servidor
-                                with open(argument1, "rb") as f:
-                                    file_data = f.read(1024)
-                                    while file_data:
-                                        data_socket.sendall(file_data)
-                                        file_data = f.read(1024)
-                                        print("Enviando chunk de datos...")
-
-                                # Cierra la conexión de datos
-                                data_socket.shutdown(socket.SHUT_WR)
-                                data_socket.close()
-
-                                # Agrega verificación del mensaje 226
-                                completion_response = client_socket.recv(1024).decode().strip()
-                                print(json.dumps({"status": completion_response.split(" ")[0], "message": completion_response}, indent=4))
-                    else:
-                        print(json.dumps({"status": "500", "message": "Error al procesar la respuesta PASV"}, indent=4))
-                else:
-                    print(json.dumps({"status": "500", "message": "Error al entrar en modo PASV"}, indent=4))
-
+                stor_retr_files(command, pasv_response, server, client_socket, argument1, argument2);
+                
             elif command == "RNFR":
                 rnfr_response = send_command(client_socket, f"RNFR {argument1}\r\n")
                 print(rnfr_response)
+                rename_file(rnfr_response, client_socket, argument2)
                 
-                if "350" in rnfr_response:  # Código 350: Listo para RNTO
-                    rnto_response = send_command(client_socket, f"RNTO {argument2}\r\n")
-                    print(rnto_response)
             else:
                 # Ejecuta otros comandos
                 if command in command_delegates:
