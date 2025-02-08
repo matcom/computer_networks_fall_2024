@@ -1,4 +1,5 @@
 import argparse
+from urllib.parse import urlencode
 from client import HTTPClient
 
 def main():
@@ -12,12 +13,19 @@ def main():
     parser.add_argument("method", type=str, help="HTTP method (GET, POST, HEAD, DELETE, PATCH, PUT)")
     parser.add_argument("url", type=str, help="URL to make the request to")
     
-    # Optional arguments for request body and headers
+    # Optional arguments for request body, headers, and query parameters
     parser.add_argument("--body", type=str, help="Request body (for POST, PUT, PATCH, DELETE)", default=None)
     parser.add_argument("--headers", type=str, help="Request headers (format: 'Key: Value, Key2: Value2')", default=None)
+    parser.add_argument("--query", type=str, help="Query parameters (format: 'key1=value1&key2=value2')", default=None)
 
     # Parse the arguments
     args = parser.parse_args()
+
+    # Add query parameters to the URL if provided
+    if args.query:
+        # Check if the URL already contains query parameters
+        separator = "&" if "?" in args.url else "?"
+        args.url += separator + args.query
 
     # Convert headers from string to dictionary
     headers = {}
