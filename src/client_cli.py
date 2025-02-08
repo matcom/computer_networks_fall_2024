@@ -1,7 +1,7 @@
 import argparse
 import json
 import sys
-from http_client import HttpClient
+from http_client import request
 
 
 if __name__ == "__main__":
@@ -24,8 +24,7 @@ if __name__ == "__main__":
         sys.exit(1)
     
     # creando un cliente
-    client = HttpClient("")  
-    response = client.request(args.method, args.url, data=args.data, headers=headers)
+    response = request(args.method, args.url,headers=headers, data=args.data)
 
     # respuesta final
     response_data = {
