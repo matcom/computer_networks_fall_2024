@@ -1,3 +1,6 @@
+import re
+import json
+
 class basic_rules : 
     def is_char(self, c: str) -> bool : 
         return 0 <= ord(c) and ord(c) <= 127
@@ -35,19 +38,20 @@ class basic_rules :
 class httpMessage:
   def get_http_version(min: int, max: int):
     return "HTTP" + "/" + str(min) + '.' + str(max)
-  def get_host_port(url: str):
+  def get_url_info(url: str):
     if url.startswith("http://"):
         url = url[len("http://"):]
-        default_port = 80
+        default_port = 8080
     elif url.startswith("https://"):
         url = url[len("https://"):]
         default_port = 443
     else:
-        default_port = 80
+        default_port = 8080
 
     slash_i = url.find("/")
     if slash_i == -1:
         host_port = url
+        path = "/"
     else:
         host_port = url[:slash_i]
         path = url[slash_i:]
@@ -60,7 +64,7 @@ class httpMessage:
         host = host_port[:colon_i]
         port = int(host_port[colon_i + 1:])
 
-    return host, port
+    return host, port, path
       
 
 class httpRequest:
@@ -70,6 +74,33 @@ class httpRequest:
     sp = basic_rules.sp
     crlf = basic_rules.crlf
     return method + sp + request_uri + sp + http_version + crlf
-  def build_req(method: str, uri:str, headers: str = None, body: str =None):
-    return httpRequest.build_request_line(method, uri, httpMessage.get_http_version(1, 1)) + headers + basic_rules.crlf + body
+  def build_headers(headers_str: str) -> str :
+    if not headers_str:
+      return ""
+    json_headers = json.loads(headers_str)
+    headers = ""
+    for key, value in json_headers.items():
+        headers += key + ": " + value + basic_rules.crlf
+    return headers
     
+  def build_req(method: str, uri:str, headers: str = None, body: str =None):
+    return httpRequest.build_request_line(method, uri, httpMessage.get_http_version(1, 1)) + httpRequest.build_headers(headers) + basic_rules.crlf + body
+    
+class httpResponse:
+  def extract_head_info(head: str):
+    status_line, headers = head.split(basic_rules.crlf, 1)
+    headers = headers.split(basic_rules.crlf)
+    header_fields = {}
+    for header in headers:
+        if not header:
+            continue
+        key, value = re.split(r":\s+", header, 1)
+        header_fields[key] = value
+    http_version, status_code, reason_phrase = status_line.split(basic_rules.sp, 2)
+    
+    return {
+        "http_version": http_version,
+        "status_code": int(status_code),
+        "reason_phrase": reason_phrase,
+        "headers": header_fields
+    }
