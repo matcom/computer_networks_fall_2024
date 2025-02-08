@@ -24,7 +24,7 @@ if __name__ == "__main__":
         sys.exit(1)
     
     # creando un cliente
-    response = request(args.method, args.url,headers=headers, data=args.data)
+    response = request(method=args.method, url=args.url,headers=headers, body=args.data)
 
     # respuesta final
     response_data = {
@@ -32,4 +32,4 @@ if __name__ == "__main__":
         "body": response.get_body_raw().decode('utf-8') # decodifica la respuesta del srvidor si viene en formato bytes
     }
     
-    print(json.dump(response_data,indent=2))
+    print(json.dumps(response_data,indent=2))
