@@ -4,11 +4,4 @@
 
 # echo $@
 
-. ./env.sh
-
-if [ "$PROTOCOL" -eq 1 ]; then
-    python3 http_client.py "$@"
-else
-    echo "Error: Protocolo no soportado en run.sh"
-    exit 1
-fi
+python3 src/client_cli.py $@
