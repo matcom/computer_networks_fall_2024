@@ -30,8 +30,8 @@ class connection:
         self.client_socket.sendall(data)
         return self.client_socket.recv(1024)
     
-    def send_file(self, filename: str):
-        pointer = open(filename, 'rb')
+    def send_file(self, filepath: str):
+        pointer = open(filepath, 'rb')
         self.client_socket.sendfile(pointer)
         pointer.close()
             
