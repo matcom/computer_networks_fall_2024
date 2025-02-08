@@ -25,4 +25,5 @@ if [ -z "$method" ] || [ -z "$url" ]; then
   exit 1
 fi
 
-python3 client.py -m "$method" -u "$url" -H "$headers" -d "$data"
+export PYTHONPATH=$PWD
+python3 src/client/main.py -m "$method" -u "$url" -H "$headers" -d "$data"
