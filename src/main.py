@@ -1,13 +1,13 @@
 import threading
 from client import IRCClient as ircc
 
-server = "irc.libera.chat"
-port = 6667
-nickname = "jotica0602"
-realname = "Alex Brunet"
-password = "Poseidon123*"  # La contraseña que elegiste al registrar la cuenta IRC
+server = input("Enter the server url:\n>")
+port = int(input("Enter server port:\n>"))
+nickname = input("Enter your nickname:\n>")
+realname = input("Enter real name:\n>")
+# password = "Poseidon123*"  # La contraseña que elegiste al registrar la cuenta IRC
 
-client = ircc(server, port, nickname, realname, password)
+client = ircc(server, port, nickname, realname)
 
 # Conectar al servidor
 client.connect()
