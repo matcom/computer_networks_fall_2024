@@ -5,7 +5,7 @@ from .commands import SMTPCommands
 from .response import SMTPResponse
 from .exceptions import SMTPException, TemporarySMTPException, PermanentSMTPException
 from .utils import validate_email
-
+import json
           
 class SMTPClient:
     """
@@ -47,11 +47,11 @@ class SMTPClient:
         except Exception as e:
             raise SMTPException(f"Error al conectar: {e}")
 
-    def tls_conncection(self):
+    def connect_by_tls(self):
         """
         Establece la conexión segura con el servidor SMTP a traves de TLS y realiza el handshake inicial (EHLO).
         """
-        if not self.tls_conncection:
+        if not self.connect_by_tls:
             raise SMTPException(f"El servidor no soporta TLS")
         
         self.connection.start_tls()
@@ -67,7 +67,6 @@ class SMTPClient:
         for line in response.message.splitlines():
             if "AUTH" in line:
                 self.auth_methods = line.split("AUTH")[1].strip().split(' ')
-
     
     def disconnect(self):
         """
@@ -75,7 +74,7 @@ class SMTPClient:
         """
         try:
             print(self.commands.quit())
-            print(self.connection.close())
+            self.connection.close()
         except Exception as e:
             raise SMTPException(f"Error al desconectar: {e}")
             
@@ -116,9 +115,9 @@ class SMTPClient:
         """
         Se verifica si el servidor SMTP soporta TLS.
         """
-        return self.tls_conncection
+        return self.connect_by_tls
     
-    def send_mail(self, sender: str, recipients: list, subject: str, body: str):
+    def send_mail(self, sender: str, recipients: list, subject: str, body: str, headers: str | dict = None):
         """
         Envía un correo electrónico utilizando la conexión SMTP establecida.
 
@@ -137,9 +136,13 @@ class SMTPClient:
             for recipient in recipients:
                 print(self.commands.rcpt_to(recipient))
             
-            message = f"Subject: {subject}\r\n\r\n{body}"
-            
-            print(self.commands.data(message))
+            #
+            headers_string = self.format_headers(headers, sender, recipients)
+
+            # Incluir Subject manualmente
+            formatted_message = f"{headers_string}\r\nSubject: {subject}\r\n\r\n{body}"
+                
+            print(self.commands.data(formatted_message))
             
         except TemporarySMTPException as e:
             print(f"Error temporal: {e}. Puedes reintentar más tarde.")
@@ -149,3 +152,82 @@ class SMTPClient:
             print(f"Error general de SMTP: {e}")
         except Exception as e:
             print(f"Error inesperado: {e}")
+            
+    def format_headers(self, headers, sender, recipients):
+        """
+        Formatea y valida los headers para asegurar que cumplan con RFC 5322.
+
+        :param headers: Headers en formato string (saltos de línea), JSON (dict) o string con formato JSON.
+        :param sender: Dirección de correo del remitente.
+        :param recipients: Lista de direcciones de los destinatarios.
+        :return: String con los headers formateados.
+        :raises SMTPException: Si los headers no son válidos.
+        """
+
+        # Si los headers están en formato JSON (dict), los usamos directamente
+        if not headers:
+            headers_dict = {}
+        
+        elif isinstance(headers, dict):
+            headers_dict = headers
+
+        # Si es un string con formato JSON, lo convertimos a diccionario
+        elif isinstance(headers, str) and headers.strip().startswith("{"):
+            try:
+                #headers = headers.replace('\\', '')  # Eliminar las comillas escapadas
+                headers_dict = json.loads(headers)
+            except json.JSONDecodeError:
+                raise SMTPException("Formato JSON inválido en los headers.")
+
+        # Si es un string con saltos de línea, lo convertimos a diccionario
+        elif isinstance(headers, str):
+            headers_dict = {}
+            for line in headers.split("\n"):
+                if ": " in line:
+                    key, value = line.split(": ", 1)
+                    headers_dict[key.strip()] = value.strip()
+
+        else:
+            raise SMTPException("Formato de headers no válido. Use un string, JSON o diccionario.")
+
+        # Validar y construir los headers
+        validated_headers = {}
+
+        # Validar que "From" y "To" coincidan con los valores de sender y recipients
+        if "From" in headers_dict:
+            if headers_dict["From"] != sender:
+                raise SMTPException("El header 'From' no coincide con el remitente proporcionado.")
+            validated_headers["From"] = headers_dict["From"]
+        else:
+            validated_headers["From"] = sender  # Si no está en headers, lo agregamos.
+
+        if "To" in headers_dict:
+            if set(headers_dict["To"].split(", ")) != set(recipients):
+                raise SMTPException("El header 'To' no coincide con los destinatarios proporcionados.")
+            validated_headers["To"] = headers_dict["To"]
+        else:
+            validated_headers["To"] = ", ".join(recipients)
+
+        # Validar otros headers opcionales según RFC 5322
+        allowed_headers = [
+            "Reply-To", "CC", "BCC", "Message-ID", "Date",
+            "MIME-Version", "Content-Type", "Content-Transfer-Encoding"
+        ]
+
+        for key, value in headers_dict.items():
+            if key in allowed_headers:
+                validated_headers[key] = value
+            else:
+                raise SMTPException(f"El header '{key}' no esta permitido.")
+
+        # Agregar valores por defecto si no están presentes
+        if "MIME-Version" not in validated_headers:
+            validated_headers["MIME-Version"] = "1.0"
+        
+        if "Content-Type" not in validated_headers:
+            validated_headers["Content-Type"] = "text/plain; charset=us-ascii"
+
+        # Convertir a formato string con `\r\n`
+        formatted_headers = "\r\n".join([f"{k}: {v}" for k, v in validated_headers.items()])
+        
+        return formatted_headers

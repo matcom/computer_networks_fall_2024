@@ -1,0 +1,461 @@
+2025-02-08 16:16:22,725 - INFO - Conexión establecida con smtp.gmail.com:587
+2025-02-08 16:16:22,726 - INFO - Enviado: EHLO smtp.gmail.com
+
+2025-02-08 16:16:22,977 - INFO - Recibido: 220 smtp.gmail.com ESMTP 4fb4d7f45d1cf-5dcf1b7adf4sm5009099a12.26 - gsmtp
+2025-02-08 16:16:22,978 - INFO - Enviado: MAIL FROM:<example@domain.com>
+
+2025-02-08 16:16:23,194 - INFO - Recibido: 250-smtp.gmail.com at your service, [89.39.107.203]
+250-SIZE 35882577
+250-8BITMIME
+250-STARTTLS
+250-ENHANCEDSTATUSCODES
+250-PIPELINING
+250-CHUNKING
+250 SMTPUTF8
+2025-02-08 16:16:23,195 - INFO - Enviado: RCPT TO:<andras.pla@google.com>
+
+2025-02-08 16:16:23,457 - INFO - Recibido: 530-5.7.0 Must issue a STARTTLS command first. For more information, go to
+530-5.7.0  https://support.google.com/a/answer/3221692 and review RFC 3207
+530 5.7.0 specifications. 4fb4d7f45d1cf-5dcf1b7adf4sm5009099a12.26 - gsmtp
+2025-02-08 16:16:23,458 - INFO - Enviado: DATA
+
+2025-02-08 16:16:23,694 - INFO - Recibido: 530-5.7.0 Must issue a STARTTLS command first. For more information, go to
+530-5.7.0  https://support.google.com/a/answer/3221692 and review RFC 3207
+530 5.7.0 specifications. 4fb4d7f45d1cf-5dcf1b7adf4sm5009099a12.26 - gsmtp
+2025-02-08 16:16:23,694 - INFO - Enviado: QUIT
+
+2025-02-08 16:16:23,896 - INFO - Recibido: 530-5.7.0 Must issue a STARTTLS command first. For more information, go to
+530-5.7.0  https://support.google.com/a/answer/3221692 and review RFC 3207
+530 5.7.0 specifications. 4fb4d7f45d1cf-5dcf1b7adf4sm5009099a12.26 - gsmtp
+2025-02-08 16:16:23,896 - INFO - Conexión cerrada.
+2025-02-08 16:17:53,566 - INFO - Conexión establecida con localhost:1025
+2025-02-08 16:17:53,566 - INFO - Enviado: EHLO localhost
+
+2025-02-08 16:17:53,568 - INFO - Recibido: 220 mailhog.example ESMTP MailHog
+2025-02-08 16:17:53,569 - INFO - Enviado: MAIL FROM:<example@domain.com>
+
+2025-02-08 16:17:53,569 - INFO - Recibido: 250-Hello localhost
+250-PIPELINING
+2025-02-08 16:17:53,570 - INFO - Enviado: RCPT TO:<andras.pla@google.com>
+
+2025-02-08 16:17:53,570 - INFO - Recibido: 250 AUTH PLAIN
+2025-02-08 16:17:53,570 - INFO - Enviado: DATA
+
+2025-02-08 16:17:53,571 - INFO - Recibido: 250 Sender example@domain.com ok
+250 Recipient andras.pla@google.com ok
+2025-02-08 16:17:53,571 - INFO - Enviado: From: example@domain.com
+To: andras.pla@google.com
+Subject: Subject: Test Email
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+
+This is a test email.
+.
+
+2025-02-08 16:17:53,571 - INFO - Recibido: 354 End data with <CR><LF>.<CR><LF>
+2025-02-08 16:17:53,572 - INFO - Enviado: QUIT
+
+2025-02-08 16:17:53,572 - INFO - Recibido: 250 Ok: queued as K5GdQiolPXDg16lCTdgJDoQTlT1BByVQmK9rftGStfA=@mailhog.example
+2025-02-08 16:17:53,573 - INFO - Conexión cerrada.
+2025-02-08 16:18:47,028 - INFO - Conexión establecida con localhost:1025
+2025-02-08 16:18:47,029 - INFO - Enviado: EHLO localhost
+
+2025-02-08 16:18:47,029 - INFO - Recibido: 220 mailhog.example ESMTP MailHog
+2025-02-08 16:18:47,030 - INFO - Enviado: MAIL FROM:<example@domain.com>
+
+2025-02-08 16:18:47,030 - INFO - Recibido: 250-Hello localhost
+250-PIPELINING
+250 AUTH PLAIN
+2025-02-08 16:18:47,031 - INFO - Enviado: RCPT TO:<andras.pla@google.com>
+
+2025-02-08 16:18:47,031 - INFO - Recibido: 250 Sender example@domain.com ok
+2025-02-08 16:18:47,031 - INFO - Enviado: DATA
+
+2025-02-08 16:18:47,032 - INFO - Recibido: 250 Recipient andras.pla@google.com ok
+2025-02-08 16:18:47,032 - INFO - Enviado: From: example@domain.com
+To: andras.pla@google.com
+Subject: Test Email
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+
+This is a test email.
+.
+
+2025-02-08 16:18:47,033 - INFO - Recibido: 354 End data with <CR><LF>.<CR><LF>
+2025-02-08 16:18:47,034 - INFO - Enviado: QUIT
+
+2025-02-08 16:18:47,034 - INFO - Recibido: 250 Ok: queued as N0WE6Ri6f3ZJJmNuYtQKNuhg0mAwu8ul9p0c0Ies52s=@mailhog.example
+2025-02-08 16:18:47,034 - INFO - Conexión cerrada.
+2025-02-08 16:19:31,300 - INFO - Conexión establecida con localhost:1025
+2025-02-08 16:19:31,301 - INFO - Enviado: EHLO localhost
+
+2025-02-08 16:19:31,301 - INFO - Recibido: 220 mailhog.example ESMTP MailHog
+2025-02-08 16:19:31,303 - INFO - Enviado: MAIL FROM:<example@domain.com>
+
+2025-02-08 16:19:31,303 - INFO - Recibido: 250-Hello localhost
+250-PIPELINING
+250 AUTH PLAIN
+2025-02-08 16:19:31,303 - INFO - Enviado: RCPT TO:<andras.pla@google.com>
+
+2025-02-08 16:19:31,304 - INFO - Recibido: 250 Sender example@domain.com ok
+2025-02-08 16:19:31,304 - INFO - Enviado: DATA
+
+2025-02-08 16:19:31,304 - INFO - Recibido: 250 Recipient andras.pla@google.com ok
+2025-02-08 16:19:31,305 - INFO - Enviado: From: example@domain.com
+To: andras.pla@google.com
+Subject: Test Email
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+
+This is a test email.
+.
+
+2025-02-08 16:19:31,305 - INFO - Recibido: 354 End data with <CR><LF>.<CR><LF>
+2025-02-08 16:19:31,306 - INFO - Enviado: QUIT
+
+2025-02-08 16:19:31,308 - INFO - Recibido: 250 Ok: queued as LmUnvHePftPZRsY2162JD66QJl9JKjRP3mO8njFhMZw=@mailhog.example
+2025-02-08 16:19:31,309 - INFO - Conexión cerrada.
+2025-02-08 16:55:57,926 - INFO - Conexión establecida con localhost:1025
+2025-02-08 16:55:57,926 - INFO - Enviado: EHLO localhost
+
+2025-02-08 16:55:57,927 - INFO - Recibido: 220 mailhog.example ESMTP MailHog
+2025-02-08 16:59:40,827 - INFO - Conexión establecida con localhost:1025
+2025-02-08 16:59:40,828 - INFO - Enviado: EHLO localhost
+
+2025-02-08 16:59:40,829 - INFO - Recibido: 220 mailhog.example ESMTP MailHog
+250-Hello localhost
+2025-02-08 16:59:40,830 - INFO - Enviado: MAIL FROM:<example@domain.com>
+
+2025-02-08 16:59:40,831 - INFO - Recibido: 250-PIPELINING
+250 AUTH PLAIN
+2025-02-08 16:59:40,831 - INFO - Enviado: RCPT TO:<andras.pla@google.com>
+
+2025-02-08 16:59:40,831 - INFO - Recibido: 250 Sender example@domain.com ok
+2025-02-08 16:59:40,832 - INFO - Enviado: QUIT
+
+2025-02-08 16:59:40,832 - INFO - Recibido: 250 Recipient andras.pla@google.com ok
+2025-02-08 16:59:40,833 - INFO - Conexión cerrada.
+2025-02-08 17:00:19,936 - INFO - Conexión establecida con localhost:1025
+2025-02-08 17:00:19,937 - INFO - Enviado: EHLO localhost
+
+2025-02-08 17:00:19,938 - INFO - Recibido: 220 mailhog.example ESMTP MailHog
+250-Hello localhost
+250-PIPELINING
+250 AUTH PLAIN
+2025-02-08 17:00:19,939 - INFO - Enviado: MAIL FROM:<example@domain.com>
+
+2025-02-08 17:00:19,943 - INFO - Recibido: 250 Sender example@domain.com ok
+2025-02-08 17:00:19,944 - INFO - Enviado: RCPT TO:<andras.pla@google.com>
+
+2025-02-08 17:00:19,944 - INFO - Recibido: 250 Recipient andras.pla@google.com ok
+2025-02-08 17:00:19,944 - INFO - Enviado: QUIT
+
+2025-02-08 17:00:19,947 - INFO - Recibido: 221 Bye
+2025-02-08 17:00:19,948 - INFO - Conexión cerrada.
+2025-02-08 17:00:54,284 - INFO - Conexión establecida con localhost:1025
+2025-02-08 17:00:54,285 - INFO - Enviado: EHLO localhost
+
+2025-02-08 17:00:54,285 - INFO - Recibido: 220 mailhog.example ESMTP MailHog
+2025-02-08 17:00:54,286 - INFO - Enviado: MAIL FROM:<example@domain.com>
+
+2025-02-08 17:00:54,287 - INFO - Recibido: 250-Hello localhost
+250-PIPELINING
+250 AUTH PLAIN
+2025-02-08 17:00:54,287 - INFO - Enviado: RCPT TO:<andras.pla@google.com>
+
+2025-02-08 17:00:54,287 - INFO - Recibido: 250 Sender example@domain.com ok
+2025-02-08 17:00:54,287 - INFO - Enviado: DATA
+
+2025-02-08 17:00:54,288 - INFO - Recibido: 250 Recipient andras.pla@google.com ok
+2025-02-08 17:00:54,288 - INFO - Enviado: From: example@domain.com
+To: andras.pla@google.com
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Subject: Test Email
+
+This is a test email.
+.
+
+2025-02-08 17:00:54,288 - INFO - Recibido: 354 End data with <CR><LF>.<CR><LF>
+2025-02-08 17:00:54,289 - INFO - Enviado: QUIT
+
+2025-02-08 17:00:54,290 - INFO - Recibido: 250 Ok: queued as G4BbU_q20hEtlpAgjkYo_ZXFuds9d7vA9np8dVDs3gU=@mailhog.example
+2025-02-08 17:00:54,290 - INFO - Conexión cerrada.
+2025-02-08 17:02:17,291 - INFO - Conexión establecida con localhost:1025
+2025-02-08 17:02:17,291 - INFO - Enviado: EHLO localhost
+
+2025-02-08 17:02:17,292 - INFO - Recibido: 220 mailhog.example ESMTP MailHog
+2025-02-08 17:02:17,293 - INFO - Enviado: MAIL FROM:<example@domain.com>
+
+2025-02-08 17:02:17,293 - INFO - Recibido: 250-Hello localhost
+250-PIPELINING
+250 AUTH PLAIN
+2025-02-08 17:02:17,294 - INFO - Enviado: RCPT TO:<andras.pla@google.com>
+
+2025-02-08 17:02:17,294 - INFO - Recibido: 250 Sender example@domain.com ok
+2025-02-08 17:02:17,294 - INFO - Enviado: DATA
+
+2025-02-08 17:02:17,295 - INFO - Recibido: 250 Recipient andras.pla@google.com ok
+2025-02-08 17:02:17,295 - INFO - Enviado: From: example@domain.com
+To: andras.pla@google.com
+Reply-To: support@example.com
+CC: charlie@example.com
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Subject: Test Email
+
+This is a test email.
+.
+
+2025-02-08 17:02:17,296 - INFO - Recibido: 354 End data with <CR><LF>.<CR><LF>
+2025-02-08 17:02:17,296 - INFO - Enviado: QUIT
+
+2025-02-08 17:02:17,298 - INFO - Recibido: 250 Ok: queued as _gNTN3r59UDF88kfswydjZscBKx8Lo1UdCPLtyZ6FLs=@mailhog.example
+2025-02-08 17:02:17,299 - INFO - Conexión cerrada.
+2025-02-08 17:02:46,457 - INFO - Conexión establecida con localhost:1025
+2025-02-08 17:02:46,459 - INFO - Enviado: EHLO localhost
+
+2025-02-08 17:02:46,459 - INFO - Recibido: 220 mailhog.example ESMTP MailHog
+2025-02-08 17:02:56,625 - INFO - Enviado: MAIL FROM:<example@domain.com>
+
+2025-02-08 17:02:56,626 - INFO - Recibido: 250-Hello localhost
+250-PIPELINING
+250 AUTH PLAIN
+2025-02-08 17:02:59,105 - INFO - Enviado: RCPT TO:<andras.pla@google.com>
+
+2025-02-08 17:02:59,107 - INFO - Recibido: 250 Sender example@domain.com ok
+250 Recipient andras.pla@google.com ok
+2025-02-08 17:03:42,384 - INFO - Enviado: DATA
+
+2025-02-08 17:03:42,386 - INFO - Recibido: 354 End data with <CR><LF>.<CR><LF>
+2025-02-08 17:03:42,388 - INFO - Enviado: From: example@domain.com
+To: andras.pla@google.com
+Reply-To: support@example.com
+CC: charlie@example.com
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Subject: Test Email
+
+This is a test email.
+.
+
+2025-02-08 17:03:42,392 - INFO - Recibido: 250 Ok: queued as TI0xFN2GOSIqzRNDSc76ayCIcKH63cbnu0EZ5_2Bz6U=@mailhog.example
+2025-02-08 17:03:50,677 - INFO - Enviado: QUIT
+
+2025-02-08 17:03:50,678 - INFO - Recibido: 221 Bye
+2025-02-08 17:03:50,685 - INFO - Conexión cerrada.
+2025-02-08 17:06:03,083 - INFO - Conexión establecida con localhost:1025
+2025-02-08 17:06:03,083 - INFO - Enviado: EHLO localhost
+
+2025-02-08 17:06:03,083 - INFO - Recibido: 220 mailhog.example ESMTP MailHog
+2025-02-08 17:06:03,084 - INFO - Enviado: MAIL FROM:<example@domain.com>
+
+2025-02-08 17:06:03,085 - INFO - Recibido: 250-Hello localhost
+250-PIPELINING
+250 AUTH PLAIN
+2025-02-08 17:06:03,085 - INFO - Enviado: RCPT TO:<andras.pla@google.com>
+
+2025-02-08 17:06:03,086 - INFO - Recibido: 250 Sender example@domain.com ok
+2025-02-08 17:06:03,086 - INFO - Enviado: DATA
+
+2025-02-08 17:06:03,087 - INFO - Recibido: 250 Recipient andras.pla@google.com ok
+2025-02-08 17:06:03,088 - INFO - Enviado: From: example@domain.com
+To: andras.pla@google.com
+Reply-To: support@example.com
+CC: charlie@example.com
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Subject: Test Email
+
+This is a test email.
+.
+
+2025-02-08 17:06:03,088 - INFO - Recibido: 354 End data with <CR><LF>.<CR><LF>
+2025-02-08 17:06:03,088 - INFO - Enviado: QUIT
+
+2025-02-08 17:06:03,089 - INFO - Recibido: 250 Ok: queued as vgUFWDNKfZz9pn2I7j-K6xCbcCJplB2J0fX7Gid3Gds=@mailhog.example
+2025-02-08 17:06:03,090 - INFO - Conexión cerrada.
+2025-02-08 17:06:54,815 - INFO - Conexión establecida con localhost:1025
+2025-02-08 17:06:54,816 - INFO - Enviado: EHLO localhost
+
+2025-02-08 17:06:54,816 - INFO - Recibido: 220 mailhog.example ESMTP MailHog
+2025-02-08 17:06:54,817 - INFO - Enviado: MAIL FROM:<example@domain.com>
+
+2025-02-08 17:06:54,818 - INFO - Recibido: 250-Hello localhost
+250-PIPELINING
+2025-02-08 17:06:54,818 - INFO - Enviado: RCPT TO:<andras.pla@google.com>
+
+2025-02-08 17:06:54,818 - INFO - Recibido: 250 AUTH PLAIN
+2025-02-08 17:06:54,818 - INFO - Enviado: DATA
+
+2025-02-08 17:06:54,819 - INFO - Recibido: 250 Sender example@domain.com ok
+2025-02-08 17:06:54,819 - INFO - Enviado: From: example@domain.com
+To: andras.pla@google.com
+Reply-To: support@example.com
+CC: charliePan@example.com
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Subject: Test Email
+
+This is a test email.
+.
+
+2025-02-08 17:06:54,820 - INFO - Recibido: 250 Recipient andras.pla@google.com ok
+2025-02-08 17:06:54,820 - INFO - Enviado: QUIT
+
+2025-02-08 17:06:54,821 - INFO - Recibido: 354 End data with <CR><LF>.<CR><LF>
+2025-02-08 17:06:54,821 - INFO - Conexión cerrada.
+2025-02-08 17:07:20,977 - INFO - Conexión establecida con localhost:1025
+2025-02-08 17:07:20,978 - INFO - Enviado: EHLO localhost
+
+2025-02-08 17:07:20,979 - INFO - Recibido: 220 mailhog.example ESMTP MailHog
+250-Hello localhost
+2025-02-08 17:07:20,980 - INFO - Enviado: MAIL FROM:<example@domain.com>
+
+2025-02-08 17:07:20,980 - INFO - Recibido: 250-PIPELINING
+250 AUTH PLAIN
+2025-02-08 17:07:20,980 - INFO - Enviado: RCPT TO:<andras.pla@google.com>
+
+2025-02-08 17:07:20,981 - INFO - Recibido: 250 Sender example@domain.com ok
+2025-02-08 17:07:20,981 - INFO - Enviado: DATA
+
+2025-02-08 17:07:20,982 - INFO - Recibido: 250 Recipient andras.pla@google.com ok
+2025-02-08 17:07:20,982 - INFO - Enviado: From: example@domain.com
+To: andras.pla@google.com
+Reply-To: support@example.com
+CC: charlie@example.com
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Subject: Test Email
+
+This is a test email.
+.
+
+2025-02-08 17:07:20,983 - INFO - Recibido: 354 End data with <CR><LF>.<CR><LF>
+2025-02-08 17:07:20,983 - INFO - Enviado: QUIT
+
+2025-02-08 17:07:20,984 - INFO - Recibido: 250 Ok: queued as VVgzi7BMtzUIBYm4HNabEdoXr3ZI24C1EMMW59Z3QsI=@mailhog.example
+2025-02-08 17:07:20,984 - INFO - Conexión cerrada.
+2025-02-08 17:08:39,120 - INFO - Conexión establecida con localhost:1025
+2025-02-08 17:08:39,121 - INFO - Enviado: EHLO localhost
+
+2025-02-08 17:08:39,122 - INFO - Recibido: 220 mailhog.example ESMTP MailHog
+2025-02-08 17:08:46,453 - INFO - Enviado: MAIL FROM:<example@domain.com>
+
+2025-02-08 17:08:46,454 - INFO - Recibido: 250-Hello localhost
+250-PIPELINING
+250 AUTH PLAIN
+2025-02-08 17:08:48,269 - INFO - Enviado: RCPT TO:<andras.pla@google.com>
+
+2025-02-08 17:08:48,269 - INFO - Recibido: 250 Sender example@domain.com ok
+250 Recipient andras.pla@google.com ok
+2025-02-08 17:09:43,705 - INFO - Enviado: DATA
+
+2025-02-08 17:09:43,706 - INFO - Recibido: 354 End data with <CR><LF>.<CR><LF>
+2025-02-08 17:09:43,709 - INFO - Enviado: From: example@domain.com
+To: andras.pla@google.com
+Reply-To: support@example.com
+CC: charlie@example.com
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Subject: Test Email
+
+This is a test email.
+.
+
+2025-02-08 17:09:43,711 - INFO - Recibido: 250 Ok: queued as 3sJI9G8iP2gQrygZQnmtE_uCPXDV4FuuYD3JVtUneic=@mailhog.example
+2025-02-08 17:09:45,351 - INFO - Enviado: QUIT
+
+2025-02-08 17:09:45,353 - INFO - Recibido: 221 Bye
+2025-02-08 17:09:45,355 - INFO - Conexión cerrada.
+2025-02-08 17:10:36,263 - INFO - Conexión establecida con localhost:1025
+2025-02-08 17:10:36,265 - INFO - Enviado: EHLO localhost
+
+2025-02-08 17:10:36,265 - INFO - Recibido: 220 mailhog.example ESMTP MailHog
+2025-02-08 17:10:44,149 - INFO - Enviado: MAIL FROM:<example@domain.com>
+
+2025-02-08 17:10:44,151 - INFO - Recibido: 250-Hello localhost
+250-PIPELINING
+250 AUTH PLAIN
+250 Sender example@domain.com ok
+2025-02-08 17:10:46,337 - INFO - Enviado: RCPT TO:<andras.pla@google.com>
+
+2025-02-08 17:10:46,341 - INFO - Recibido: 250 Recipient andras.pla@google.com ok
+2025-02-08 17:10:54,720 - INFO - Enviado: QUIT
+
+2025-02-08 17:10:54,721 - INFO - Recibido: 221 Bye
+2025-02-08 17:10:54,731 - INFO - Conexión cerrada.
+2025-02-08 17:19:15,746 - INFO - Conexión establecida con localhost:1025
+2025-02-08 17:19:15,747 - INFO - Enviado: EHLO localhost
+
+2025-02-08 17:19:15,748 - INFO - Recibido: 220 mailhog.example ESMTP MailHog
+250-Hello localhost
+2025-02-08 17:19:15,749 - INFO - Enviado: MAIL FROM:<example@domain.com>
+
+2025-02-08 17:19:15,749 - INFO - Recibido: 250-PIPELINING
+250 AUTH PLAIN
+2025-02-08 17:19:15,749 - INFO - Enviado: RCPT TO:<andras.pla@google.com>
+
+2025-02-08 17:19:15,750 - INFO - Recibido: 250 Sender example@domain.com ok
+2025-02-08 17:19:15,751 - INFO - Enviado: QUIT
+
+2025-02-08 17:19:15,751 - INFO - Recibido: 250 Recipient andras.pla@google.com ok
+2025-02-08 17:19:15,751 - INFO - Conexión cerrada.
+2025-02-08 17:19:39,964 - INFO - Conexión establecida con localhost:1025
+2025-02-08 17:19:39,969 - INFO - Enviado: EHLO localhost
+
+2025-02-08 17:19:39,970 - INFO - Recibido: 220 mailhog.example ESMTP MailHog
+250-Hello localhost
+250-PIPELINING
+250 AUTH PLAIN
+2025-02-08 17:19:47,598 - INFO - Enviado: MAIL FROM:<example@domain.com>
+
+2025-02-08 17:19:47,599 - INFO - Recibido: 250 Sender example@domain.com ok
+2025-02-08 17:19:52,689 - INFO - Enviado: RCPT TO:<andras.pla@google.com>
+
+2025-02-08 17:19:52,690 - INFO - Recibido: 250 Recipient andras.pla@google.com ok
+2025-02-08 17:20:58,493 - INFO - Conexión establecida con localhost:1025
+2025-02-08 17:20:58,495 - INFO - Enviado: EHLO localhost
+
+2025-02-08 17:20:58,495 - INFO - Recibido: 220 mailhog.example ESMTP MailHog
+2025-02-08 17:21:08,354 - INFO - Enviado: MAIL FROM:<example@domain.com>
+
+2025-02-08 17:21:08,355 - INFO - Recibido: 250-Hello localhost
+250-PIPELINING
+250 AUTH PLAIN
+2025-02-08 17:21:13,174 - INFO - Enviado: RCPT TO:<andras.pla@google.com>
+
+2025-02-08 17:21:13,175 - INFO - Recibido: 250 Sender example@domain.com ok
+2025-02-08 18:12:43,529 - INFO - Conexión establecida con localhost:1025
+2025-02-08 18:12:43,530 - INFO - Enviado: EHLO localhost
+
+2025-02-08 18:12:43,530 - INFO - Recibido: 220 mailhog.example ESMTP MailHog
+2025-02-08 18:12:43,531 - INFO - Enviado: MAIL FROM:<user1@uh.cu>
+
+2025-02-08 18:12:43,532 - INFO - Recibido: 250-Hello localhost
+250-PIPELINING
+250 AUTH PLAIN
+2025-02-08 18:12:43,532 - INFO - Enviado: RCPT TO:<user2@uh.cu>
+
+2025-02-08 18:12:43,532 - INFO - Recibido: 250 Sender user1@uh.cu ok
+2025-02-08 18:12:43,533 - INFO - Enviado: RCPT TO:<user3@uh.cu>
+
+2025-02-08 18:12:43,533 - INFO - Recibido: 250 Recipient user2@uh.cu ok
+2025-02-08 18:12:43,533 - INFO - Enviado: DATA
+
+2025-02-08 18:12:43,533 - INFO - Recibido: 250 Recipient user3@uh.cu ok
+2025-02-08 18:12:43,533 - INFO - Enviado: From: user1@uh.cu
+To: user2@uh.cu, user3@uh.cu
+CC: cc@example.com
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Subject: Email for testing purposes
+
+Body content
+.
+
+2025-02-08 18:12:43,534 - INFO - Recibido: 354 End data with <CR><LF>.<CR><LF>
+2025-02-08 18:12:43,534 - INFO - Enviado: QUIT
+
+2025-02-08 18:12:43,535 - INFO - Recibido: 250 Ok: queued as IDO2eUEZddOw5Kti9O4KSGtVZi3IaVOUjBzZordnVCo=@mailhog.example
+2025-02-08 18:12:43,535 - INFO - Conexión cerrada.
