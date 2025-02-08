@@ -94,7 +94,7 @@ class IRCClient:
         if len(parts) < 2:
             return "⚠️ Error: Debes proporcionar un destinatario y un mensaje"
         target, message = parts
-        self.send_command(f"PRIVMSG {target} :{message}")
+        self.send_command(f"PRIVMSG {target} :{argument}")
         return self.receive_response()
 
     def send_notice(self, argument):
