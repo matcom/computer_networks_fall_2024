@@ -13,29 +13,35 @@ class IRCClient:
     def connect(self):
         """Se conecta al servidor IRC y envía el NICK y USER inicial."""
         self.sock.connect((self.host, self.port))
-
+        self.connected = True
         # Enviar comandos iniciales al servidor
         self.send_command(f"NICK {self.nick}")
         self.send_command(f"USER {self.nick} 0 * :Test User")
-
         # Esperar respuesta del servidor después de conectarse
-        response = self.receive_response()
+        self.receive_response()
 
     def send_command(self, command):
         """Envía un comando al servidor IRC en formato correcto."""
         self.sock.sendall((command + "\r\n").encode("utf-8"))
 
     def receive_response(self):
-        """Recibe datos del servidor hasta encontrar una línea completa."""
-        buffer = ""
-        while True:
-            data = self.sock.recv(4096).decode("utf-8")
-            if not data:
-                break  # Conexión cerrada
-            buffer += data
-            if "\r\n" in buffer:  # Mensaje IRC completo recibido
-                break
-        return buffer.strip()
+        """Recibe y almacena todas las respuestas del servidor hasta que no haya más datos en el buffer."""
+        try:
+            response = ""
+            self.sock.settimeout(0.5)  # Evita bloqueos infinitos si no llegan más mensajes
+            while True:
+                try:
+                    chunk = self.sock.recv(4096).decode("utf-8")
+                    if not chunk:
+                        break
+                    response += chunk
+                except socket.timeout:
+                    break  # Salimos cuando no hay más datos disponibles
+
+            return response.strip()  # Eliminamos espacios en blanco sobrantes
+        except Exception as e:
+            return f"❌ Error al recibir respuesta: {e}"
+
 
 
     def handle_command(self, command, argument):
@@ -142,7 +148,7 @@ def parse_arguments():
     parser.add_argument("-H", type=str, help="Host del servidor IRC", required=True)
     parser.add_argument("-n", type=str, help="Nickname del usuario", required=True)
     parser.add_argument("-c", type=str, help="Comando de IRC a ejecutar", required=True)
-    parser.add_argument("-a", type=str, help="Argumento del comando", required=False, default="")
+    parser.add_argument("-a", type=str, help="Argumento del comando", required=False, default="", nargs="+")
 
     return parser.parse_args()
 
@@ -154,6 +160,5 @@ if __name__ == "__main__":
     client.connect()
     # Ejecutar el comando desde el test
     response = client.handle_command(args.c, args.a)
-
     # Mostrar la respuesta del servidor
     print(response)
