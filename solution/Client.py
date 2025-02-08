@@ -155,10 +155,11 @@ def parse_arguments():
 if __name__ == "__main__":
     args = parse_arguments()
     sleep(1)
+    argument = " ".join(args.a) if isinstance(args.a, list) else args.a
     # Crear el cliente y conectar al servidor
     client = IRCClient(args.H, args.p, args.n)
     client.connect()
     # Ejecutar el comando desde el test
-    response = client.handle_command(args.c, args.a)
+    response = client.handle_command(args.c, argument)
     # Mostrar la respuesta del servidor
     print(response)
