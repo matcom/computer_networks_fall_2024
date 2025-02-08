@@ -103,7 +103,7 @@ class IRCClient:
         if len(parts) < 2:
             return "⚠️ Error: Debes proporcionar un destinatario y un mensaje"
         target, message = parts
-        self.send_command(f"NOTICE {target} :{argument}")
+        self.send_command(f"NOTICE {target} {argument}")
         return self.receive_response()
     
     def list_channels(self):
