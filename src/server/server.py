@@ -4,8 +4,8 @@ from src.grammar import httpMessage, basic_rules, httpRequest, httpResponse
 import router as r
 
 def handle_client(client_socket: socket.socket):
+  request_info, body = receive_request(client_socket)
   try:
-    request_info, body = receive_request(client_socket)
     print(f"Solicitud recibida")
     status, body = r.router.handle(request_info["uri"], request_info["method"], body)
     headers = httpResponse.build_headers(status, body)
@@ -16,7 +16,9 @@ def handle_client(client_socket: socket.socket):
     response = httpResponse.build_res(500, "Error")
     client_socket.send()
   finally:
-    client_socket.close()
+    if "Connection" in request_info["headers"] and request_info["headers"]["Connection"] == 'close':
+      print("conexión cerrada")
+      client_socket.close()
     
 def receive_request(client_socket):
   head = ""
