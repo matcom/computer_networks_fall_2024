@@ -1,5 +1,6 @@
 import argparse
 import socket
+from time import sleep
 
 class IRCClient:
     def __init__(self, host, port, nick):
@@ -7,6 +8,7 @@ class IRCClient:
         self.port = port
         self.nick = nick
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.connected= False
 
     def connect(self):
         """Se conecta al servidor IRC y envía el NICK y USER inicial."""
@@ -15,6 +17,9 @@ class IRCClient:
         # Enviar comandos iniciales al servidor
         self.send_command(f"NICK {self.nick}")
         self.send_command(f"USER {self.nick} 0 * :Test User")
+
+        # Esperar respuesta del servidor después de conectarse
+        response = self.receive_response()
 
     def send_command(self, command):
         """Envía un comando al servidor IRC en formato correcto."""
@@ -143,13 +148,12 @@ def parse_arguments():
 
 if __name__ == "__main__":
     args = parse_arguments()
-
+    sleep(1)
     # Crear el cliente y conectar al servidor
     client = IRCClient(args.H, args.p, args.n)
     client.connect()
-
     # Ejecutar el comando desde el test
     response = client.handle_command(args.c, args.a)
 
     # Mostrar la respuesta del servidor
-    # print(response)
+    print(response)
