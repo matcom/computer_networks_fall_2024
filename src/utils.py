@@ -1,3 +1,5 @@
+# src/response.py
+
 from .exceptions import SMTPException, TemporarySMTPException, PermanentSMTPException
 from .response import SMTPResponse
 import base64

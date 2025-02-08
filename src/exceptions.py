@@ -1,3 +1,5 @@
+# src/exceptions.py
+
 class SMTPException(Exception):
     pass
 

@@ -1,3 +1,5 @@
+# src/commands.py
+
 from .response import SMTPResponse
 from .connection import SMTPConnection
 from .exceptions import SMTPException, TemporarySMTPException, PermanentSMTPException
@@ -115,12 +117,7 @@ class SMTPCommands:
         
         else:
             raise SMTPException(f"Mecanismo de autenticación no soportado: {mechanism}")
-        
-        
-
-        
-
-    
+          
     def mail_from(self, sender: str, size: int = None) -> SMTPResponse:
         """
         Envía el comando MAIL FROM al servidor SMTP.
