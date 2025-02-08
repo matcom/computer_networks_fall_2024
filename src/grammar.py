@@ -82,10 +82,25 @@ class httpRequest:
     for key, value in json_headers.items():
         headers += key + ": " + value + basic_rules.crlf
     return headers
-    
   def build_req(method: str, uri:str, headers: str = None, body: str =None):
     return httpRequest.build_request_line(method, uri, httpMessage.get_http_version(1, 1)) + httpRequest.build_headers(headers) + basic_rules.crlf + body
-    
+  def get_head_info(head: str):
+    request_line, headers = head.split(basic_rules.crlf, 1)
+    method, uri, http_version = request_line.split(basic_rules.sp)
+    headers = headers.split(basic_rules.crlf)
+    header_fields = {}
+    for header in headers:
+      if not header:
+          continue
+      key, value = re.split(r":\s+", header, 1)
+      header_fields[key] = value
+    return {
+        "method": method,
+        "uri": uri,
+        "http_version": http_version,
+        "headers": header_fields
+    }
+
 class httpResponse:
   def extract_head_info(head: str):
     status_line, headers = head.split(basic_rules.crlf, 1)
@@ -104,3 +119,22 @@ class httpResponse:
         "reason_phrase": reason_phrase,
         "headers": header_fields
     }
+  def build_response_line(http_version: str, status_code: int, reason_phrase: str):
+    sp = basic_rules.sp
+    crlf = basic_rules.crlf
+    return http_version + sp + str(status_code) + sp + reason_phrase + crlf
+  def build_headers(status: int, body: str) -> dict:
+    #TODO: add more stuff
+    headers = {}
+    if len(body) > 0:
+      headers["Content-Length"] = len(body)
+    return headers
+      
+  def stringify_headers(headers: dict) -> str:
+    result = ""
+    for key, value in headers.items():
+      result += key + ": " + str(value) + basic_rules.crlf
+    return result
+      
+  def build_res(status_code: int, reason_phrase: str, headers: str = None, body: str = None):
+    return httpResponse.build_response_line(httpMessage.get_http_version(1,1), status_code, reason_phrase) + headers + basic_rules.crlf + body
