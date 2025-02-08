@@ -5,7 +5,7 @@ from utils import from_json, to_json, log
 
 # Configuración del servidor
 HOST = '127.0.0.1'  # Dirección IP del servidor
-PORT = 21         # Puerto FTP (por defecto es 21, pero usamos 2121 para evitar conflictos)
+PORT = 21         # Puerto FTP
 BUFFER_SIZE = 1024
 USERS = {"user": "pass"}  # Usuario y contraseña válidos
 
@@ -46,8 +46,20 @@ def handle_client(client_socket: socket):
         elif command == "PASS":
             authenticated = handle_pass_command(client_socket, args, user)
         elif command == "LIST" and authenticated:
-            files = os.listdir('.')
+            files = os.listdir('files')
             client_socket.send(to_json({"status_code" : "150", "message": "Here comes the directory listing.", "data": files}))
+        elif command == "RETR" and authenticated:
+            filename = args[0] if args else ""
+            try:
+                client_socket.send(to_json({"status_code" : "150", "message": "Opening data connection."}))
+                
+                pointer = open(f'files/{filename}', 'rb')
+                client_socket.sendfile(pointer)
+                pointer.close()
+                
+                client_socket.send(to_json({"status_code" : "226", "message": "Transfer complete."}))
+            except FileNotFoundError:
+                client_socket.send(to_json({"status_code" : "550", "message": "Requested action not taken. File unavailable."}))
         elif command == "QUIT":
             client_socket.send(to_json({"status_code" : "221", "message": "Goodbye."}))
             break

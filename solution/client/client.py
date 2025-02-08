@@ -44,6 +44,27 @@ def handle_command(conn: connection, command, arg1, arg2):
             print('\n'.join(rsp.data))
         else:
             print(rsp.message)
+            
+    elif(command == 'RETR'):
+        data = from_json(conn.send(to_json({'command': 'RETR', 'args': [arg1]})))
+        rsp = response(data['status_code'], data['message'])
+        
+        if(rsp.status_code == '150'):
+            log(rsp.message)
+            
+            file = conn.client_socket.recv(1024)
+            with open(arg1, 'wb') as f:
+                f.write(file)
+                
+            data = from_json(conn.client_socket.recv(1024))
+            rsp = response(data['status_code'], data['message'])
+            
+            if(rsp.status_code == '226'):
+                log(rsp.message)
+            else:
+                print(rsp.message)
+        else:
+            print(rsp.message)
     else:
         print('Invalid command.')
         
