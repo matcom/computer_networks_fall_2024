@@ -1,148 +1,461 @@
 import socket
 import os
-import threading
+from pathlib import Path
+import shutil
 
-# Configuración del servidor
-HOST = '0.0.0.0'  # Escucha en todas las interfaces
-PORT = 21         # Puerto FTP estándar
-FTP_ROOT = os.getcwd()  # Directorio raíz del servidor FTP
+class FTPServer:
+    def __init__(self, host='0.0.0.0', port=21):
+        self.host = host
+        self.port = port
+        self.current_user = None
+        self.authenticated = False  # Nuevo atributo para rastrear la autenticación
+        self.base_dir = Path.cwd()
+        self.current_dir = self.base_dir
+        self.commands = {}
+        self._register_commands()
+        self.data_port = 20
+        self.transfer_type = 'A'  # ASCII por defecto
+        self.structure = 'F'      # File por defecto
+        self.mode = 'S'          # Stream por defecto
+        self.data_socket = None
 
-# Diccionario para almacenar la información de los usuarios (simulado)
-USERS = {
-    'joel': 'joel'
-}
+    def _register_commands(self):
+        # Registro de comandos con sus funciones correspondientes
+        self.add_command("USER", self.handle_user)
+        self.add_command("PASS", self.handle_pass)
+        self.add_command("PWD", self.handle_pwd)
+        self.add_command("CWD", self.handle_cwd)
+        self.add_command("CDUP", self.handle_cdup)        
+        self.add_command("LIST", self.handle_list)
+        self.add_command("QUIT", self.handle_quit)
+        self.add_command("MKD", self.handle_mkd)
+        self.add_command("RMD", self.handle_rmd)
+        self.add_command("DELE", self.handle_dele)
+        self.add_command("RNFR", self.handle_rnfr)
+        self.add_command("RNTO", self.handle_rnto)
+        self.add_command("SYST", self.handle_syst)
+        self.add_command("HELP", self.handle_help)
+        self.add_command("NOOP", self.handle_noop)
+        self.add_command("ACCT", self.handle_acct)
+        self.add_command("SMNT", self.handle_smnt)
+        self.add_command("REIN", self.handle_rein)
+        self.add_command("PORT", self.handle_port)
+        self.add_command("PASV", self.handle_pasv)
+        self.add_command("TYPE", self.handle_type)
+        self.add_command("STRU", self.handle_stru)
+        self.add_command("MODE", self.handle_mode)
+        self.add_command("RETR", self.handle_retr)
+        self.add_command("STOR", self.handle_stor)
+        self.add_command("STOU", self.handle_stou)
+        self.add_command("APPE", self.handle_appe)
+        self.add_command("ALLO", self.handle_allo)
+        self.add_command("REST", self.handle_rest)
+        self.add_command("ABOR", self.handle_abor)
+        self.add_command("SITE", self.handle_site)
+        self.add_command("STAT", self.handle_stat)
+        self.add_command("NLST", self.handle_nlst)
 
-# Función para manejar la conexión con un cliente
-def handle_client(client_socket, client_address):
-    print(f"Conexión establecida con {client_address}")
-    current_dir = FTP_ROOT
-    authenticated = False
-    pasv_mode = False
-    pasv_socket = None
-    username = None
+    def add_command(self, cmd_name, cmd_func):
+        """Añade un nuevo comando al servidor"""
+        self.commands[cmd_name] = cmd_func
 
-    # Envía el mensaje de bienvenida
-    client_socket.send(b"220 Welcome to Python FTP Server\r\n")
+    def start(self):
+        server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        server_socket.bind((self.host, self.port))
+        server_socket.listen(5)
+        print(f"Servidor FTP iniciado en {self.host}:{self.port}")
 
-    while True:
+        while True:
+            client_socket, client_address = server_socket.accept()
+            print(f"Cliente conectado: {client_address}")
+            self.handle_client(client_socket)
+
+    def handle_client(self, client_socket):
+        client_socket.send(b"220 Bienvenido al servidor FTP\r\n")
+        self.rename_from = None  # Para el comando RNFR/RNTO
+        self.authenticated = False  # Reiniciar el estado de autenticación para cada cliente
+        
+        while True:
+            try:
+                data = client_socket.recv(1024).decode().strip()
+                if not data:
+                    break
+
+                print(f"Comando recibido: {data}")
+                cmd_parts = data.split()
+                cmd = cmd_parts[0].upper()
+                args = cmd_parts[1:] if len(cmd_parts) > 1 else []
+
+                # Comandos permitidos sin autenticación
+                if cmd in ["HELP", "QUIT", "USER", "PASS"]:
+                    self.commands[cmd](client_socket, args)
+                else:
+                    # Verificar si el cliente está autenticado
+                    if not self.authenticated:
+                        client_socket.send(b"530 Por favor inicie sesion con USER y PASS.\r\n")
+                        continue
+
+                    # Ejecutar el comando si está autenticado
+                    if cmd in self.commands:
+                        self.commands[cmd](client_socket, args)
+                    else:
+                        client_socket.send(b"502 Comando no implementado\r\n")
+
+            except Exception as e:
+                print(f"Error: {e}")
+                break
+
+        client_socket.close()
+
+    # Implementación de comandos
+    def handle_user(self, client_socket, args):
+        self.current_user = args[0] if args else None
+        client_socket.send(b"331 Usuario OK, esperando contrasena\r\n")
+
+    def handle_pass(self, client_socket, args):
+        if self.current_user:
+            self.authenticated = True  # Cliente autenticado
+            client_socket.send(b"230 Usuario logueado exitosamente\r\n")
+        else:
+            client_socket.send(b"503 Primero ingrese el usuario\r\n")
+
+    def handle_pwd(self, client_socket, args):
+        response = f"257 \"{self.current_dir.relative_to(self.base_dir)}\"\r\n"
+        client_socket.send(response.encode())
+
+    def handle_cwd(self, client_socket, args):
+        if not args:
+            client_socket.send(b"501 Sintaxis invalida\r\n")
+            return
         try:
-            # Recibe el comando del cliente
-            command = client_socket.recv(1024).decode().strip()
-            if not command:
-                break
-
-            print(f"Comando recibido: {command}")
-
-            # Procesa el comando
-            if command.startswith("USER"):
-                username = command.split()[1]
-                client_socket.send(b"331 User name okay, need password\r\n")
-            elif command.startswith("PASS"):
-                if username in USERS and USERS[username] == command.split()[1]:
-                    authenticated = True
-                    client_socket.send(b"230 User logged in, proceed\r\n")
-                else:
-                    client_socket.send(b"530 Not logged in\r\n")
-            elif command.startswith("QUIT"):
-                client_socket.send(b"221 Goodbye\r\n")
-                break
-            elif command.startswith("PWD"):
-                client_socket.send(f"257 \"{current_dir}\"\r\n".encode())
-            elif command.startswith("CWD"):
-                new_dir = command.split()[1]
-                new_path = os.path.join(current_dir, new_dir)
-                if os.path.isdir(new_path):
-                    current_dir = new_path
-                    client_socket.send(f"250 Directory changed to {current_dir}\r\n".encode())
-                else:
-                    client_socket.send(b"550 Failed to change directory\r\n")
-            elif command.startswith("PASV"):
-                if pasv_socket:
-                    pasv_socket.close()
-                pasv_socket, pasv_port = start_pasv_mode()
-                client_socket.send(f"227 Entering Passive Mode (127,0,0,1,{pasv_port // 256},{pasv_port % 256})\r\n".encode())
-                pasv_mode = True
-            elif command.startswith("LIST"):
-                if pasv_mode and pasv_socket:
-                    data_socket = pasv_socket.accept()[0]
-                    pasv_mode = False
-                else:
-                    client_socket.send(b"425 Use PASV first.\r\n")
-                    continue
-                try:
-                    files = os.listdir(current_dir)
-                    client_socket.send(b"150 Here comes the directory listing\r\n")
-                    listing = "\r\n".join(files) + "\r\n"
-                    data_socket.send(listing.encode())
-                    data_socket.close()
-                    client_socket.send(b"226 Directory send OK\r\n")
-                except Exception as e:
-                    client_socket.send(b"550 Failed to list directory\r\n")
-            elif command.startswith("RETR"):
-                if pasv_mode and pasv_socket:
-                    data_socket = pasv_socket.accept()[0]
-                    pasv_mode = False
-                else:
-                    client_socket.send(b"425 Use PASV first.\r\n")
-                    continue
-                filename = command.split()[1]
-                filepath = os.path.join(current_dir, filename)
-                if os.path.isfile(filepath):
-                    client_socket.send(b"150 Opening data connection\r\n")
-                    with open(filepath, 'rb') as f:
-                        data_socket.sendfile(f)
-                    data_socket.close()
-                    client_socket.send(b"226 Transfer complete\r\n")
-                else:
-                    client_socket.send(b"550 File not found\r\n")
-            elif command.startswith("STOR"):
-                if pasv_mode and pasv_socket:
-                    data_socket = pasv_socket.accept()[0]
-                    pasv_mode = False
-                else:
-                    client_socket.send(b"425 Use PASV first.\r\n")
-                    continue
-                filename = command.split()[1]
-                filepath = os.path.join(current_dir, filename)
-                client_socket.send(b"150 Ok to send data\r\n")
-                with open(filepath, 'wb') as f:
-                    while True:
-                        data = data_socket.recv(1024)
-                        if not data:
-                            break
-                        f.write(data)
-                data_socket.close()
-                client_socket.send(b"226 Transfer complete\r\n")
+            print(args[0])
+            if args[0] == '..':
+                print('Entrando en CDUP desde CWD')
+                self.handle_cdup(client_socket, args)
+                return
+        
+            new_path = (self.current_dir / args[0]).resolve()
+            if new_path.exists() and new_path.is_dir():
+                self.current_dir = new_path
+                client_socket.send(b"250 Directorio cambiado exitosamente\r\n")
             else:
-                client_socket.send(b"500 Command not recognized\r\n")
+                client_socket.send(b"550 Directorio no existe\r\n")
+        except:
+            client_socket.send(b"550 Error al cambiar directorio\r\n")
+            
+    def handle_cdup(self, client_socket, args):
+        """Maneja el comando CDUP (cambiar al directorio padre)"""
+        try:
+            print("Entrando en handle_cdup")
+            print("Este directorio: ", self.current_dir)
+            print("Directorio base: ", self.base_dir)
+            if self.current_dir == self.base_dir:
+                client_socket.send(b"550 No se puede subir mas. Ya estas en el directorio raiz.\r\n")
+            else:
+                # Cambiar al directorio padre
+                new_path = self.current_dir.parent.resolve()
+                
+                if new_path.exists() and new_path.is_dir():
+                    self.current_dir = new_path
+                    client_socket.send(b"250 Directorio cambiado exitosamente\r\n")
+                else:
+                    client_socket.send(b"550 Directorio no existe\r\n")
+        except:
+            client_socket.send(b"550 Error al cambiar directorio\r\n")
+                
+    def handle_list(self, client_socket, args):
+        """Maneja el comando LIST (listar archivos)"""
+        try:
+            client_socket.send(b"150 Iniciando transferencia\r\n")
+            
+            # Aceptar la conexión de datos
+            self.data_socket, _ = self.pasv_socket.accept()
+            
+            # Enviar la lista de archivos
+            files = "\r\n".join(str(f.name) for f in self.current_dir.iterdir())
+            self.data_socket.send(files.encode())
+            
+            client_socket.send(b"226 Transferencia completa\r\n")
+            self.data_socket.close()  # Cerrar el socket de datos
+            self.data_socket = None  # Reiniciar el socket de datos
         except Exception as e:
-            print(f"Error: {e}")
-            break
+            print(f"Error en LIST: {e}")
+            client_socket.send(b"550 Error al listar archivos\r\n")
 
-    print(f"Conexión cerrada con {client_address}")
-    if pasv_socket:
-        pasv_socket.close()
-    client_socket.close()
+    def handle_mkd(self, client_socket, args):
+        if not args:
+            client_socket.send(b"501 Sintaxis invalida\r\n")
+            return
+        try:
+            new_dir = (self.current_dir / args[0])
+            new_dir.mkdir(parents=True, exist_ok=True)
+            client_socket.send(f"257 \"{new_dir}\" creado\r\n".encode())
+        except:
+            client_socket.send(b"550 Error al crear directorio\r\n")
 
-# Función para iniciar el modo PASV
-def start_pasv_mode():
-    pasv_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    pasv_socket.bind((HOST, 0))
-    pasv_socket.listen(1)
-    pasv_port = pasv_socket.getsockname()[1]
-    return pasv_socket, pasv_port
+    def handle_rmd(self, client_socket, args):
+        if not args:
+            client_socket.send(b"501 Sintaxis invalida\r\n")
+            return
+        try:
+            dir_to_remove = (self.current_dir / args[0])
+            if dir_to_remove.is_dir():
+                shutil.rmtree(dir_to_remove)
+                client_socket.send(b"250 Directorio eliminado\r\n")
+            else:
+                client_socket.send(b"550 No es un directorio\r\n")
+        except:
+            client_socket.send(b"550 Error al eliminar directorio\r\n")
 
-# Función principal del servidor
-def start_ftp_server():
-    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server_socket.bind((HOST, PORT))
-    server_socket.listen(5)
-    print(f"Servidor FTP escuchando en {HOST}:{PORT}")
+    def handle_dele(self, client_socket, args):
+        if not args:
+            client_socket.send(b"501 Sintaxis invalida\r\n")
+            return
+        try:
+            file_to_delete = (self.current_dir / args[0])
+            if file_to_delete.is_file():
+                file_to_delete.unlink()
+                client_socket.send(b"250 Archivo eliminado\r\n")
+            else:
+                client_socket.send(b"550 No es un archivo\r\n")
+        except:
+            client_socket.send(b"550 Error al eliminar archivo\r\n")
 
-    while True:
-        client_socket, client_address = server_socket.accept()
-        client_thread = threading.Thread(target=handle_client, args=(client_socket, client_address))
-        client_thread.start()
+    def handle_rnfr(self, client_socket, args):
+        if not args:
+            client_socket.send(b"501 Sintaxis invalida\r\n")
+            return
+        file_path = (self.current_dir / args[0])
+        if file_path.exists():
+            self.rename_from = file_path
+            client_socket.send(b"350 Listo para RNTO\r\n")
+        else:
+            client_socket.send(b"550 Archivo no existe\r\n")
+
+    def handle_rnto(self, client_socket, args):
+        if not self.rename_from or not args:
+            client_socket.send(b"503 Comando RNFR requerido primero\r\n")
+            return
+        try:
+            new_path = (self.current_dir / args[0])
+            self.rename_from.rename(new_path)
+            client_socket.send(b"250 Archivo renombrado exitosamente\r\n")
+        except:
+            client_socket.send(b"553 Error al renombrar\r\n")
+        finally:
+            self.rename_from = None
+
+    def handle_syst(self, client_socket, args):
+        client_socket.send(b"215 UNIX Type: L8\r\n")
+
+    def handle_help(self, client_socket, args):
+        commands = ", ".join(sorted(self.commands.keys()))
+        response = f"214-Los siguientes comandos están disponibles:\r\n{commands}\r\n214 Fin de ayuda.\r\n"
+        client_socket.send(response.encode())
+
+    def handle_noop(self, client_socket, args):
+        client_socket.send(b"200 OK\r\n")
+
+    def handle_quit(self, client_socket, args):
+        client_socket.send(b"221 Goodbye\r\n")
+        return True
+
+    # Nuevos manejadores de comandos
+    def handle_acct(self, client_socket, args):
+        client_socket.send(b"230 No se requiere cuenta para este servidor\r\n")
+
+    def handle_smnt(self, client_socket, args):
+        client_socket.send(b"502 SMNT no implementado\r\n")
+
+    def handle_rein(self, client_socket, args):
+        self.current_user = None
+        self.current_dir = self.base_dir
+        client_socket.send(b"220 Servicio reiniciado\r\n")
+
+    def handle_port(self, client_socket, args):
+        client_socket.send(b"200 Comando PORT no implementado\r\n")
+
+    def handle_pasv(self, client_socket, args):
+        """Maneja el comando PASV (modo pasivo)"""
+        try:
+            # Cerrar el socket pasivo anterior si existe
+            if hasattr(self, 'pasv_socket'):
+                self.pasv_socket.close()
+            
+            # Crear un nuevo socket para la conexión de datos
+            self.pasv_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self.pasv_socket.bind((self.host, 0))  # Puerto aleatorio
+            self.pasv_socket.listen(1)
+            _, port = self.pasv_socket.getsockname()
+
+            # Obtener la dirección IP del servidor
+            ip = socket.gethostbyname(socket.gethostname())
+            port_bytes = [str(port >> 8), str(port & 0xff)]
+            response = f"227 Entering Passive Mode ({','.join(ip.split('.'))},{','.join(port_bytes)})\r\n"
+            client_socket.send(response.encode())
+        except Exception as e:
+            print(f"Error en PASV: {e}")
+            client_socket.send(b"500 Error en modo pasivo\r\n")
+
+    def handle_type(self, client_socket, args):
+        if not args:
+            client_socket.send(b"501 Sintaxis: TYPE {A,E,I,L}\r\n")
+            return
+        type_code = args[0].upper()
+        if type_code in ['A', 'E', 'I', 'L']:
+            client_socket.send(f"200 Tipo establecido a {type_code}\r\n".encode())
+        else:
+            client_socket.send(b"504 Tipo no soportado\r\n")
+
+    def handle_stru(self, client_socket, args):
+        if not args:
+            client_socket.send(b"501 Sintaxis: STRU {F,R,P}\r\n")
+            return
+        stru_code = args[0].upper()
+        if stru_code == 'F':
+            client_socket.send(b"200 Estructura establecida a File\r\n")
+        else:
+            client_socket.send(b"504 Estructura no soportada\r\n")
+
+    def handle_mode(self, client_socket, args):
+        if not args:
+            client_socket.send(b"501 Sintaxis: MODE {S,B,C}\r\n")
+            return
+        mode_code = args[0].upper()
+        if mode_code == 'S':
+            client_socket.send(b"200 Modo establecido a Stream\r\n")
+        else:
+            client_socket.send(b"504 Modo no soportado\r\n")
+
+    def handle_retr(self, client_socket, args):
+        """Maneja el comando RETR (descargar archivo)"""
+        if not args:
+            client_socket.send(b"501 Sintaxis: RETR filename\r\n")
+            return
+        try:
+            file_path = self.current_dir / args[0]
+            if file_path.is_file():
+                client_socket.send(b"150 Iniciando transferencia\r\n")
+                
+                # Aceptar la conexión de datos
+                self.data_socket, _ = self.pasv_socket.accept()
+                
+                # Enviar el archivo
+                with open(file_path, 'rb') as f:
+                    self.data_socket.sendall(f.read())
+                
+                client_socket.send(b"226 Transferencia completa\r\n")
+                self.data_socket.close()
+                self.data_socket = None
+            else:
+                client_socket.send(b"550 Archivo no encontrado\r\n")
+        except Exception as e:
+            print(f"Error en RETR: {e}")
+            client_socket.send(b"550 Error al leer archivo\r\n")
+
+    def handle_stor(self, client_socket, args):
+        """Maneja el comando STOR (subir archivo)"""
+        if not args:
+            client_socket.send(b"501 Sintaxis: STOR filename\r\n")
+            return
+        try:
+            # Verificar si el archivo ya existe
+            file_path = self.current_dir / args[0]
+            if file_path.exists():
+                client_socket.send(b"550 Archivo ya existe\r\n")
+                return
+
+            # Indicar al cliente que está listo para recibir el archivo
+            client_socket.send(b"150 Listo para recibir datos\r\n")
+
+            # Aceptar la conexión de datos
+            self.data_socket, _ = self.pasv_socket.accept()
+
+            # Recibir el archivo
+            with open(file_path, 'wb') as f:
+                while True:
+                    data = self.data_socket.recv(1024)
+                    if not data:
+                        break
+                    f.write(data)
+
+            # Confirmar que la transferencia se completó
+            client_socket.send(b"226 Transferencia completa\r\n")
+            self.data_socket.close()
+            self.data_socket = None
+        except Exception as e:
+            print(f"Error en STOR: {e}")
+            client_socket.send(b"550 Error al almacenar archivo\r\n")
+            if self.data_socket:
+                self.data_socket.close()
+                self.data_socket = None
+
+    def handle_stou(self, client_socket, args):
+        try:
+            import tempfile
+            temp_file = tempfile.NamedTemporaryFile(delete=False, dir=self.current_dir)
+            temp_name = Path(temp_file.name).name
+            client_socket.send(f"150 Archivo será almacenado como {temp_name}\r\n".encode())
+            
+            # Recibir datos
+            while True:
+                data = client_socket.recv(1024)
+                if not data:
+                    break
+                temp_file.write(data)
+            
+            temp_file.close()
+            client_socket.send(f"226 Transferencia completa. Archivo guardado como {temp_name}\r\n".encode())
+        except:
+            client_socket.send(b"550 Error al almacenar archivo\r\n")
+
+    def handle_appe(self, client_socket, args):
+        if not args:
+            client_socket.send(b"501 Sintaxis: APPE filename\r\n")
+            return
+        try:
+            file_path = self.current_dir / args[0]
+            mode = 'ab' if file_path.exists() else 'wb'
+            
+            client_socket.send(b"150 Listo para recibir datos\r\n")
+            with open(file_path, mode) as f:
+                while True:
+                    data = client_socket.recv(1024)
+                    if not data:
+                        break
+                    f.write(data)
+            
+            client_socket.send(b"226 Transferencia completa\r\n")
+        except:
+            client_socket.send(b"550 Error al anexar al archivo\r\n")
+
+    def handle_allo(self, client_socket, args):
+        client_socket.send(b"200 ALLO no necesario\r\n")
+
+    def handle_rest(self, client_socket, args):
+        client_socket.send(b"502 REST no implementado\r\n")
+
+    def handle_abor(self, client_socket, args):
+        client_socket.send(b"226 ABOR procesado\r\n")
+
+    def handle_site(self, client_socket, args):
+        client_socket.send(b"200 Comando SITE no soportado\r\n")
+
+    def handle_stat(self, client_socket, args):
+        response = "211-Estado del servidor FTP\r\n"
+        response += f"    Usuario: {self.current_user}\r\n"
+        response += f"    Directorio actual: {self.current_dir}\r\n"
+        response += "211 Fin del estado\r\n"
+        client_socket.send(response.encode())
+
+    def handle_nlst(self, client_socket, args):
+        try:
+            files = "\r\n".join(str(f.name) for f in self.current_dir.iterdir() if f.is_file())
+            response = f"150 Lista de archivos:\r\n{files}\r\n226 Transferencia completa\r\n"
+            client_socket.send(response.encode())
+        except:
+            client_socket.send(b"550 Error al listar archivos\r\n")
 
 if __name__ == "__main__":
-    start_ftp_server()
+    server = FTPServer()
+    server.start()

@@ -1,189 +1,245 @@
 import socket
-import ssl
-import argparse
+import os
 import re
+from pathlib import Path
 
-commands = [
-    "USER", "PASS", "ACCT", "CWD", "CDUP", "SMNT", "REIN", "QUIT", "PORT", "PASV", "TYPE", "STRU", "MODE", "RETR", 
-    "STOR", "STOU", "APPE", "ALLO", "REST", "RNFR", "RNTO", "ABOR", "DELE", "RMD", "MKD", "PWD", "LIST", "NLST", 
-    "SITE", "SYST", "STAT", "HELP", "NOOP"
-]
+class FTPClient:
+    def __init__(self, host='127.0.0.1', port=21):
+        self.host = host
+        self.port = port
+        self.commands = {}
+        self._register_commands()
+        self.downloads_folder = str(Path.cwd() / "Downloads")  # Carpeta local Downloads
+        # Crear la carpeta si no existe
+        os.makedirs(self.downloads_folder, exist_ok=True)
+        print(f"Carpeta de descargas: {self.downloads_folder}")
 
-def connect_to_server(server, port, use_tls=False):
-    """
-    Conecta al servidor FTP.
-    Si use_tls es True, establece una conexión segura (TLS/SSL).
-    """
-    client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    client_socket.connect((server, port))
+    def _register_commands(self):
+        # Registro de comandos con sus descripciones
+        self.add_command("USER", "Especifica el usuario")
+        self.add_command("PASS", "Especifica la contraseña")
+        self.add_command("PWD", "Muestra el directorio actual")
+        self.add_command("CWD", "Cambia el directorio de trabajo")       
+        self.add_command("CDUP", "Cambia el directorio de trabajo al directorio padre")       
+        self.add_command("LIST", "Lista archivos y directorios")
+        self.add_command("MKD", "Crea un directorio")
+        self.add_command("RMD", "Elimina un directorio")
+        self.add_command("DELE", "Elimina un archivo")
+        self.add_command("RNFR", "Especifica el archivo a renombrar")
+        self.add_command("RNTO", "Especifica el nuevo nombre")
+        self.add_command("QUIT", "Cierra la conexión")
+        self.add_command("HELP", "Muestra la ayuda")
+        self.add_command("SYST", "Muestra información del sistema")
+        self.add_command("NOOP", "No realiza ninguna operación")
+        self.add_command("ACCT", "Especifica la cuenta del usuario")
+        self.add_command("SMNT", "Monta una estructura de sistema de archivos")
+        self.add_command("REIN", "Reinicia la conexión")
+        self.add_command("PORT", "Especifica dirección y puerto para conexión")
+        self.add_command("PASV", "Entra en modo pasivo")
+        self.add_command("TYPE", "Establece el tipo de transferencia")
+        self.add_command("STRU", "Establece la estructura de archivo")
+        self.add_command("MODE", "Establece el modo de transferencia")
+        self.add_command("RETR", "Recupera un archivo")
+        self.add_command("STOR", "Almacena un archivo")
+        self.add_command("STOU", "Almacena un archivo con nombre único")
+        self.add_command("APPE", "Añade datos a un archivo")
+        self.add_command("ALLO", "Reserva espacio")
+        self.add_command("REST", "Reinicia transferencia desde punto")
+        self.add_command("ABOR", "Aborta operación en progreso")
+        self.add_command("SITE", "Comandos específicos del sitio")
+        self.add_command("STAT", "Retorna estado actual")
+        self.add_command("NLST", "Lista nombres de archivos")
 
-    if use_tls:
-        # Enviar el comando AUTH TLS
-        client_socket.sendall(b"AUTH TLS\r\n")
-        response = client_socket.recv(1024).decode().strip()
-        print(f"auth: {response}")
+    def add_command(self, cmd_name, description):
+        """Añade un nuevo comando al cliente"""
+        self.commands[cmd_name] = description
+
+    def send_command(self, sock, command, *args):
+        full_command = f"{command} {' '.join(args)}".strip()
+        sock.send(f"{full_command}\r\n".encode())
         
-        if "234" in response:  # Código 234 indica que el servidor acepta TLS
-            # Configura el contexto SSL
-            context = ssl.create_default_context()
-            tls_socket = context.wrap_socket(client_socket, server_hostname=server)
-            return tls_socket
-        else:
-            print("Error: El servidor no acepta AUTH TLS.")
-            client_socket.close()
+        response = ""
+        while True:
+            data = sock.recv(1024).decode()
+            if not data:  # Si no hay más datos, salir del bucle
+                break
+            response += data
+            # Verificar si la respuesta termina con un código de estado (por ejemplo, "226")
+            if re.search(r"\d{3} .*\r\n", response):
+                break
+        
+        return response
+    
+    def send_command_multiresponse(self, sock, command, *args):
+        full_command = f"{command} {' '.join(args)}".strip()
+        sock.send(f"{full_command}\r\n".encode())
+        
+        response = ""
+        while True:
+            data = sock.recv(1024).decode()
+            if not data:  # Si no hay más datos, salir del bucle
+                break
+            response += data
+            # Verificar si la respuesta termina con un código de estado (por ejemplo, "226")
+            if re.search(r"226 .*\r\n", response):
+                break
+        
+        return response
+
+    def send_file(self, sock, filename):
+        """Envía un archivo al servidor"""
+        try:
+            with open(filename, 'rb') as f:
+                data = f.read()
+                sock.send(data)
+            return True
+        except:
+            return False
+
+    def receive_file(self, sock, filename):
+        """Recibe un archivo del servidor en la carpeta Downloads local"""
+        try:
+            # Construir la ruta completa en la carpeta Downloads local
+            download_path = os.path.join(self.downloads_folder, filename)
+            with open(download_path, 'wb') as f:
+                while True:
+                    data = sock.recv(1024)
+                    if not data or b"226" in data:  # Detectar fin de transferencia
+                        break
+                    f.write(data)
+            print(f"Archivo guardado en: {download_path}")
+            return True
+        except Exception as e:
+            print(f"Error al recibir archivo: {e}")
+            return False
+        
+    def enter_passive_mode(self, control_sock):
+        """Entra en modo pasivo y devuelve el socket de datos"""
+        response = self.send_command(control_sock, "PASV")
+        print(response)
+
+        # Extraer la dirección IP y el puerto de la respuesta
+        match = re.search(r'(\d+),(\d+),(\d+),(\d+),(\d+),(\d+)', response)
+        if not match:
+            print("No se pudo entrar en modo pasivo")
             return None
-    else:
-        return client_socket
 
-def send_command(client_socket, command):
-    """
-    Envía un comando al servidor FTP y devuelve la respuesta.
-    """
-    client_socket.sendall(command.encode() + b"\r\n")
-    response = client_socket.recv(1024).decode().strip()
-    return response
-
-def parse_pasv_response(response):
-    """
-    Extrae la dirección IP y el puerto de la respuesta PASV.
-    """
-    match = re.search(r"(\d+),(\d+),(\d+),(\d+),(\d+),(\d+)", response)
-    if match:
+        # Construir la dirección IP y el puerto
         ip = ".".join(match.groups()[:4])
-        port = int(match.groups()[4]) * 256 + int(match.groups()[5])
-        return ip, port
-    return None, None  # Si no se puede parsear la respuesta
-
-def handle_data_transfer(command, pasv_response, server, client_socket, argument1, argument2=None):
-    if "227" in pasv_response:  # Código 227: Entrando en modo pasivo
-        ip, port = parse_pasv_response(pasv_response)
-        if ip and port:
-            # Establece la conexión de datos
-            data_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            data_socket.connect((ip, port))
-
-            if command == "RETR":
-                # Ejecuta el comando RETR
-                retr_response = send_command(client_socket, f"RETR {argument1}")
-                print(retr_response)
-
-                if "150" in retr_response:  # Código 150: Preparándose para la transferencia
-                    # Recibe los datos del archivo
-                    with open(argument1, "wb") as f:
-                        while True:
-                            file_data = data_socket.recv(1024)
-                            if not file_data:
-                                break
-                            f.write(file_data)
-
-                    # Cierra la conexión de datos
-                    data_socket.close()
-
-                    # Recibe la confirmación de finalización
-                    completion_response = client_socket.recv(1024).decode().strip()
-                    print(completion_response)
-                else:
-                    print("Error en la transferencia del archivo.")
-
-            elif command == "STOR":
-                # Ejecuta el comando STOR
-                stor_response = send_command(client_socket, f"STOR {argument2}")
-                print(stor_response)
-
-                if "150" in stor_response:  # Código 150: Preparándose para la transferencia
-                    # Envía el archivo al servidor
-                    with open(argument1, "rb") as f:
-                        while True:
-                            file_data = f.read(1024)
-                            if not file_data:
-                                break
-                            data_socket.sendall(file_data)
-
-                    # Cierra la conexión de datos
-                    data_socket.close()
-
-                    # Recibe la confirmación de finalización
-                    completion_response = client_socket.recv(1024).decode().strip()
-                    print(completion_response)
-                else:
-                    print("Error en la transferencia del archivo.")
-        else:
-            print("Error al procesar la respuesta PASV")
-    else:
-        print("Error al entrar en modo PASV")
-
-def ftp_client(argvs):
-    """
-    Función principal del cliente FTP.
-    """
-    server = argvs.host
-    port = argvs.port
-    username = argvs.username
-    password = argvs.password
-    use_tls = argvs.use_tls  # Usar o no TLS
-
-    try:
-        # Conecta al servidor
-        client_socket = connect_to_server(server, port, use_tls)
-        if not client_socket:
-            return
-
-        # Recibe el mensaje de bienvenida del servidor
-        welcome_message = client_socket.recv(1024).decode().strip()
-        print(welcome_message)
-
-        # Autenticación con USER y PASS
-        user_response = send_command(client_socket, f"USER {username}")
-        print(user_response)
+        port = (int(match.group(5)) << 8) + int(match.group(6))
         
-        pass_response = send_command(client_socket, f"PASS {password}")
-        print(pass_response)
+        # Si la dirección IP es 0.0.0.0, usar la dirección IP del servidor
+        if ip == "0.0.0.0":
+            ip = self.host
 
-        # Verifica si la autenticación fue exitosa
-        if "230" in pass_response:  # Código 230: Usuario autenticado
-            print("Autenticación exitosa. Puedes comenzar a enviar comandos.")
+        # Crear un nuevo socket para la conexión de datos
+        data_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        data_sock.connect((ip, port))
+
+        return data_sock
+
+    def start(self):
+        client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        try:
+            client_socket.connect((self.host, self.port))
+            print(client_socket.recv(1024).decode())
+
             while True:
-                # Solicita un comando al usuario
-                command = input("ftp> ").strip()
-                if command.upper() == "QUIT":
-                    send_command(client_socket, "QUIT")
-                    print("Cerrando conexión...")
-                    break
+                try:
+                    command = input("FTP> ").strip().split()
+                    if not command:
+                        continue
 
-                # Manejo especial para comandos que requieren transferencia de datos
-                if command.upper().startswith("RETR") or command.upper().startswith("STOR"):
-                    pasv_response = send_command(client_socket, "PASV")
-                    print(pasv_response)
-                    args = command.split()
-                    handle_data_transfer(args[0], pasv_response, server, client_socket, args[1], args[1] if len(args) > 1 else None)
-                else:
-                    # Ejecuta otros comandos
-                    if command.upper() in commands:
-                        response = send_command(client_socket, command)
-                        print(response)
+                    cmd = command[0].upper()
+                    args = command[1:] if len(command) > 1 else []
+
+                    if cmd == "HELP":
+                        if args:
+                            cmd_help = args[0].upper()
+                            if cmd_help in self.commands:
+                                print(f"{cmd_help}: {self.commands[cmd_help]}")
+                            else:
+                                print(f"Comando '{cmd_help}' no reconocido")
+                        else:
+                            print("\nComandos disponibles:")
+                            for cmd_name, desc in sorted(self.commands.items()):
+                                print(f"{cmd_name}: {desc}")
+                        continue
+
+                    if cmd in self.commands:
+                        # Manejo especial para comandos que requieren modo pasivo
+                        if cmd in ["LIST", "RETR", "STOR", "APPE"]:
+                            data_sock = self.enter_passive_mode(client_socket)
+                            if not data_sock:
+                                continue
+
+                            try:
+                                if cmd == "LIST":
+                                    response = self.send_command_multiresponse(client_socket, cmd)
+                                    print(response)
+                                    if "150" in response:
+                                        data = data_sock.recv(4096).decode()
+                                        print(data)
+                                    data_sock.close()  # Cerrar el socket de datos
+
+                                elif cmd in ["RETR", "STOR", "APPE"]:
+                                    if len(args) < 1:
+                                        print(f"Uso: {cmd} <filename>")
+                                        continue
+
+                                    filename = args[0]
+                                    if cmd == "STOR":
+                                        if os.path.exists(filename):
+                                            response = self.send_command_multiresponse(client_socket, cmd, filename)
+                                            print(response)
+                                            if "150" in response:
+                                                if self.send_file(data_sock, filename):
+                                                    print("Archivo enviado exitosamente")
+                                                else:
+                                                    print("Error al enviar archivo")
+                                        else:
+                                            print("Archivo no encontrado")
+
+                                    elif cmd == "RETR":
+                                        response = self.send_command_multiresponse(client_socket, cmd, filename)
+                                        print(response)
+                                        if "150" in response:
+                                            if self.receive_file(data_sock, filename):
+                                                print("Archivo recibido exitosamente")
+                                            else:
+                                                print("Error al recibir archivo")
+
+                                    elif cmd == "APPE":
+                                        if os.path.exists(filename):
+                                            response = self.send_command_multiresponse(client_socket, cmd, filename)
+                                            print(response)
+                                            if "150" in response:
+                                                if self.send_file(data_sock, filename):
+                                                    print("Archivo anexado exitosamente")
+                                                else:
+                                                    print("Error al anexar archivo")
+                                        else:
+                                            print("Archivo no encontrado")
+                            finally:
+                                data_sock.close()  # Cerrar el socket de datos
+
+                        else:
+                            # Comandos que no requieren modo pasivo
+                            response = self.send_command(client_socket, cmd, *args)
+                            print(response)
+                            if cmd == "QUIT":
+                                break
                     else:
-                        print("Comando no soportado.")
-        else:
-            print("Error de autenticación. Verifica las credenciales.")
+                        print("Comando no reconocido")
 
-    except Exception as e:
-        print(f"Error durante la ejecución: {e}")
-    finally:
-        # Cierra la conexión
-        if client_socket:
+                except Exception as e:
+                    print(f"Error: {e}")
+
+        except Exception as e:
+            print(f"Error de conexión: {e}")
+        finally:
             client_socket.close()
-
+    
 if __name__ == "__main__":
-    # Configura el parser de argumentos
-    parser = argparse.ArgumentParser(description="Cliente FTP en Python", add_help=False)
-    parser.add_argument("-h", "--host", required=True, help="Dirección del servidor FTP")
-    parser.add_argument("-p", "--port", type=int, default=21, help="Puerto del servidor FTP")
-    parser.add_argument("-u", "--username", required=True, help="Nombre de usuario")
-    parser.add_argument("-w", "--password", required=True, help="Contraseña")
-    parser.add_argument("--use_tls", action="store_true", help="Usar TLS/SSL para la conexión")
-
-    # Parsea los argumentos
-    argvs = parser.parse_args()
-
-    # Llama a la función principal del cliente FTP
-    ftp_client(argvs)
+    client = FTPClient()
+    client.start()
