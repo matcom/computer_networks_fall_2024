@@ -27,9 +27,13 @@ class httpClient:
                 raise ConnectionError(f"Failed to connect to {self.host}:{self.port}", self.host, self.port) from e
             
             try:
-                request = httpRequest.build_req(method=method, uri=self.path, headers=header, body=data)
+                if method == "CONNECT":
+                    uri = f"{self.host}:{self.port}"
+                else:
+                    uri = self.path
+                request = httpRequest.build_req(method=method, uri=uri, headers=header, body=data)
             except Exception as e:
-                raise RequestBuildError("Failed to build request", method, self.path, header, data) from e
+                raise RequestBuildError("Failed to build request", method, uri, header, data) from e
             
             try:
                 req_socket.send(request.encode())
