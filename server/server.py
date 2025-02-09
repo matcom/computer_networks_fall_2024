@@ -310,6 +310,34 @@ def cmd_SYST(client_socket):
 
     client_socket.send(response.encode())
 
+def cmd_STAT(arg, client_socket, current_dir):
+    if not arg:
+        # Si no se recibe argumento, se devuelve información del sistema
+        system_info = "FTP Server: Windows Type: L8\r\n"
+        client_socket.send(f"211- {system_info}".encode())
+        client_socket.send(b"211 End of status.\r\n")
+    else:
+        # Si se recibe un argumento, se devuelve información sobre el archivo o directorio
+        target_path = os.path.join(current_dir, arg)
+        
+        if not os.path.exists(target_path):
+            client_socket.send(b"550 File or directory not found.\r\n")
+            return
+        
+        # Si es un archivo
+        if os.path.isfile(target_path):
+            file_info = os.stat(target_path)
+            last_modified = time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime(file_info.st_mtime))
+            file_size = file_info.st_size
+            response = f"213 {last_modified} {file_size} {target_path}\r\n"
+            client_socket.send(response.encode())
+        # Si es un directorio
+        elif os.path.isdir(target_path):
+            response = f"213 Directory: {target_path} exists.\r\n"
+            client_socket.send(response.encode())
+        else:
+            client_socket.send(b"550 Not a valid file or directory.\r\n")
+
 
 #-------------------------------------------------------------------------------------------------------------------------
 
