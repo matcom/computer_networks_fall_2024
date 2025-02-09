@@ -2,9 +2,11 @@ import socket
 import os
 import re
 import sys
+import struct
 
 BUFFER_SIZE = 1024
 TYPE = 'A'
+MODE = 'B'
 DATA_SOCKET = None                  # Socket de transferencia utilizado para transferencia de datos
 
 # Funciones -------------------------------------------------------------------------------------------------------------------
@@ -123,6 +125,18 @@ def generic_command_by_type(socket, *args, command, command_type):
         if not socket is None:
             socket.close()
 
+    if command == 'MODE':
+        if args[0] == 'S':
+            MODE = 'S'
+        elif args[0] == 'B':
+            MODE = 'B'
+
+    if command == 'TYPE':
+        if args[0] == 'A':
+            MODE = 'A'
+        elif args[0] == 'I':
+            MODE = 'I'
+
     return response
 
 def cmd_STOR_APPE_STOU(socket, *args, command):
@@ -155,7 +169,10 @@ def cmd_STOR_APPE_STOU(socket, *args, command):
                 chunk = file.read(BUFFER_SIZE)
                 if not chunk:
                     break # Se sale del bucle cuando no hay más datos para enviar
-                data_socket.sendall(chunk.encode())
+                if TYPE == 'A':
+                    data_socket.sendall(chunk.encode())
+                else:
+                    data_socket.sendall(chunk)
     finally:
         # Asegurarse de que el socket de datos se cierre correctamente
         data_socket.close()
@@ -184,17 +201,47 @@ def cmd_RETR(socket, *args):
 
         # Recibir el archivo y guardarlo en la carpeta Downloads
         with open(f'Downloads/{args[0]}', w_mode) as file:
-            while True:
-                try:
-                    chunk = data_socket.recv(BUFFER_SIZE)
-                    if not chunk:
+
+            if MODE == 'S':
+                while True:
+                    try:
+                        chunk = data_socket.recv(BUFFER_SIZE)
+                        if not chunk:
+                            break
+                        if TYPE == 'A':
+                            file.write(chunk.decode())
+                        else:
+                            file.write(chunk)
+                    except socket.timeout:
                         break
+            else:
+                while True:
+                    # Recibir el encabezado del bloque (1 byte de tipo + 2 bytes de longitud)
+                    header = data_socket.recv(3)
+                    if not header:
+                        break  # Fin de la transferencia
+
+                    block_type, block_size = struct.unpack(">BH", header)
+
+                    # Si es un bloque EOF (0x80), finaliza la transferencia
+                    if block_type == 0x80:
+                        print("Fin de archivo alcanzado (EOF).")
+                        break
+
+                    # Recibir los datos del bloque
+                    data = data_socket.recv(block_size)
+                    if not data:
+                        break  # Fin de la transferencia
+
+                    # Escribir los datos en el archivo
                     if TYPE == 'A':
-                        file.write(chunk.decode())
+                        file.write(data.decode())
                     else:
-                        file.write(chunk)
-                except socket.timeout:
-                    break
+                        file.write(data)
+            
+
+            
+        
     finally:
         # Asegurarse de que el socket de datos se cierre correctamente
         data_socket.close()
