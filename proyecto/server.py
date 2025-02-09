@@ -3,7 +3,7 @@ import os
 from pathlib import Path
 import shutil
 
-class FTPServer:
+class ServerFTP:
     def __init__(self, host='0.0.0.0', port=21):
         self.host = host
         self.port = port
@@ -11,53 +11,46 @@ class FTPServer:
         self.authenticated = False  # Nuevo atributo para rastrear la autenticación
         self.base_dir = Path.cwd()
         self.current_dir = self.base_dir
-        self.commands = {}
-        self._register_commands()
+        self.commands = {
+            "USER": self.handle_user,
+            "PASS": self.handle_pass,
+            "PWD" : self.handle_pwd,
+            "CWD" : self.handle_cwd,
+            "CDUP": self.handle_cdup,
+            "LIST": self.handle_list,
+            "QUIT": self.handle_quit,
+            "MKD" : self.handle_mkd,
+            "RMD" : self.handle_rmd,
+            "DELE": self.handle_dele,
+            "RNFR": self.handle_rnfr,
+            "RNTO": self.handle_rnto,
+            "SYST": self.handle_syst,
+            "HELP": self.handle_help,
+            "NOOP": self.handle_noop,
+            "ACCT": self.handle_acct,
+            "SMNT": self.handle_smnt,
+            "REIN": self.handle_rein,
+            "PORT": self.handle_port,
+            "PASV": self.handle_pasv,
+            "TYPE": self.handle_type,
+            "STRU": self.handle_stru,
+            "MODE": self.handle_mode,
+            "RETR": self.handle_retr,
+            "STOR": self.handle_stor,
+            "STOU": self.handle_stou,
+            "APPE": self.handle_appe,
+            "ALLO": self.handle_allo,
+            "REST": self.handle_rest,
+            "ABOR": self.handle_abor,
+            "SITE": self.handle_site,
+            "STAT": self.handle_stat,
+            "NLST": self.handle_nlst
+        }
         self.data_port = 20
         self.transfer_type = 'A'  # ASCII por defecto
         self.structure = 'F'      # File por defecto
         self.mode = 'S'          # Stream por defecto
         self.data_socket = None
-
-    def _register_commands(self):
-        # Registro de comandos con sus funciones correspondientes
-        self.add_command("USER", self.handle_user)
-        self.add_command("PASS", self.handle_pass)
-        self.add_command("PWD", self.handle_pwd)
-        self.add_command("CWD", self.handle_cwd)
-        self.add_command("CDUP", self.handle_cdup)        
-        self.add_command("LIST", self.handle_list)
-        self.add_command("QUIT", self.handle_quit)
-        self.add_command("MKD", self.handle_mkd)
-        self.add_command("RMD", self.handle_rmd)
-        self.add_command("DELE", self.handle_dele)
-        self.add_command("RNFR", self.handle_rnfr)
-        self.add_command("RNTO", self.handle_rnto)
-        self.add_command("SYST", self.handle_syst)
-        self.add_command("HELP", self.handle_help)
-        self.add_command("NOOP", self.handle_noop)
-        self.add_command("ACCT", self.handle_acct)
-        self.add_command("SMNT", self.handle_smnt)
-        self.add_command("REIN", self.handle_rein)
-        self.add_command("PORT", self.handle_port)
-        self.add_command("PASV", self.handle_pasv)
-        self.add_command("TYPE", self.handle_type)
-        self.add_command("STRU", self.handle_stru)
-        self.add_command("MODE", self.handle_mode)
-        self.add_command("RETR", self.handle_retr)
-        self.add_command("STOR", self.handle_stor)
-        self.add_command("STOU", self.handle_stou)
-        self.add_command("APPE", self.handle_appe)
-        self.add_command("ALLO", self.handle_allo)
-        self.add_command("REST", self.handle_rest)
-        self.add_command("ABOR", self.handle_abor)
-        self.add_command("SITE", self.handle_site)
-        self.add_command("STAT", self.handle_stat)
-        self.add_command("NLST", self.handle_nlst)
-
-    def add_command(self, cmd_name, cmd_func):
-        """Añade un nuevo comando al servidor"""
-        self.commands[cmd_name] = cmd_func
 
     def start(self):
         server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -358,15 +351,18 @@ class FTPServer:
         if not args:
             client_socket.send(b"501 Sintaxis: STOR filename\r\n")
             return
+
         try:
             # Verificar si el archivo ya existe
-            file_path = self.current_dir / args[0]
+            file_path = self.current_dir / Path(args[0]).name
+            print(file_path)
             if file_path.exists():
                 client_socket.send(b"550 Archivo ya existe\r\n")
                 return
 
             # Indicar al cliente que está listo para recibir el archivo
             client_socket.send(b"150 Listo para recibir datos\r\n")
+            print(b"150 Listo para recibir datos\r\n")
 
             # Aceptar la conexión de datos
             self.data_socket, _ = self.pasv_socket.accept()
@@ -374,6 +370,7 @@ class FTPServer:
             # Recibir el archivo
             with open(file_path, 'wb') as f:
                 while True:
+                    print("hola")
                     data = self.data_socket.recv(1024)
                     if not data:
                         break
@@ -381,11 +378,13 @@ class FTPServer:
 
             # Confirmar que la transferencia se completó
             client_socket.send(b"226 Transferencia completa\r\n")
-            self.data_socket.close()
-            self.data_socket = None
+
         except Exception as e:
             print(f"Error en STOR: {e}")
             client_socket.send(b"550 Error al almacenar archivo\r\n")
+
+        finally:
+            # Cerrar el socket de datos
             if self.data_socket:
                 self.data_socket.close()
                 self.data_socket = None
@@ -457,5 +456,5 @@ class FTPServer:
             client_socket.send(b"550 Error al listar archivos\r\n")
 
 if __name__ == "__main__":
-    server = FTPServer()
+    server = ServerFTP()
     server.start()

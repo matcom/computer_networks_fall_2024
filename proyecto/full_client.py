@@ -7,52 +7,45 @@ class FTPClient:
     def __init__(self, host='127.0.0.1', port=21):
         self.host = host
         self.port = port
-        self.commands = {}
-        self._register_commands()
+        self.commands_help = {
+            "USER": "Especifica el usuario",
+            "PASS": "Especifica la contraseña",
+            "PWD" : "Muestra el directorio actual",
+            "CWD" : "Cambia el directorio de trabajo",
+            "CDUP": "Cambia el directorio de trabajo al directorio padre",
+            "LIST": "Lista archivos y directorios",
+            "MKD" : "Crea un directorio",
+            "RMD" : "Elimina un directorio",
+            "DELE": "Elimina un archivo",
+            "RNFR": "Especifica el archivo a renombrar",
+            "RNTO": "Especifica el nuevo nombre",
+            "QUIT": "Cierra la conexión",
+            "HELP": "Muestra la ayuda",
+            "SYST": "Muestra información del sistema",
+            "NOOP": "No realiza ninguna operación",
+            "ACCT": "Especifica la cuenta del usuario",
+            "SMNT": "Monta una estructura de sistema de archivos",
+            "REIN": "Reinicia la conexión",
+            "PORT": "Especifica dirección y puerto para conexión",
+            "PASV": "Entra en modo pasivo",
+            "TYPE": "Establece el tipo de transferencia",
+            "STRU": "Establece la estructura de archivo",
+            "MODE": "Establece el modo de transferencia",
+            "RETR": "Recupera un archivo",
+            "STOR": "Almacena un archivo",
+            "STOU": "Almacena un archivo con nombre único",
+            "APPE": "Añade datos a un archivo",
+            "ALLO": "Reserva espacio",
+            "REST": "Reinicia transferencia desde punto",
+            "ABOR": "Aborta operación en progreso",
+            "SITE": "Comandos específicos del sitio",
+            "STAT": "Retorna estado actual",
+            "NLST": "Lista nombres de archivos"
+        }
         self.downloads_folder = str(Path.cwd() / "Downloads")  # Carpeta local Downloads
         # Crear la carpeta si no existe
         os.makedirs(self.downloads_folder, exist_ok=True)
         print(f"Carpeta de descargas: {self.downloads_folder}")
-
-    def _register_commands(self):
-        # Registro de comandos con sus descripciones
-        self.add_command("USER", "Especifica el usuario")
-        self.add_command("PASS", "Especifica la contraseña")
-        self.add_command("PWD", "Muestra el directorio actual")
-        self.add_command("CWD", "Cambia el directorio de trabajo")       
-        self.add_command("CDUP", "Cambia el directorio de trabajo al directorio padre")       
-        self.add_command("LIST", "Lista archivos y directorios")
-        self.add_command("MKD", "Crea un directorio")
-        self.add_command("RMD", "Elimina un directorio")
-        self.add_command("DELE", "Elimina un archivo")
-        self.add_command("RNFR", "Especifica el archivo a renombrar")
-        self.add_command("RNTO", "Especifica el nuevo nombre")
-        self.add_command("QUIT", "Cierra la conexión")
-        self.add_command("HELP", "Muestra la ayuda")
-        self.add_command("SYST", "Muestra información del sistema")
-        self.add_command("NOOP", "No realiza ninguna operación")
-        self.add_command("ACCT", "Especifica la cuenta del usuario")
-        self.add_command("SMNT", "Monta una estructura de sistema de archivos")
-        self.add_command("REIN", "Reinicia la conexión")
-        self.add_command("PORT", "Especifica dirección y puerto para conexión")
-        self.add_command("PASV", "Entra en modo pasivo")
-        self.add_command("TYPE", "Establece el tipo de transferencia")
-        self.add_command("STRU", "Establece la estructura de archivo")
-        self.add_command("MODE", "Establece el modo de transferencia")
-        self.add_command("RETR", "Recupera un archivo")
-        self.add_command("STOR", "Almacena un archivo")
-        self.add_command("STOU", "Almacena un archivo con nombre único")
-        self.add_command("APPE", "Añade datos a un archivo")
-        self.add_command("ALLO", "Reserva espacio")
-        self.add_command("REST", "Reinicia transferencia desde punto")
-        self.add_command("ABOR", "Aborta operación en progreso")
-        self.add_command("SITE", "Comandos específicos del sitio")
-        self.add_command("STAT", "Retorna estado actual")
-        self.add_command("NLST", "Lista nombres de archivos")
-
-    def add_command(self, cmd_name, description):
-        """Añade un nuevo comando al cliente"""
-        self.commands[cmd_name] = description
 
     def send_command(self, sock, command, *args):
         full_command = f"{command} {' '.join(args)}".strip()
@@ -90,10 +83,13 @@ class FTPClient:
         """Envía un archivo al servidor"""
         try:
             with open(filename, 'rb') as f:
-                data = f.read()
-                sock.send(data)
+                data = f.read(1024)
+                while data:
+                    sock.sendall(data)
+                    data = f.read(1024)
             return True
-        except:
+        except Exception as e:
+            print(f"Error al enviar archivo: {e}")
             return False
 
     def receive_file(self, sock, filename):
@@ -156,26 +152,44 @@ class FTPClient:
                     if cmd == "HELP":
                         if args:
                             cmd_help = args[0].upper()
-                            if cmd_help in self.commands:
-                                print(f"{cmd_help}: {self.commands[cmd_help]}")
+                            if cmd_help in self.commands_help:
+                                print(f"{cmd_help}: {self.commands_help[cmd_help]}")
                             else:
                                 print(f"Comando '{cmd_help}' no reconocido")
                         else:
                             print("\nComandos disponibles:")
-                            for cmd_name, desc in sorted(self.commands.items()):
+                            for cmd_name, desc in sorted(self.commands_help.items()):
                                 print(f"{cmd_name}: {desc}")
                         continue
 
-                    if cmd in self.commands:
+                    if cmd in self.commands_help:
                         # Manejo especial para comandos que requieren modo pasivo
                         if cmd in ["LIST", "RETR", "STOR", "APPE"]:
-                            data_sock = self.enter_passive_mode(client_socket)
-                            if not data_sock:
+                            # Enviar el comando PASV y obtener la respuesta
+                            response = self.send_command(client_socket, "PASV")
+                            print(response)
+
+                            if not response.startswith("227"):
+                                print("Error: No se pudo entrar en modo pasivo")
                                 continue
+
+                            # Extraer la dirección IP y el puerto de la respuesta
+                            match = re.search(r'(\d+),(\d+),(\d+),(\d+),(\d+),(\d+)', response)
+                            if not match:
+                                print("Error: No se pudo extraer la dirección IP y el puerto")
+                                continue
+
+                            # Construir la dirección IP y el puerto
+                            ip = ".".join(match.groups()[:4])
+                            port = (int(match.group(5)) << 8) + int(match.group(6))
+
+                            # Crear un nuevo socket para la conexión de datos
+                            data_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                            data_sock.connect((ip, port))
 
                             try:
                                 if cmd == "LIST":
-                                    response = self.send_command_multiresponse(client_socket, cmd)
+                                    response = self.send_command_multiresponse(client_socket, "LIST")
                                     print(response)
                                     if "150" in response:
                                         data = data_sock.recv(4096).decode()
@@ -189,8 +203,12 @@ class FTPClient:
 
                                     filename = args[0]
                                     if cmd == "STOR":
-                                        if os.path.exists(filename):
-                                            response = self.send_command_multiresponse(client_socket, cmd, filename)
+                                        if os.path.exists(filename):                                    # Enviar el archivo
+                                            if self.send_file(data_sock, filename):
+                                                print("Archivo enviado exitosamente")
+                                            else:
+                                                print("Error al enviar archivo")
+                                            response = self.send_command_multiresponse(client_socket, "STOR", filename)
                                             print(response)
                                             if "150" in response:
                                                 if self.send_file(data_sock, filename):
@@ -201,7 +219,7 @@ class FTPClient:
                                             print("Archivo no encontrado")
 
                                     elif cmd == "RETR":
-                                        response = self.send_command_multiresponse(client_socket, cmd, filename)
+                                        response = self.send_command_multiresponse(client_socket, "RETR", filename)
                                         print(response)
                                         if "150" in response:
                                             if self.receive_file(data_sock, filename):
@@ -211,7 +229,7 @@ class FTPClient:
 
                                     elif cmd == "APPE":
                                         if os.path.exists(filename):
-                                            response = self.send_command_multiresponse(client_socket, cmd, filename)
+                                            response = self.send_command_multiresponse(client_socket, "APPE", filename)
                                             print(response)
                                             if "150" in response:
                                                 if self.send_file(data_sock, filename):
