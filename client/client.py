@@ -112,8 +112,9 @@ def generic_command_by_type(socket, *args, command, command_type):
             response = send(socket, f'{command} {args[0]}')
         else:
             response = send(socket, f'{command}')
+
     if command == 'RNFR':
-        response = argument_handler(0,1,args_len)
+        response = argument_handler(1,2,args_len)
         print(response)
         if args_len == 1:
             response = send(socket, f'{command} {args[0]}')
@@ -266,9 +267,6 @@ def cmd_RETR(socket, *args):
                     else:
                         file.write(data)
             
-
-            
-        
     finally:
         # Asegurarse de que el socket de datos se cierre correctamente
         data_socket.close()
@@ -443,7 +441,7 @@ try:
     elif command == 'PORT': # Inicializa un socket y escucha en un puerto especificado, y envía la información al servidor para establecer la conexión
         print(cmd_PORT(ftp_socket, *cmd_args))
     elif command == 'PASV': # Inicializa un socket y se conecta al puerto que el servidor está escuchando
-        PASV_SOCKET = cmd_PASV(ftp_socket)
+        DATA_SOCKET = cmd_PASV(ftp_socket)
     elif command == 'SYST': # Solicita información del sistema operativo del servidor FTP
         print(generic_command_by_type(ftp_socket, *cmd_args, command=command, command_type='B'))
     elif command == 'STAT': # Solicita el estado del servidor FTP o de un archivo específico
