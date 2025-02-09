@@ -33,6 +33,9 @@ except json.JSONDecodeError:
 subject = "$subject"
 body = "$body"
 
+subject
+body
+
 try:
     headers = json.loads('$header') if '$header' else {}
     if not isinstance(headers, dict):
@@ -42,6 +45,6 @@ except json.JSONDecodeError:
 
 client = SMTPClient(host, port)
 client.connect()
-client.send_mail(sender, recipients, subject, body, headers)
-client.disconnect()
+response = client.send_mail(sender, recipients, subject, body, headers)
+print(json.dumps(response))
 END
