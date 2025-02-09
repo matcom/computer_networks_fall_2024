@@ -157,6 +157,21 @@ def cmd_CWD(arg, client_socket, current_dir, authenticated):
         client_socket.send(b"550 Failed to change directory.\r\n")  # Directorio inválido
     return current_dir
 
+def cmd_CDUP(client_socket, current_dir, root_dir, authenticated):
+    if not authenticated:
+        client_socket.send(b"530 Not logged in.\r\n")
+        return current_dir
+
+    # Intentar moverse al directorio padre
+    new_dir = os.path.dirname(current_dir)
+
+    # Verificar que no se salga de la raíz del usuario
+    if os.path.commonpath([new_dir, root_dir]) != root_dir:
+        client_socket.send(b"550 Access denied.\r\n")
+        return current_dir
+
+    client_socket.send(b"250 Directory successfully changed.\r\n")
+    return new_dir
 
 
 
