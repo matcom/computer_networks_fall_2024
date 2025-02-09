@@ -1,5 +1,6 @@
 import socket
 import threading
+from src.status import HTTPStatus
 from src.grammar import httpMessage, basic_rules, httpRequest, httpResponse
 import router as r
 
@@ -19,7 +20,7 @@ def handle_client(client_socket: socket.socket):
         break
   except Exception as e:
     print(f"Error: {e}")
-    response = httpResponse.build_res(500, "Error")
+    response = httpResponse.build_res(HTTPStatus.INTERNAL_SERVER_ERROR, "Error")
     client_socket.send(response.encode())
   finally:
     client_socket.close()

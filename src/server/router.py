@@ -1,4 +1,5 @@
 from typing import Callable, List, Tuple
+from src.status import HTTPStatus
 
 #some type definitions
 
@@ -26,17 +27,17 @@ class Router:
       for m in route.methods:
         if m.method == method:
           return m.handle(request)
-      return 405, "Method Not Allowed"
-    return 404, "Not Found"
+      return HTTPStatus.METHOD_NOT_ALLOWED, "Method Not Allowed"
+    return HTTPStatus.NOT_FOUND, "Not Found"
   
 router = Router([
   Endpoint("/", [
-    Method("GET", lambda request: (200, "bienvenidos al himalaya"))
+    Method("GET", lambda request: (HTTPStatus.OK, "bienvenidos al himalaya"))
   ]),
   Endpoint("/hello", [
-    Method("GET", lambda request: (200, "Hello, world!"))
+    Method("GET", lambda request: (HTTPStatus.OK, "Hello, world!"))
   ]),
   Endpoint("/goodbye", [
-    Method("GET", lambda request: (200, "Goodbye, world!"))
+    Method("GET", lambda request: (HTTPStatus.OK, "Goodbye, world!"))
   ])
 ])
