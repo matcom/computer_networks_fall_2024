@@ -488,6 +488,68 @@ def cmd_PASV(client_socket, data_port_range=(1024, 65535)):
         print(f"Error en PASV: {e}")
         return None, None, None
 
+def cmd_RETR(client_socket, data_socket, filename, TYPE, MODE, current_dir):
+    try:
+        if not data_socket:
+            client_socket.sendall(b"425 Use PASV or PORT first.\r\n")
+            return
+
+        # Verificar si el archivo existe
+        target_path = filename
+        if not os.path.isfile(filename):
+            target_path = os.path.join(current_dir, filename)
+            if not os.path.isfile(target_path):
+                client_socket.sendall(b"550 File not found.\r\n")
+                return
+        
+        # Verificar tipo de archivo para configurar permisos de lectura
+        r_mode = 'rb'
+        if TYPE == 'A':
+            r_mode = 'r'
+
+        if TYPE == 'A':
+            client_socket.sendall(b"150 Opening ASCII mode data connection for file transfer.\r\n")
+        else:
+            client_socket.sendall(b"150 Opening binary mode data connection for file transfer.\r\n")
+
+        if MODE == 'S':
+            with open(target_path, r_mode) as file:
+                while True:
+                    data = file.read(BUFFER_SIZE)
+                    if not data:
+                        break  # Fin del archivo
+                    if TYPE == 'A':
+                        data_socket.sendall(data.encode())  # Enviar los datos
+                    else:
+                        data_socket.sendall(data)
+        else:
+            with open(target_path, r_mode) as file:
+                while True:
+                    data = file.read(BUFFER_SIZE)
+                    if not data:
+                        break  # Fin del archivo
+
+                    # Crear encabezado del bloque (DATA)
+                    block_header = struct.pack(">BH", 0x00, len(data))  # (Tipo, Tamaño)
+                    if TYPE == 'A':
+                        data_socket.sendall(block_header + data.encode())  # Enviar bloque
+                    else:
+                        data_socket.sendall(block_header + data)  # Enviar bloque
+
+                # Enviar bloque EOF al final
+                eof_header = struct.pack(">BH", 0x80, 0)  # Tipo EOF, Tamaño 0
+                data_socket.sendall(eof_header)
+
+        # Cerrar el socket de datos
+        data_socket.close()
+        
+        # Confirmar la transferencia
+        client_socket.sendall(b"226 Transfer complete.\r\n")
+    
+    except Exception as e:
+        client_socket.sendall(b"451 Requested action aborted: local error in processing.\r\n")
+        print(f"Error en RETR: {e}")
+
 
 #-------------------------------------------------------------------------------------------------------------------------
 
