@@ -16,33 +16,50 @@ class httpClient:
         self.url = url
         self.path = path
     
-    def send_request(self, method: str, header: str, data: str):
-        try:
-            req_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            req_socket.connect((self.host, self.port))
-        except socket.error as e:
-            raise ConnectionError(f"Failed to connect to {self.host}:{self.port}", self.host, self.port) from e
+    def send_request(self, method: str, header: str, data: str, max_redirects=5):
+        redirect_count = 0
+        while redirect_count < max_redirects:
+            try:
+                req_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                req_socket.connect((self.host, self.port))
+            except socket.error as e:
+                raise ConnectionError(f"Failed to connect to {self.host}:{self.port}", self.host, self.port) from e
+            
+            try:
+                request = httpRequest.build_req(method=method, uri=self.path, headers=header, body=data)
+            except Exception as e:
+                raise RequestBuildError("Failed to build request", method, self.path, header, data) from e
+            
+            try:
+                req_socket.send(request.encode())
+            except Exception as e:
+                req_socket.close()
+                raise RequestSendError("Failed to send request", request) from e
+            
+            try:
+                response = self.receive_response(req_socket)
+            except Exception as e:
+                raise ResponseReceiveError("Failed to receive response") from e
+            finally:
+                req_socket.close()
+            
+            if response["status"] in (301, 302, 303, 307):
+                redirect_count += 1
+                new_url = response["headers"].get("Location")
+                if not new_url:
+                    raise ResponseParseError("Redirection response missing 'Location' header", response["headers"])
+                try:
+                    self.host, self.port, self.path = httpMessage.get_url_info(new_url)
+                except Exception as e:
+                    raise InvalidURLError(f"Invalid URL in 'Location' header: {new_url}", new_url) from e
+                if response["status"] == 303:
+                    method = "GET"
+                    data = ""
+            else:
+                return response
         
-        try:
-            request = httpRequest.build_req(method=method, uri=self.path, headers=header, body=data)
-        except Exception as e:
-            raise RequestBuildError("Failed to build request", method, self.path, header, data) from e
-        
-        try:
-            req_socket.send(request.encode())
-        except Exception as e:
-            req_socket.close()
-            raise RequestSendError("Failed to send request", request) from e
-        
-        try:
-            response = self.receive_response(req_socket)
-        except Exception as e:
-            raise ResponseReceiveError("Failed to receive response") from e
-        finally:
-            req_socket.close()
-        
-        return response
-        
+        raise ResponseReceiveError("Too many redirects")
+
     def receive_response(self, req_socket: socket.socket):
         head = ""
         try:
@@ -75,6 +92,7 @@ class httpClient:
         
         return {
             "status": head_info["status_code"],
+            "headers": head_info["headers"],
             "body": body
         }
 
