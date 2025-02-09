@@ -1,6 +1,7 @@
 import argparse
 import socket
 from time import sleep
+import threading
 
 class IRCClient:
     def __init__(self, host, port, nick):
@@ -9,19 +10,22 @@ class IRCClient:
         self.nick = nick
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.connected= False
+        self.buffer=""
 
     def connect(self):
         """Se conecta al servidor IRC y envía el NICK y USER inicial."""
         self.sock.connect((self.host, self.port))
         self.connected = True
+        sleep(0.2)
         # Enviar comandos iniciales al servidor
         self.send_command(f"NICK {self.nick}")
-        self.send_command(f"USER {self.nick} 0 * :Test User")
+        sleep(0.2)
+        self.send_command(f"USER {self.nick}")
         # Esperar respuesta del servidor después de conectarse
-        self.receive_response()
+        
 
     def send_command(self, command):
-        """Envía un comando al servidor IRC en formato correcto."""
+        """Envía un mensaje al servidor IRC."""
         self.sock.sendall((command + "\r\n").encode("utf-8"))
 
     def receive_response(self):
@@ -42,6 +46,36 @@ class IRCClient:
         except Exception as e:
             return f"❌ Error al recibir respuesta: {e}"
 
+
+    def start_receiving(self):
+        """Inicia un hilo para recibir mensajes del servidor."""
+        threading.Thread(target=self.receive_messages, daemon=True).start()
+
+    def receive_messages(self):
+        """Escucha continuamente los mensajes del servidor."""
+        while self.connected:
+            try:
+                info = self.sock.recv(4096)  # 4096 bytes recibidos
+                if not info:
+                    continue
+
+                self.buffer += info.decode('utf-8', errors='replace')
+                self.process_buffer()
+
+            except UnicodeDecodeError as e:
+                print(f"Error de decodificación en la recepción de mensajes: {e}.")
+            except Exception as e:
+                print(f"Error al recibir mensaje: {e}.")
+
+    def process_buffer(self):
+        """Procesa los mensajes completos en el buffer."""
+        while "\r\n" in self.buffer:
+            message, self.buffer = self.buffer.split("\r\n", 1)  # Separar un mensaje completo
+            self.handle_message(message)
+
+    def handle_message(self, message):
+        """Maneja el mensaje recibido."""
+        print(f"Mensaje del servidor: {message}")
 
 
     def handle_command(self, command, argument):
@@ -67,80 +101,65 @@ class IRCClient:
         elif command == "/quit":
             return self.quit_server()
         else:
-            return f"⚠️ Error: Comando '{command}' no soportado"
+            return f"Error: Comando '{command}' no soportado"
 
     def change_nick(self, new_nick):
         """Cambia el nickname enviando el comando al servidor."""
         self.send_command(f"NICK {new_nick}")
-        return self.receive_response()
 
     def join_channel(self, channel):
         """Se une a un canal enviando el comando JOIN."""
-        if not channel.startswith("#"):
-            return "⚠️ Error: Los canales IRC deben comenzar con '#'"
         self.send_command(f"JOIN {channel}")
-        return self.receive_response()
 
     def part_channel(self, channel):
         """Sale de un canal enviando el comando PART."""
-        if not channel.startswith("#"):
-            return "⚠️ Error: Los canales IRC deben comenzar con '#'"
         self.send_command(f"PART {channel}")
-        return self.receive_response()
 
     def send_private_message(self, argument):
         """Envía un mensaje privado a un usuario o canal."""
         parts = argument.split(" ", 1)
         if len(parts) < 2:
-            return "⚠️ Error: Debes proporcionar un destinatario y un mensaje"
+            return "Error: Debes proporcionar un destinatario y un mensaje"
         target, message = parts
         self.send_command(f"PRIVMSG {target} :{message}")
-        return self.receive_response()
 
     def send_notice(self, argument):
         """Envía un mensaje NOTICE a un usuario o canal."""
         parts = argument.split(" ", 1)
         if len(parts) < 2:
-            return "⚠️ Error: Debes proporcionar un destinatario y un mensaje"
+            return "Error: Debes proporcionar un destinatario y un mensaje"
         target, message = parts
-        self.send_command(f"NOTICE {target} {argument}")
-        return self.receive_response()
+        self.send_command(f"NOTICE {target} {argument}") 
     
     def list_channels(self):
         """Solicita la lista de canales al servidor."""
         self.send_command("LIST")
-        return self.receive_response()
     
     def list_users(self, channel):
         """Lista los usuarios de un canal específico."""
-        if not channel.startswith("#"):
-            return "⚠️ Error: Los canales IRC deben comenzar con '#'"
         self.send_command(f"NAMES {channel}")
-        return self.receive_response()
-    
+
     def whois_user(self, user):
         """Obtiene información sobre un usuario."""
         self.send_command(f"WHOIS {user}")
-        return self.receive_response()
     
     def change_topic(self, argument):
         """Cambia o consulta el tema de un canal."""
         parts = argument.split(" ", 1)
         if len(parts) < 1:
-            return "⚠️ Error: Debes proporcionar un canal"
+            return "Error: Debes proporcionar un canal"
         channel = parts[0]
         topic = parts[1] if len(parts) > 1 else ""
         if topic:
             self.send_command(f"TOPIC {channel} :{topic}")
         else:
             self.send_command(f"TOPIC {channel}")
-        return self.receive_response()
     
     def quit_server(self):
         """Sale del servidor IRC enviando el comando QUIT."""
         self.send_command("QUIT :Saliendo del servidor")
         self.sock.close()
-        return "Desconectado del servidor"
+        self.connected= False
 
 def parse_arguments():
     parser = argparse.ArgumentParser(description="Parser de pruebas para cliente IRC")
@@ -159,7 +178,9 @@ if __name__ == "__main__":
     # Crear el cliente y conectar al servidor
     client = IRCClient(args.H, args.p, args.n)
     client.connect()
+    client.receive_response()
     # Ejecutar el comando desde el test
-    response = client.handle_command(args.c, argument)
+    client.handle_command(args.c, argument)
+    response = client.receive_response()
     # Mostrar la respuesta del servidor
     print(response)
