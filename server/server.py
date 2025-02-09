@@ -28,12 +28,43 @@ USERS = {
     "user5": "pass5"
 }
 
+def check_failed_attempts(client_ip):
+    current_time = time.time()
+    if client_ip in failed_attempts:
+        attempts = failed_attempts[client_ip]
+        # Si la IP ha sido bloqueada y no ha pasado el tiempo de bloqueo
+        if attempts['block_time'] > current_time:
+            return True  # IP bloqueada
+        # Si el tiempo de bloqueo ha pasado, resetear los intentos fallidos
+        elif attempts['block_time'] <= current_time:
+            failed_attempts[client_ip] = {'attempts': 0, 'block_time': 0}
+    return False
+
+def increment_failed_attempts(client_ip):
+    current_time = time.time()
+    if client_ip in failed_attempts:
+        failed_attempts[client_ip]['attempts'] += 1
+    else:
+        failed_attempts[client_ip] = {'attempts': 1, 'block_time': 0}
+    
+    if failed_attempts[client_ip]['attempts'] >= MAX_FAILED_ATTEMPTS:
+        # Bloqueamos la IP por un tiempo determinado (por ejemplo, 5 minutos)
+        failed_attempts[client_ip]['block_time'] = current_time + BLOCK_TIME
+        return True  # La IP ha sido bloqueada
+
+    return False
+
+def generate_unique_filename(directory, original_filename):
+    # Generar un nombre único basado en el nombre del archivo original y un sufijo aleatorio
+    name, ext = os.path.splitext(original_filename)
+    while True:
+        unique_suffix = ''.join(random.choices(string.ascii_letters + string.digits, k=8))
+        unique_name = f"{name}_{unique_suffix}{ext}"
+        if not os.path.exists(os.path.join(directory, unique_name)):
+            return unique_name
 
 
 #-------------------------------------------------------------------------------------------------------------------------
-
-
-
 
 #-------------------------------------------------------------------------------------------------------------------------
 
