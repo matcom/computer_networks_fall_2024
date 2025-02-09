@@ -338,6 +338,51 @@ def cmd_STAT(arg, client_socket, current_dir):
         else:
             client_socket.send(b"550 Not a valid file or directory.\r\n")
 
+def cmd_HELP(arg, client_socket):
+    # Descripciones de los comandos según el RFC 959
+    commands = {
+        "USER": "USER <username> - Identifies the user to the server.",
+        "PASS": "PASS <password> - Authenticates the user.",
+        "ACCT": "ACCT <account> - Provides additional information to the server.",
+        "CWD": "CWD <directory> - Changes the current working directory on the server.",
+        "CDUP": "CDUP - Changes to the parent directory.",
+        "SMNT": "SMNT <pathname> - Mounts a file system on the server.",
+        "QUIT": "QUIT - Closes the connection with the server.",
+        "REIN": "REIN - Reinitializes the connection without closing it.",
+        "PORT": "PORT <address> - Specifies the IP address and port for data transfer.",
+        "PASV": "PASV - Enables passive mode for data transfer.",
+        "TYPE": "TYPE <type> - Sets the data transfer mode (ASCII or binary).",
+        "STRU": "STRU <structure> - Specifies the file structure (F for file, R for record).",
+        "MODE": "MODE <mode> - Sets the transfer mode (Stream, Block, or Compressed).",
+        "RETR": "RETR <file> - Retrieves a file from the server.",
+        "STOR": "STOR <file> - Stores a file on the server.",
+        "APPE": "APPE <file> - Appends data to a file on the server.",
+        "LIST": "LIST [path] - Lists files and directories.",
+        "NLST": "NLST [path] - Lists only file names.",
+        "STAT": "STAT [path] - Displays the status of the server or a file/directory.",
+        "HELP": "HELP [command] - Provides help for FTP commands. If no command is given, lists available commands.",
+        "NOOP": "NOOP - Performs a no-operation (no action).",
+        "MDTM": "MDTM <file> - Displays the last modification time of a file.",
+        "DELE": "DELE <file> - Deletes a file from the server.",
+        "RMD": "RMD <directory> - Removes an empty directory from the server.",
+        "MKD": "MKD <directory> - Creates a directory on the server.",
+        "PWD": "PWD - Displays the current working directory."
+    }
+
+    if arg:
+        # Si se pasa un argumento, muestra la ayuda de ese comando específico
+        if arg.upper() in commands:
+            client_socket.send(f"214 {commands[arg.upper()]}\r\n".encode())
+        else:
+            client_socket.send(b"500 Command not recognized.\r\n")
+    else:
+        # Si no se pasa un argumento, muestra la lista completa de comandos
+        help_message = "214 The following commands are recognized:\r\n"
+        for command in commands:
+            help_message += f"{command}\r\n"
+        help_message += "214 End of help message.\r\n"
+        client_socket.send(help_message.encode())
+
 
 #-------------------------------------------------------------------------------------------------------------------------
 
