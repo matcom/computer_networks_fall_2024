@@ -84,7 +84,23 @@ def handle_dele_command(client_socket: socket, args):
         client_socket.send(to_json({"status_code" : "250", "message": "Requested file action okay, completed."}))
     except FileNotFoundError:
         client_socket.send(to_json({"status_code" : "550", "message": "Requested action not taken. File unavailable."}))
+
+def handle_mkd_command(client_socket: socket, args):
+    dirname = args[0] if args else ""
+    try:
+        os.mkdir(f'files/{dirname}')
+        client_socket.send(to_json({"status_code" : "257", "message": "Directory created."}))
+    except FileExistsError:
+        client_socket.send(to_json({"status_code" : "550", "message": "Requested action not taken. Directory already exists."}))
         
+def handle_rmd_command(client_socket: socket, args):
+    dirname = args[0] if args else ""
+    try:
+        os.rmdir(f'files/{dirname}')
+        client_socket.send(to_json({"status_code" : "250", "message": "Directory removed."}))
+    except FileNotFoundError:
+        client_socket.send(to_json({"status_code" : "550", "message": "Requested action not taken. Directory does not exist."}))
+
 def handle_quit_command(client_socket: socket):
     client_socket.send(to_json({"status_code" : "221", "message": "Goodbye."}))
 
@@ -119,6 +135,10 @@ def handle_client(client_socket: socket):
             handle_rnto_command(client_socket, filename, args)
         elif command == "DELE" and authenticated:
             handle_dele_command(client_socket, args)
+        elif command == "MKD" and authenticated:
+            handle_mkd_command(client_socket, args)
+        elif command == "RMD" and authenticated:
+            handle_rmd_command(client_socket, args)
         elif command == "QUIT":
             handle_quit_command(client_socket)
             break

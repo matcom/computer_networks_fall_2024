@@ -110,6 +110,24 @@ def handle_command_dele(conn: connection, filename: str):
     else:
         print(rsp.message)
         
+def handle_command_mkd(conn: connection, dirname: str):
+    data = from_json(conn.send(to_json({'command': 'MKD', 'args': [dirname]})))
+    rsp = response(data['status_code'], data['message'])
+    
+    if(rsp.status_code == '257'):
+        log(rsp.message)
+    else:
+        print(rsp.message)
+        
+def handle_command_rmd(conn: connection, dirname: str):
+    data = from_json(conn.send(to_json({'command': 'RMD', 'args': [dirname]})))
+    rsp = response(data['status_code'], data['message'])
+    
+    if(rsp.status_code == '250'):
+        log(rsp.message)
+    else:
+        print(rsp.message)
+        
 def close_connection(conn: connection):
     log('Closing connection...')
     conn.send(to_json({'command': 'QUIT', 'args': []}))
@@ -125,6 +143,10 @@ def handle_command(conn: connection, command, arg1, arg2):
         handle_command_rnfr(conn, arg1, arg2)
     elif command == 'DELE':
         handle_command_dele(conn, arg1)
+    elif command == 'MKD':
+        handle_command_mkd(conn, arg1)
+    elif command == 'RMD':
+        handle_command_rmd(conn, arg1)
     elif command == 'QUIT':
         pass
     else:
