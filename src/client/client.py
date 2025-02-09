@@ -4,6 +4,7 @@ from src.error.error import (
     InvalidURLError, ConnectionError, RequestBuildError, 
     RequestSendError, ResponseReceiveError, ResponseParseError, ResponseBodyError
 )
+from src.status import HTTPStatus
 
 class httpClient:
     def __init__(self, url):
@@ -43,7 +44,7 @@ class httpClient:
             finally:
                 req_socket.close()
             
-            if response["status"] in (301, 302, 303, 307):
+            if response["status"] in (HTTPStatus.MOVED_PERMANENTLY, HTTPStatus.FOUND, HTTPStatus.SEE_OTHER, HTTPStatus.TEMPORARY_REDIRECT):
                 redirect_count += 1
                 new_url = response["headers"].get("Location")
                 if not new_url:
@@ -52,7 +53,7 @@ class httpClient:
                     self.host, self.port, self.path = httpMessage.get_url_info(new_url)
                 except Exception as e:
                     raise InvalidURLError(f"Invalid URL in 'Location' header: {new_url}", new_url) from e
-                if response["status"] == 303:
+                if response["status"] == HTTPStatus.SEE_OTHER:
                     method = "GET"
                     data = ""
             else:
