@@ -248,6 +248,22 @@ def cmd_DELE(arg, client_socket, authenticated, current_dir):
     
     return current_dir
 
+def cmd_TYPE(arg, client_socket):
+    """Maneja el comando TYPE, que establece el tipo de transferencia de datos (ASCII o Binario)."""
+    if not arg:
+        client_socket.send(b"501 Syntax error in parameters or arguments.\r\n")
+        return None
+    if arg.upper() == 'A':
+        client_socket.send(b"200 Type set to ASCII.\r\n")
+        # Aquí podrías agregar la lógica para manejar la transferencia de archivos en modo ASCII.
+        return 'A'
+    elif arg.upper() == 'I':
+        client_socket.send(b"200 Type set to Binary.\r\n")
+        # Aquí podrías agregar la lógica para manejar la transferencia de archivos en modo binario.
+        return 'I'
+    else:
+        client_socket.send(b"501 Syntax error in parameters or arguments.\r\n")
+
 #-------------------------------------------------------------------------------------------------------------------------
 
 
