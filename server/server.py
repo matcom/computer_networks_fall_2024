@@ -774,6 +774,53 @@ def cmd_STOU(client_socket, data_socket, filename, TYPE, MODE, current_dir):
         client_socket.sendall(b"451 Requested action aborted: local error in processing.\r\n")
         print(f"Error en STOU: {e}")
 
+def cmd_LIST(client_socket, data_socket, current_dir):
+    try:
+        # Verificar si se está usando PASV o PORT
+        if not data_socket:
+            client_socket.sendall(b"425 Use PASV or PORT first.\r\n")
+            return
+
+        # Enviar respuesta indicando que se está abriendo una conexión de datos
+        client_socket.sendall(b"150 Opening data connection for file list.\r\n")
+
+        # Obtener lista de archivos y directorios en el directorio actual
+        files = os.listdir(current_dir)
+
+        # Recorrer los archivos y directorios y enviar detalles reales
+        for filename in files:
+            file_path = os.path.join(current_dir, filename)
+            file_stat = os.stat(file_path)
+
+            # Obtener los permisos del archivo (modo)
+            file_permissions = oct(file_stat.st_mode)[-3:]
+            
+            # Obtener el tamaño del archivo
+            file_size = file_stat.st_size
+
+            # Obtener la fecha de última modificación
+            last_modified_time = time.strftime("%b %d %H:%M", time.localtime(file_stat.st_mtime))
+
+            # Preparar la línea de detalles del archivo
+            if os.path.isdir(file_path):
+                # Directorio
+                file_details = f"drwxr-xr-x   1 user group {file_size} {last_modified_time} {filename}\r\n"
+            else:
+                # Archivo regular
+                file_details = f"-rw-r--r--   1 user group {file_size} {last_modified_time} {filename}\r\n"
+            
+            # Enviar los detalles del archivo
+            data_socket.sendall(file_details.encode())
+
+        # Finalizar la transferencia
+        client_socket.sendall(b"226 Transfer complete.\r\n")
+        data_socket.close()
+
+    except Exception as e:
+        # En caso de error, enviar código de error
+        client_socket.sendall(b"451 Requested action aborted: local error in processing.\r\n")
+        print(f"Error en LIST: {e}")
+
 
 #-------------------------------------------------------------------------------------------------------------------------
 
