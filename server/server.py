@@ -446,6 +446,15 @@ def cmd_RNTO(arg, client_socket, rename_from_path, current_dir):
     except Exception as e:
         client_socket.send(f"550 Error: {str(e)}\r\n".encode())
 
+def cmd_NOOP(client_socket):
+    try:
+        # Responder con un código de éxito 200, indicando que la operación no ha hecho nada
+        client_socket.send(b"200 NOOP command successful.\r\n")
+    except Exception as e:
+        # Manejo de errores en caso de que la respuesta no pueda enviarse
+        client_socket.send(b"450 Requested file action not taken.\r\n")
+        print(f"Error handling NOOP command: {e}")
+
 
 #-------------------------------------------------------------------------------------------------------------------------
 
