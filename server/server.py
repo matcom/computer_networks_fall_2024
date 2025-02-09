@@ -821,6 +821,32 @@ def cmd_LIST(client_socket, data_socket, current_dir):
         client_socket.sendall(b"451 Requested action aborted: local error in processing.\r\n")
         print(f"Error en LIST: {e}")
 
+def cmd_NLST(client_socket, data_socket, current_dir):
+    try:
+        # Verificar si se está usando PASV o PORT
+        if not data_socket:
+            client_socket.sendall(b"425 Use PASV or PORT first.\r\n")
+            return
+
+        # Enviar respuesta indicando que se está abriendo una conexión de datos
+        client_socket.sendall(b"150 Opening data connection for file list.\r\n")
+
+        # Obtener lista de archivos en el directorio actual
+        files = os.listdir(current_dir)
+
+        # Enviar los nombres de los archivos y directorios
+        for filename in files:
+            data_socket.sendall(f"{filename}\r\n".encode())
+
+        # Finalizar la transferencia
+        client_socket.sendall(b"226 Transfer complete.\r\n")
+        data_socket.close()
+
+    except Exception as e:
+        # En caso de error, enviar código de error
+        client_socket.sendall(b"451 Requested action aborted: local error in processing.\r\n")
+        print(f"Error en NLST: {e}")
+
 
 #-------------------------------------------------------------------------------------------------------------------------
 
