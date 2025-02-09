@@ -2,4 +2,4 @@
 
 # Replace the next shell command with the entrypoint of your solution
 
-echo $@
+python Project/Client/Client_test.py "$@"
