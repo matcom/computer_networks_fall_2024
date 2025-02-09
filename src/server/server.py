@@ -1,4 +1,5 @@
 import socket
+import ssl
 import threading
 from src.status import HTTPStatus
 from src.grammar import httpMessage, basic_rules, httpRequest, httpResponse
@@ -50,18 +51,22 @@ def receive_request(client_socket):
         body = client_socket.recv(int(head_info["headers"]["Content-Length"])).decode()
     return head_info, body
 
-def start_server(host='127.0.0.1', port=8080):
-    try:
-        server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        server_socket.bind((host, port))
-        server_socket.listen(5)
-        print(f"Server listening on {host}:{port}...")
+def start_server(host='127.0.0.1', port=8080, cert=None, key=None):
+  try:
+    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server_socket.bind((host, port))
+    server_socket.listen(5)
+    if cert and key:
+      context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
+      context.load_cert_chain(certfile=cert, keyfile=key)
+      server_socket = context.wrap_socket(server_socket, server_side=True)
+    print(f"Server listening on {host}:{port}...")
 
-        while True:
-            client_socket, addr = server_socket.accept()
-            client_socket.settimeout(10)
-            print(f"Connection accepted from {addr}")
-            client_handler = threading.Thread(target=handle_client, args=(client_socket,))
-            client_handler.start()
-    except Exception as e:
-        print(f'Fatal Error {e}')
+    while True:
+        client_socket, addr = server_socket.accept()
+        client_socket.settimeout(10)
+        print(f"Connection accepted from {addr}")
+        client_handler = threading.Thread(target=handle_client, args=(client_socket,))
+        client_handler.start()
+  except Exception as e:
+      print(f'Fatal Error : {e}')

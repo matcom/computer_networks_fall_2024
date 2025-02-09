@@ -2,3 +2,5 @@ venv
 .idea
 .vscode
 __pycache__
+cert.pem
+key.pem
