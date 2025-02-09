@@ -82,6 +82,25 @@ def cmd_USER(arg, client_socket, client_ip):
             return None
     return None
 
+def cmd_PASS(arg, client_socket, authenticated, username, current_dir, client_ip):
+    if username is None:
+        client_socket.send(b"503 Bad sequence of commands.\r\n")
+    elif not arg:
+        client_socket.send(b"501 Syntax error in parameters or arguments.\r\n")
+    elif authenticated:
+        client_socket.send(b"202 User already logged in.\r\n")
+    elif username in USERS and USERS[username] == arg:
+        user_dir = os.path.join(current_dir, "server\\root", username)
+        os.makedirs(user_dir, exist_ok=True)
+        client_socket.send(b"230 Login successful.\r\n")
+        return user_dir, True
+    else:
+        client_socket.send(b"530 Login incorrect.\r\n")
+        if increment_failed_attempts(client_ip):
+            client_socket.send(b"421 Too many failed login attempts. Try again later.\r\n")
+            return None, False
+    return current_dir, False
+
 
 
 
