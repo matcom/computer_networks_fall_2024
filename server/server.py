@@ -298,6 +298,18 @@ def cmd_STRU(arg, client_socket):
     else:
         client_socket.send(b"501 Syntax error in parameters or arguments.\r\n")
 
+def cmd_SYST(client_socket):
+    """Maneja el comando SYST, que devuelve información sobre el sistema operativo del servidor."""
+    system_name = platform.system()
+    if system_name == "Windows":
+        response = "215 Windows Type: L8\r\n"
+    elif system_name == "Linux":
+        response = "215 UNIX Type: L8\r\n"
+    else:
+        response = f"215 {system_name} Type: L8\r\n"
+
+    client_socket.send(response.encode())
+
 
 #-------------------------------------------------------------------------------------------------------------------------
 
