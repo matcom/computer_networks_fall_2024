@@ -862,6 +862,31 @@ def cmd_ABOR(client_socket, data_socket):
         client_socket.sendall(b"451 Requested action aborted: local error in processing.\r\n")
         print(f"Error en ABOR: {e}")
 
+def cmd_PORT(client_socket, port_command, current_dir, DATA_SOCKET):
+    try:
+        # Procesar el comando PORT y extraer la IP y el puerto
+        parts = port_command.strip().split(',')
+        if len(parts) != 6:
+            client_socket.sendall(b"501 Syntax error in parameters or arguments.\r\n")
+            return DATA_SOCKET
+        
+        ip_address = '.'.join(parts[:4])  # Dirección IP
+        port1, port2 = int(parts[4]), int(parts[5])
+        port = port1 * 256 + port2  # Calcular el puerto final
+
+        # Crear un socket de datos para la conexión
+        data_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        data_socket.connect((ip_address, port))  # Conectar al cliente en el puerto especificado
+
+        # Confirmar la recepción del comando PORT
+        client_socket.sendall(b"200 PORT command successful.\r\n")
+
+        return data_socket
+    
+    except Exception as e:
+        client_socket.sendall(b"500 Syntax error, command unrecognized.\r\n")
+        print(f"Error en PORT: {e}")
+
 
 #-------------------------------------------------------------------------------------------------------------------------
 
