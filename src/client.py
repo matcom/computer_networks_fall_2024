@@ -33,7 +33,7 @@ class SMTPClient:
             
             if not response.is_success():
                 raise SMTPException(f"Error en EHLO: {response}")
-                      
+            
             # Parsear capacidades del servidor si EHLO tiene éxito
             self.auth_methods = None
             for line in response.message.splitlines():
@@ -41,9 +41,7 @@ class SMTPClient:
                     self.auth_methods = line.split("AUTH")[1].strip().split(' ')
                 elif "STARTTLS" in line:
                     self.supports_tls = True
-            
-            print(response)
-            
+                        
         except Exception as e:
             raise SMTPException(f"Error al conectar: {e}")
 
@@ -51,7 +49,7 @@ class SMTPClient:
         """
         Establece la conexión segura con el servidor SMTP a traves de TLS y realiza el handshake inicial (EHLO).
         """
-        if not self.connect_by_tls:
+        if not self.supports_tls:
             raise SMTPException(f"El servidor no soporta TLS")
         
         self.connection.start_tls()
@@ -73,7 +71,7 @@ class SMTPClient:
         Cierra la conexión SMTP de manera ordenada.
         """
         try:
-            print(self.commands.quit())
+            self.commands.quit()
             self.connection.close()
         except Exception as e:
             raise SMTPException(f"Error al desconectar: {e}")
@@ -93,9 +91,7 @@ class SMTPClient:
             response = self.commands.authenticate(mechanism, username, password)
             if not response.is_success():
                 raise SMTPException(f"Autenticación fallida: {response}")
-            
-            print(response)
-            
+                        
         except Exception as e:
             raise SMTPException(f"Error durante la autenticación: {e}")
 
@@ -111,7 +107,7 @@ class SMTPClient:
         
         return self.auth_methods.__contains__(auth_type)
     
-    def does_server_supprorts_tls(self):
+    def does_server_supports_tls(self):
         """
         Se verifica si el servidor SMTP soporta TLS.
         """
@@ -127,29 +123,38 @@ class SMTPClient:
         :param body: Cuerpo del correo.
         """
         
-        if not validate_email(sender) or not all(validate_email(recipient) for recipient in recipients):
-            raise SMTPException("Invalid email address")
+        # if not validate_email(sender) or not all(validate_email(recipient) for recipient in recipients):
+        #     raise SMTPException("Invalid email address")
         
         try:
-            print(self.commands.mail_from(sender))
+            response = self.commands.mail_from(sender)
+            
+            if response.is_permanent_error() or response.is_provisional():
+                return response.to_json()
             
             for recipient in recipients:
-                print(self.commands.rcpt_to(recipient))
+                response = self.commands.rcpt_to(recipient)
+                
+                if response.is_permanent_error() or response.is_provisional():
+                    return response.to_json()
             
             #
             headers_string = self.format_headers(headers, sender, recipients)
 
             # Incluir Subject manualmente
             formatted_message = f"{headers_string}\r\nSubject: {subject}\r\n\r\n{body}"
-                
-            print(self.commands.data(formatted_message))
+            #formatted_message = f"Subject: {subject}\r\n\r\n{body}"    
             
-        except TemporarySMTPException as e:
-            print(f"Error temporal: {e}. Puedes reintentar más tarde.")
-        except PermanentSMTPException as e:
-            print(f"Error permanente: {e}. No puedes continuar con esta operación.")
-        except SMTPException as e:
-            print(f"Error general de SMTP: {e}")
+            response = self.commands.data(formatted_message)
+        
+            return response.to_json()
+        
+        # except TemporarySMTPException as e:
+        #     print(f"Error temporal: {e}. Puedes reintentar más tarde.")
+        # except PermanentSMTPException as e:
+        #     print(f"Error permanente: {e}. No puedes continuar con esta operación.")
+        # except SMTPException as e:
+        #     print(f"Error general de SMTP: {e}")
         except Exception as e:
             print(f"Error inesperado: {e}")
             
@@ -174,7 +179,6 @@ class SMTPClient:
         # Si es un string con formato JSON, lo convertimos a diccionario
         elif isinstance(headers, str) and headers.strip().startswith("{"):
             try:
-                #headers = headers.replace('\\', '')  # Eliminar las comillas escapadas
                 headers_dict = json.loads(headers)
             except json.JSONDecodeError:
                 raise SMTPException("Formato JSON inválido en los headers.")
@@ -220,7 +224,7 @@ class SMTPClient:
             else:
                 raise SMTPException(f"El header '{key}' no esta permitido.")
 
-        # Agregar valores por defecto si no están presentes
+        # # Agregar valores por defecto si no están presentes
         if "MIME-Version" not in validated_headers:
             validated_headers["MIME-Version"] = "1.0"
         

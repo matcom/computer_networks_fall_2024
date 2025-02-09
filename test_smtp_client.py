@@ -6,31 +6,20 @@ def main():
     
     google = ("smtp.gmail.com", 587)
     mailhog = ("localhost", 1025)
+    matcom = ("0.0.0.0", 2525)
     
     
-    sender = 'example@domain.com'
-    recipients = ['andras.pla@google.com']
+    sender = 'user1@uh.cu'
+    recipients = ["user2@uh.cu", "user3@uh.cu"]
     subject = 'Test Email'
     body = 'This is a test email.'
     headers1="Reply-To: support@example.com\nCC: charlie@example.com"
-    headers2={
-        "Reply-To": "support@example.com",
-        "CC": "charlie@example.com",
-    }
+    headers2={"CC": "charlie@example.com"}
     headers3='{"Reply-To": "support@example.com", "CC": "charliePan@example.com"}'
-    headers4='{\\"CC\\":\\ \\"cc@example.com\\"}'
 
     client = SMTPClient(mailhog[0], mailhog[1])
     client.connect()
-    
-    # if client.does_server_supprorts_tls():
-    #     client.tls_conncection()
-    
-    # mechanism='PLAIN'
-    # if client.does_server_supports_authentication(mechanism):
-    #     client.authenticate(mechanism=mechanism, username=sender, password='123456')
-    
-    client.send_mail(sender, recipients, subject, body, headers4)
+    client.send_mail(sender, recipients, subject, body)
     client.disconnect()
 
 if __name__ == '__main__':

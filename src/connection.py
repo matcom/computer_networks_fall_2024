@@ -24,7 +24,7 @@ class SMTPConnection:
         self.socket = None
         self.server_address = None
 
-        logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s', filename="connection_log.txt")
+        logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s', filename="connection_log.txt")
 
     def connect(self):
         """
@@ -34,6 +34,7 @@ class SMTPConnection:
             self.socket = socket.create_connection((self.host, self.port), timeout=self.timeout)
             self.server_address = (self.host, self.port)
             logging.info(f"Conexión establecida con {self.host}:{self.port}")
+            self.receive()
         except Exception as e:
             raise ConnectionError(f"Error al conectar con {self.host}:{self.port}: {e}")
 
@@ -66,6 +67,7 @@ class SMTPConnection:
             response = self.socket.recv(1024).decode('us-ascii')
             logging.info(f"Recibido: {response.strip()}")
             return response.strip()
+            
         except Exception as e:
             raise ConnectionError(f"Error al recibir datos: {e}")
 
@@ -100,9 +102,7 @@ class SMTPConnection:
             # Solicitar al servidor que inicie una conexión cifrada
             self.send("STARTTLS\r\n")
             response = self.receive()
-            
-            print(response)
-            
+                        
             if not response.startswith("2"):
                 raise ConnectionError(f"El servidor rechazó STARTTLS: {response}")
 
@@ -118,8 +118,7 @@ class SMTPConnection:
 
             # Recibir cualquier mensaje pendiente antes de enviar EHLO
             leftover_data = self.receive()
-            print("Datos después de STARTTLS:", leftover_data)
-            
-            print("Conexión TLS establecida con éxito.")
+            logging.info("Datos después de STARTTLS: " + leftover_data)
+            logging.info("Conexión TLS establecida con éxito.")
         except Exception as e:
             raise ConnectionError(f"Error al iniciar TLS: {e}")

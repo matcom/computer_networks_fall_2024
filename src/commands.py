@@ -22,7 +22,7 @@ class SMTPCommands:
         Envía un comando al servidor SMTP y analiza la respuesta.
 
         :param command: Comando SMTP en formato de texto.
-        :return: Instancia deSMTPResponse con la respuesta del servido.
+        :return: Instancia de SMTPResponse con la respuesta del servido.
         """
         self.connection.send(command)
         raw_response = self.connection.receive()
@@ -61,6 +61,7 @@ class SMTPCommands:
         response = self._send_command(f"EHLO {domain}\r\n")
         if response.is_permanent_error():  # EHLO no soportado, intentar HELO
             response = self._send_command(f"HELO {domain}\r\n")
+            
         return response
     
     def authenticate(self, mechanism: str, username: str, password: str) -> SMTPResponse:
@@ -126,11 +127,12 @@ class SMTPCommands:
         :param size: Tamaño del mensaje en bytes (opcional).
         :return: Respuesta del servidor al comando MAIL FROM.
         """
-        if not sender or not isinstance(sender, str):
-            raise ValueError("El remitente debe ser una dirección de correo válida.")
+        # if not sender or not isinstance(sender, str):
+        #     raise ValueError("El remitente debe ser una dirección de correo válida.")
 
         parameters = f" SIZE={size}" if size else ""
-        return self._send_command(f"MAIL FROM:<{sender}>{parameters}\r\n")
+        return self._send_command(f"MAIL FROM:{sender}\r\n")
+        #return self._send_command(f"MAIL FROM:<{sender}>{parameters}\r\n")
 
     def rcpt_to(self, recipient: str, notify: str = None) -> SMTPResponse:
         """
@@ -140,11 +142,12 @@ class SMTPCommands:
         :param notify: Parámetro opcional NOTIFY (por ejemplo, SUCCESS,FAILURE).
         :return: Respuesta del servidor al comando RCPT TO.
         """
-        if not recipient or not isinstance(recipient, str):
-            raise ValueError("El destinatario debe ser una dirección de correo válida.")
+        # if not recipient or not isinstance(recipient, str):
+        #     raise ValueError("El destinatario debe ser una dirección de correo válida.")
 
         parameters = f" NOTIFY={notify}" if notify else ""
-        return self._send_command(f"RCPT TO:<{recipient}>{parameters}\r\n")
+        return self._send_command(f"RCPT TO:{recipient}\r\n")
+        #return self._send_command(f"RCPT TO:<{recipient}>{parameters}\r\n")
 
     def data(self, message: str) -> SMTPResponse:
         """
@@ -153,17 +156,31 @@ class SMTPCommands:
         :param message: Cuerpo del mensaje que se enviará.
         :return: Respuesta del servidor tras enviar el mensaje.
         """
-        if not message or not isinstance(message, str):
-            raise ValueError("El mensaje debe ser una cadena válida.")
-
+        
+        # Enviar DATA y esperar la respuesta 354
         initial_response = self._send_command("DATA\r\n")
-        if not (initial_response.is_provisional() or initial_response.is_success()):
-            raise ConnectionError(f"Error al iniciar el envío de datos: {initial_response}")
+        if not initial_response.is_provisional():  # `354` es provisional (3xx)
+            raise SMTPException(f"Error al iniciar DATA: {initial_response}")
 
-        # Escapar líneas que comiencen con un punto
-        escaped_message = "\r\n".join([f".{line}" if line.startswith(".") else line for line in message.splitlines()])
-        final_response = self._send_command(f"{escaped_message}\r\n.\r\n")
-        return final_response
+        # Formatear el mensaje correctamente
+        lines = message.splitlines()  # Dividir en líneas
+        formatted_lines = []
+
+        for line in lines:
+            if line.startswith("."):  # apar líneas que comienzan con `.`
+                formatted_lines.append(f".{line}")
+            else:
+                formatted_lines.append(line)
+
+        formatted_message = "\r\n".join(formatted_lines)  # Unir con `<CRLF>`
+        formatted_message = formatted_message if formatted_message.endswith("\r\n") else formatted_message + "\r\n" 
+        
+        # Agregar la secuencia final `<CRLF>.<CRLF>`
+        final_message = f"{formatted_message}.\r\n"
+
+        # Enviar el mensaje y recibir la respuesta final
+        return self._send_command(final_message)
+        
 
     def rset(self) -> SMTPResponse:
         """

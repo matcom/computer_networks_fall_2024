@@ -13,7 +13,11 @@ class SMTPResponse:
         :param raw_response: Respuesta completa del servidor en formato de texto.
         """
         if not raw_response or not isinstance(raw_response, str):
-            raise ValueError("La respuesta debe ser una cadena no vacía.")
+            #raise ValueError("La respuesta debe ser una cadena no vacía.")
+            self.raw_response = ""
+            self.code = 200
+            self.message = "The absence of response is a good sign"
+            return
 
         self.raw_response = raw_response
         self.code = self._extract_code()
@@ -79,6 +83,17 @@ class SMTPResponse:
         elif self.is_permanent_error():
             raise PermanentSMTPException(f"Error permanente: {self}")
     
+    def to_json(self):
+        """
+        Devuelve una representación legible de la respuesta en formato json.
+
+        :return: Cadena con el código y el mensaje en formato json.
+        """
+        return {
+            "status_code": self.code,
+            "message": self.message
+        }
+        
     def __str__(self):
         """
         Devuelve una representación legible de la respuesta.
