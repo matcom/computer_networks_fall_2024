@@ -194,6 +194,35 @@ def cmd_MKD(arg, client_socket, current_dir, authenticated):
     except Exception:
         client_socket.send(b"550 Failed to create directory.\r\n")
 
+def cmd_RMD(arg, client_socket, current_dir, authenticated):
+    if not authenticated:
+        client_socket.send(b"530 Not logged in.\r\n")
+        return
+
+    if not arg:
+        client_socket.send(b"501 Syntax error in parameters or arguments.\r\n")
+        return
+
+    target_dir = os.path.join(current_dir, arg)
+
+    if not os.path.exists(target_dir):
+        client_socket.send(b"550 Directory not found.\r\n")
+        return
+
+    if not os.path.isdir(target_dir):
+        client_socket.send(b"550 Not a directory.\r\n")
+        return
+
+    if os.listdir(target_dir):  # Si el directorio no está vacío
+        client_socket.send(b"550 Directory not empty.\r\n")
+        return
+
+    try:
+        os.rmdir(target_dir)
+        client_socket.send(b"250 Directory deleted successfully.\r\n")
+    except Exception:
+        client_socket.send(b"550 Failed to remove directory.\r\n")
+
 
 
 #-------------------------------------------------------------------------------------------------------------------------
