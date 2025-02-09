@@ -281,6 +281,23 @@ def cmd_MODE(arg, client_socket):
     else:
         client_socket.send(b"501 Syntax error in parameters or arguments.\r\n")
 
+def cmd_STRU(arg, client_socket):
+    """Maneja el comando STRU, que establece la estructura del archivo a transferir."""
+    if not arg:
+        client_socket.send(b"501 Syntax error in parameters or arguments.\r\n")
+        return
+
+    arg = arg.upper()
+
+    if arg == "F":
+        client_socket.send(b"200 Structure set to File (F).\r\n")
+    elif arg == "R":
+        client_socket.send(b"504 Record structure not implemented.\r\n")
+    elif arg == "P":
+        client_socket.send(b"504 Page structure not implemented.\r\n")
+    else:
+        client_socket.send(b"501 Syntax error in parameters or arguments.\r\n")
+
 
 #-------------------------------------------------------------------------------------------------------------------------
 
