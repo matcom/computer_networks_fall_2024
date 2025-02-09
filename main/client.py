@@ -24,7 +24,6 @@ class FTPClient:
         self.send_command(f'USER {username}')
         self.send_command(f'PASS {password}')
 
-
     def pasv(self):
         response = self.send_command('PASV')
         if "227" in response:  # Respuesta de modo pasivo
@@ -82,6 +81,7 @@ def main():
         print("Uso: python client.py -p PORT -h HOST -u USER -w PASS -c COMMAND -a ARG1 -b ARG2")
         return
 
+    # Parsear argumentos
     args = {}
     for i in range(1, len(sys.argv), 2):
         args[sys.argv[i]] = sys.argv[i + 1]
