@@ -62,7 +62,12 @@ class httpClient:
             raise ResponseParseError("Error parsing response header", head) from e
         
         body = ""
-        if "Content-Length" in head_info["headers"]:
+        if "Transfer-Encoding" in head_info["headers"] and head_info["headers"]["Transfer-Encoding"] == "chunked":
+            try:
+                body = self.receive_chunked_body(req_socket)
+            except ResponseBodyError as e:
+                raise ResponseBodyError("Error receiving chunked response body", e.details) from e
+        elif "Content-Length" in head_info["headers"]:
             try:
                 body = req_socket.recv(int(head_info["headers"]["Content-Length"])).decode()
             except socket.error as e:
@@ -72,3 +77,31 @@ class httpClient:
             "status": head_info["status_code"],
             "body": body
         }
+
+    def receive_chunked_body(self, req_socket: socket.socket):
+        body = ""
+        while True:
+            chunk_size_str = ""
+            while True:
+                try:
+                    data = req_socket.recv(1)
+                    if not data:
+                        raise ResponseBodyError("Error receiving chunk size", "No data received")
+                    chunk_size_str += data.decode()
+                    if chunk_size_str.endswith(basic_rules.crlf):
+                        break
+                except socket.error as e:
+                    raise ResponseBodyError("Error receiving chunk size", str(e)) from e
+            try:
+                chunk_size = int(chunk_size_str.strip(), 16)
+            except ValueError as e:
+                raise ResponseBodyError("Invalid chunk size", chunk_size_str.strip()) from e
+            if chunk_size == 0:
+                break
+            try:
+                chunk_data = req_socket.recv(chunk_size).decode()
+                body += chunk_data
+                req_socket.recv(2)
+            except socket.error as e:
+                raise ResponseBodyError("Error receiving chunk data", str(e)) from e
+        return body
