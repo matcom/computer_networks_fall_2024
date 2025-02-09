@@ -8,6 +8,8 @@ SERVER_PID=$!
 # Esperar un poco para asegurarnos de que el servidor esté completamente iniciado
 sleep 2
 
+curl http://localhost:8080/
+
 # Ejecutar las pruebas
 echo "Ejecutando las pruebas..."
 python3 ./tests/http/tests.py
