@@ -701,6 +701,79 @@ def cmd_APPE(client_socket, data_socket, filename, TYPE, MODE, current_dir):
         client_socket.sendall(b"451 Requested action aborted: local error in processing.\r\n")
         print(f"Error en APPE: {e}")
 
+def cmd_STOU(client_socket, data_socket, filename, TYPE, MODE, current_dir):
+    try:
+        # Verificar si el cliente está enviando datos para un archivo
+        if not data_socket:
+            client_socket.sendall(b"425 Use PASV or PORT first.\r\n")
+            data_socket.close()
+            return
+
+        # Preparar el path completo del archivo en el servidor
+        target_path = os.path.join(current_dir, filename)
+
+        # Generar un nombre único para el archivo
+        unique_filename = generate_unique_filename(current_dir, filename)
+        target_path = os.path.join(current_dir, unique_filename)
+
+        # Enviar un mensaje de inicio de recepción de datos
+        if TYPE == 'A':
+            client_socket.sendall(b"150 Opening ASCII mode data connection for file transfer.\r\n")
+        else:
+            client_socket.sendall(b"150 Opening binary mode data connection for file transfer.\r\n")
+
+        # Configurar el modo de escritura (binario o texto)
+        write_mode = 'wb'  # Por defecto en modo binario
+        if TYPE == 'A':
+            write_mode = 'w'  # Si es tipo ASCII, abrir en modo texto
+
+        # Abrir el archivo en modo de escritura
+        with open(target_path, write_mode) as file:
+            if MODE == 'S':
+                while True:
+                    chunk = data_socket.recv(BUFFER_SIZE)
+                    if not chunk:
+                        break
+                    if TYPE == 'A':
+                        file.write(chunk.decode())
+                    else:
+                        file.write(chunk)
+            else:
+                while True:
+                    # Recibir el encabezado del bloque (1 byte de tipo + 2 bytes de longitud)
+                    header = data_socket.recv(3)
+                    if not header:
+                        break  # Fin de la transferencia
+
+                    block_type, block_size = struct.unpack(">BH", header)
+
+                    # Si es un bloque EOF (0x80), finaliza la transferencia
+                    if block_type == 0x80:
+                        print("Fin de archivo alcanzado (EOF).")
+                        break
+
+                    # Recibir los datos del bloque
+                    data = data_socket.recv(block_size)
+                    if not data:
+                        break  # Fin de la transferencia
+
+                    # Escribir los datos en el archivo
+                    if TYPE == 'A':
+                        file.write(data.decode())
+                    else:
+                        file.write(data)
+
+        # Confirmar la transferencia
+        client_socket.sendall(f"226 Transfer complete. Stored as {unique_filename}\r\n".encode())
+
+        # Cerrar el socket de datos
+        data_socket.close()
+
+    except Exception as e:
+        # En caso de cualquier error, enviar un código de error
+        client_socket.sendall(b"451 Requested action aborted: local error in processing.\r\n")
+        print(f"Error en STOU: {e}")
+
 
 #-------------------------------------------------------------------------------------------------------------------------
 
