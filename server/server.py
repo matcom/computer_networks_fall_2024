@@ -264,6 +264,24 @@ def cmd_TYPE(arg, client_socket):
     else:
         client_socket.send(b"501 Syntax error in parameters or arguments.\r\n")
 
+def cmd_MODE(arg, client_socket):
+    """Maneja el comando MODE, que establece el modo de transferencia de datos."""
+    if not arg:
+        client_socket.send(b"501 Syntax error in parameters or arguments.\r\n")
+        return
+    
+    if arg.upper() == 'S':
+        client_socket.send(b"200 Mode set to Stream.\r\n")
+        # Aquí podrías agregar lógica adicional para manejar el modo Stream si fuera necesario.
+        return 'S'
+    elif arg.upper() == 'B':
+        client_socket.send(b"200 Mode set to Block.\r\n")
+        # Aquí podrías agregar lógica para el modo Block si fuera necesario.
+        return 'B'
+    else:
+        client_socket.send(b"501 Syntax error in parameters or arguments.\r\n")
+
+
 #-------------------------------------------------------------------------------------------------------------------------
 
 
