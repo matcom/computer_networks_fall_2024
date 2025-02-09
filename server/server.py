@@ -142,6 +142,20 @@ def cmd_PWD(client_socket, current_dir, authenticated):
         except Exception:
             client_socket.send(b"550 Failed to retrieve current directory.\r\n")  # Error inesperado
 
+def cmd_CWD(arg, client_socket, current_dir, authenticated):
+    if not authenticated:
+        client_socket.send(b"530 Not logged in.\r\n")  # Usuario no autenticado
+        return current_dir
+    if not arg:
+        client_socket.send(b"501 Syntax error in parameters or arguments.\r\n")  # Falta argumento
+        return current_dir
+    new_path = os.path.join(current_dir, arg)
+    if os.path.isdir(new_path):
+        current_dir = new_path
+        client_socket.send(b"250 Directory successfully changed.\r\n")
+    else:
+        client_socket.send(b"550 Failed to change directory.\r\n")  # Directorio inválido
+    return current_dir
 
 
 
