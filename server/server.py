@@ -66,6 +66,26 @@ def generate_unique_filename(directory, original_filename):
 
 #-------------------------------------------------------------------------------------------------------------------------
 
+
+def cmd_USER(arg, client_socket, client_ip):
+    if not arg:
+        client_socket.send(b"501 Syntax error in parameters or arguments.\r\n")
+    elif arg == "anonymous":
+        client_socket.send(b"230 User logged in, proceed.\r\n")
+    elif arg in USERS:
+        client_socket.send(b"331 User name okay, need password.\r\n")
+        return arg  # Devuelve el nombre de usuario para su posterior autenticación
+    else:
+        client_socket.send(b"530 User not found.\r\n")
+        if increment_failed_attempts(client_ip):
+            client_socket.send(b"421 Too many failed login attempts. Try again later.\r\n")
+            return None
+    return None
+
+
+
+
+
 #-------------------------------------------------------------------------------------------------------------------------
 
 
