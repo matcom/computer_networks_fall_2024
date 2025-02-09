@@ -455,6 +455,39 @@ def cmd_NOOP(client_socket):
         client_socket.send(b"450 Requested file action not taken.\r\n")
         print(f"Error handling NOOP command: {e}")
 
+def cmd_PASV(client_socket, data_port_range=(1024, 65535)):
+    global DATA_SOCKET
+    try:
+        # Obtener la IP local del servidor
+        server_ip = socket.gethostbyname(socket.gethostname())  # Obtiene la IP real
+        pasv_port = random.randint(data_port_range[0], data_port_range[1])
+
+        # Crear socket de datos
+        data_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        data_socket.bind((server_ip, pasv_port))
+        data_socket.listen(1)
+
+        # Convertir la IP y puerto a formato PASV
+        ip_parts = server_ip.split('.')
+        pasv_ip = ','.join(ip_parts)
+        p1, p2 = pasv_port // 256, pasv_port % 256
+
+        # Enviar respuesta al cliente
+        pasv_response = f"227 Entering Passive Mode ({pasv_ip},{p1},{p2})\r\n"
+        client_socket.sendall(pasv_response.encode())
+
+        # Esperar a que el cliente se conecte al socket de datos
+        client_conn, client_addr = data_socket.accept()
+
+        print(f"[PASV] Servidor en modo pasivo en {server_ip}:{pasv_port}")
+        return client_conn 
+
+
+    except Exception as e:
+        client_socket.sendall("500 PASV command failed.\r\n".encode())
+        print(f"Error en PASV: {e}")
+        return None, None, None
+
 
 #-------------------------------------------------------------------------------------------------------------------------
 
