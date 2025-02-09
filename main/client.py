@@ -97,6 +97,13 @@ class FTPClient:
         else:
             raise Exception(f"Error al renombrar el archivo desde '{from_name}'.")
 
+    def delete(self, filename):
+        response = self.send_command(f'DELE {filename}')
+        if "250" in response:  # Respuesta exitosa de DELE
+            print(f"Archivo '{filename}' eliminado correctamente.")
+        else:
+            raise Exception(f"Error al eliminar el archivo '{filename}'.")
+
 
     def quit(self):
         self.send_command('QUIT')
