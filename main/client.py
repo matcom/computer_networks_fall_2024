@@ -86,6 +86,18 @@ class FTPClient:
         else:
             raise Exception(f"Error al cambiar al directorio '{directory}'.")
 
+    def rename(self, from_name, to_name):
+        response = self.send_command(f'RNFR {from_name}')
+        if "350" in response:  # Respuesta exitosa de RNFR
+            response = self.send_command(f'RNTO {to_name}')
+            if "250" in response:  # Respuesta exitosa de RNTO
+                print(f"Archivo renombrado de '{from_name}' a '{to_name}'.")
+            else:
+                raise Exception(f"Error al renombrar el archivo a '{to_name}'.")
+        else:
+            raise Exception(f"Error al renombrar el archivo desde '{from_name}'.")
+
+
     def quit(self):
         self.send_command('QUIT')
         self.control_socket.close()
