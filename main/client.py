@@ -70,6 +70,22 @@ class FTPClient:
         data_socket.close()
         print(f"Archivo '{filename}' subido correctamente.")
 
+    def print_working_directory(self):
+        response = self.send_command('PWD')
+        if "257" in response:  # Respuesta exitosa de PWD
+            print(response)
+            return response
+        else:
+            raise Exception("Error al obtener el directorio actual.")
+
+    def change_working_directory(self, directory):
+        response = self.send_command(f'CWD {directory}')
+        if "250" in response:  # Respuesta exitosa de CWD
+            print(f"Directorio cambiado a '{directory}'.")
+            return response
+        else:
+            raise Exception(f"Error al cambiar al directorio '{directory}'.")
+
     def quit(self):
         self.send_command('QUIT')
         self.control_socket.close()
@@ -103,6 +119,10 @@ def main():
         client.retr(arg1)
     elif command == "STOR":
         client.stor(arg1)
+    elif command == "PWD":
+        client.print_working_directory()
+    elif command == "CWD":
+        client.change_working_directory(arg1)
     else:
         print(f"Comando '{command}' no reconocido.")
 
