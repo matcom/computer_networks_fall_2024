@@ -383,6 +383,33 @@ def cmd_HELP(arg, client_socket):
         help_message += "214 End of help message.\r\n"
         client_socket.send(help_message.encode())
 
+def cmd_RNFR(arg, client_socket, current_dir):
+
+    # Verificar si se ha proporcionado un argumento (nombre del archivo a renombrar)
+    if not arg:
+        client_socket.send(b"550 No file name specified.\r\n")  # Si no se pasa un archivo
+        return
+    
+    try:
+        target_path = os.path.join(current_dir, arg)
+        # Verificar si el archivo existe
+        if not os.path.exists(target_path):
+            client_socket.send(b"550 Requested action not taken. File unavailable.\r\n")
+            return
+        
+        # Verificamos si el nombre del archivo es válido
+        if not os.path.isfile(target_path):
+            client_socket.send(b"553 Requested action not taken. File name not allowed.\r\n")
+            return
+        
+        # Guardar la ruta del archivo
+        rename_from_path = target_path
+        client_socket.send(b"350 Ready for RNTO.\r\n")  # Confirmación de que RNFR fue recibido
+        return rename_from_path
+
+    except Exception as e:
+        client_socket.send(f"550 Error: {str(e)}\r\n".encode())  # Error genérico si ocurre algún problema inesperado
+
 
 #-------------------------------------------------------------------------------------------------------------------------
 
