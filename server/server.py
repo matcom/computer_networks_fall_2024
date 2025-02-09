@@ -847,6 +847,21 @@ def cmd_NLST(client_socket, data_socket, current_dir):
         client_socket.sendall(b"451 Requested action aborted: local error in processing.\r\n")
         print(f"Error en NLST: {e}")
 
+def cmd_ABOR(client_socket, data_socket):
+    try:
+        # Verificar si el socket de datos está activo
+        if data_socket:
+            # Si hay una transferencia activa, cerramos el socket de datos
+            data_socket.close()
+            client_socket.sendall(b"426 Connection closed; transfer aborted.\r\n")
+        else:
+            # Si no hay transferencia activa, se manda el error correspondiente
+            client_socket.sendall(b"550 No active transfer to abort.\r\n")
+    except Exception as e:
+        # En caso de error, enviar código de error
+        client_socket.sendall(b"451 Requested action aborted: local error in processing.\r\n")
+        print(f"Error en ABOR: {e}")
+
 
 #-------------------------------------------------------------------------------------------------------------------------
 
