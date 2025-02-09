@@ -410,6 +410,42 @@ def cmd_RNFR(arg, client_socket, current_dir):
     except Exception as e:
         client_socket.send(f"550 Error: {str(e)}\r\n".encode())  # Error genérico si ocurre algún problema inesperado
 
+def cmd_RNTO(arg, client_socket, rename_from_path, current_dir):
+
+    # Verificar que RNFR fue llamado previamente y que el nombre de archivo de destino es válido
+    if not rename_from_path:
+        client_socket.send(b"550 RNFR not received or new name missing.\r\n")  # Error si RNFR no fue ejecutado
+        return
+    
+    if not arg:
+        client_socket.send(b"550 No new file name specified.\r\n")  # Si no se proporciona un nuevo nombre
+        return
+
+    try:
+        target_path = os.path.join(current_dir, arg)
+        # Verificar si el archivo destino ya existe
+        if os.path.exists(target_path):
+            client_socket.send(b"550 File already exists.\r\n")  # Error si el archivo de destino ya existe
+
+        # Verificar si el nuevo nombre es válido
+        if not os.path.isabs(target_path):
+            client_socket.send(b"553 Requested action not taken. File name not allowed.\r\n")
+            return
+
+        # Intentar realizar el renombrado
+        os.rename(rename_from_path, target_path)  # Renombramos el archivo
+        client_socket.send(b"250 Rename successful.\r\n")  # Confirmación de éxito
+
+    except FileNotFoundError:
+        client_socket.send(b"550 Requested action not taken. File unavailable.\r\n")  # Si el archivo no se encuentra
+    except PermissionError:
+        client_socket.send(b"550 Permission denied.\r\n")  # Si no se tiene permiso para renombrar
+    except OSError as e:
+        # Manejo de casos generales o errores relacionados con el sistema de archivos
+        client_socket.send(f"550 Error: {str(e)}\r\n".encode())
+    except Exception as e:
+        client_socket.send(f"550 Error: {str(e)}\r\n".encode())
+
 
 #-------------------------------------------------------------------------------------------------------------------------
 
