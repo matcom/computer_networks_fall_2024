@@ -128,6 +128,11 @@ def cmd_SMNT(arg, client_socket, authenticated, current_dir):
 
     return current_dir  # Si no se cambia, devuelve el directorio actual
 
+def cmd_REIN(client_socket, current_dir):
+    """Restablece la conexión del usuario sin cerrar la sesión."""
+    client_socket.send(b"220 Service ready for new user.\r\n")
+    return None, False, os.getcwd()  # Restablece el usuario y autenticación, y vuelve a la raíz del servidor
+
 
 
 
