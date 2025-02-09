@@ -4,31 +4,44 @@ from src.grammar import httpMessage, basic_rules, httpRequest, httpResponse
 import router as r
 
 def handle_client(client_socket: socket.socket):
-  request_info, body = receive_request(client_socket)
   try:
-    print(f"Solicitud recibida")
-    status, body = r.router.handle(request_info["uri"], request_info["method"], body)
-    headers = httpResponse.build_headers(status, body)
-    headers = httpResponse.stringify_headers(headers)
-    response = httpResponse.build_res(status, "OK", headers, body=body)
-    client_socket.send(response.encode())
-  except:
+    while True:
+      request_info, body = receive_request(client_socket)
+      if not request_info:
+        break
+      print("Solicitud recibida")
+      status, body = r.router.handle(request_info["uri"], request_info["method"], body)
+      headers = httpResponse.build_headers(status, body)
+      headers = httpResponse.stringify_headers(headers)
+      response = httpResponse.build_res(status, "OK", headers, body=body)
+      client_socket.send(response.encode())
+      if "Connection" in request_info["headers"] and request_info["headers"]["Connection"] == 'close':
+        break
+  except Exception as e:
+    print(f"Error: {e}")
     response = httpResponse.build_res(500, "Error")
-    client_socket.send()
+    client_socket.send(response.encode())
   finally:
-    if "Connection" in request_info["headers"] and request_info["headers"]["Connection"] == 'close':
-      print("conexión cerrada")
-      client_socket.close()
+    client_socket.close()
+    print("conexión cerrada")
     
 def receive_request(client_socket):
   head = ""
-  while True:
-    data = client_socket.recv(1)
-    if not data:
-      break
-    head += data.decode()
-    if head.endswith(basic_rules.crlf * 2):
-      break
+  try:
+    while True:
+      data = client_socket.recv(1)
+      if not data:
+        return None, None
+      head += data.decode()
+      if head.endswith(basic_rules.crlf * 2):
+        break
+  except TimeoutError:
+    print("Conexión cerrada por timeout")	
+    return None, None
+  except Exception as e:
+    print(f"Error: {e}")
+    return None, None
+  
   head_info = httpRequest.get_head_info(head)
   body = ""
   if "Content-Length" in head_info["headers"]:
@@ -44,6 +57,7 @@ def start_server(host='127.0.0.1', port=8080):
 
     while True:
         client_socket, addr = server_socket.accept()
+        client_socket.settimeout(10)
         print(f"Conexión aceptada de {addr}")
         client_handler = threading.Thread(target=handle_client, args=(client_socket,))
         client_handler.start()
