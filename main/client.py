@@ -1,5 +1,6 @@
 import socket
 import sys
+import re
 
 
 class FTPClient:
@@ -22,6 +23,53 @@ class FTPClient:
     def login(self, username, password):
         self.send_command(f'USER {username}')
         self.send_command(f'PASS {password}')
+
+
+    def pasv(self):
+        response = self.send_command('PASV')
+        if "227" in response:  # Respuesta de modo pasivo
+            # Extraer la dirección IP y el puerto de la respuesta
+            ip_port = re.search(r'\((\d+,\d+,\d+,\d+,\d+,\d+)\)', response).group(1)
+            ip_parts = list(map(int, ip_port.split(',')))
+            ip = '.'.join(map(str, ip_parts[:4]))
+            port = (ip_parts[4] << 8) + ip_parts[5]
+            return ip, port
+        else:
+            raise Exception("Error al entrar en modo PASV.")
+
+    def list_files(self):
+        ip, port = self.pasv()
+        data_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        data_socket.connect((ip, port))
+        self.send_command('LIST')
+        data = data_socket.recv(4096).decode('utf-8')
+        data_socket.close()
+        print(data)
+        return data
+
+    def retr(self, filename):
+        ip, port = self.pasv()
+        data_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        data_socket.connect((ip, port))
+        self.send_command(f'RETR {filename}')
+        with open(filename, 'wb') as file:
+            while True:
+                data = data_socket.recv(4096)
+                if not data:
+                    break
+                file.write(data)
+        data_socket.close()
+        print(f"Archivo '{filename}' descargado correctamente.")
+
+    def stor(self, filename):
+        ip, port = self.pasv()
+        data_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        data_socket.connect((ip, port))
+        self.send_command(f'STOR {filename}')
+        with open(filename, 'rb') as file:
+            data_socket.sendfile(file)
+        data_socket.close()
+        print(f"Archivo '{filename}' subido correctamente.")
 
 
 
