@@ -5,20 +5,38 @@ from socket import *
 
 class Client:
 
+    user_db = 'user_database.json'
     #Constructor de la clase
     def __init__(self, ip_server, port):
         self.ip_server = ip_server
         self.port = port
         self.client_socket = socket(AF_INET, SOCK_STREAM)
         self.data_socket = None
-        
+        self.logged_in = False
         # Diccionario de comandos y sus funciones correspondientes
         self.command_handlers = {
             "LIST": self.list_file,
+            "QUIT": lambda cmd: self.send_command(cmd),
+            "RNFR": lambda cmd: self.send_command(cmd),
+            "ABOR": lambda cmd: self.send_command(cmd),
+            "DELE": lambda cmd: self.send_command(cmd),
+            "RMD": lambda cmd: self.send_command(cmd),
+            "MKD": lambda cmd: self.send_command(cmd),
+            "PWD": lambda cmd: self.send_command(cmd),
+            "SITE": lambda cmd: self.send_command(cmd),
+            "SYST": lambda cmd: self.send_command(cmd),
+            "STAT": lambda cmd: self.send_command(cmd), #Puede o no recibir argumentos, tacto en el server
+            "HELP": lambda cmd: self.send_command(cmd), #La misma pincha que Stat, puede o no recibir argumentos
+            "NOOP": lambda cmd: self.send_command(cmd),
             "STOR": lambda cmd, args: self.store_file(cmd, args),
             "STOU": lambda cmd, args: self.store_file(cmd, args),
             "RETR": lambda cmd, args: self.retrieve_file(cmd, args),
             "APPE": lambda cmd, args: self.store_file(cmd, args),
+            "CWD": lambda cmd, args: self.change_directory(cmd, args),
+            "PORT": lambda cmd, args: self.set_port(cmd, args),
+            "TYPE": lambda cmd, args: self.set_type(cmd, args),
+            "STRU": lambda cmd, args: self.set_stru(cmd, args),
+            "MODE": lambda cmd, args: self.set_mode(cmd, args),
         }
     
     #Conectar con el servidor
@@ -156,9 +174,82 @@ class Client:
         self.data_socket.close()
                     
         return self.receive_response()
+    
+    def change_directory(self, command ,path):
+        Utils.validate_args(command, path)
+
+        if not os.path.exists(path):
+            return f"Error: File '{path}' does not exist"
+        
+        self.send_command(f"{command}{path}")
+        with open(path, 'rb') as f:
+            while True:
+                data = f.read(1024)
+                if not data:
+                    break
+                self.data_socket.sendall(data)
+
+    def set_port(self, command, args):
+        Utils.validate_args(command, args)
+        if not args.isdigit():
+            return f"Error: Invalid port number"
+        
+        if self.ip_server is not None and self.port is not None:
+            ip_parts = self.ip_server.split('.')
+            ip_formatted = ','.join(ip_parts)
+
+            p1 = self.port // 256
+            p2 = self.port % 256
+
+            self.send_command(f"{command}{ip_formatted},{p1},{p2}")
+            print(self.receive_response())
+        else:
+            print("La dirección IP y el puerto del cliente no están configurados.")
+
+    def set_type(self, command, type):
+        Utils.validate_type(type)
+        self.send_command(f"{command}{type}")
+        print(self.receive_response())
+    
+    def set_stru(self, command, stru):
+        Utils.validate_stru(stru)
+        self.send_command(f"{command}{stru}")
+        print(self.receive_response())
+    
+    def set_mode(self, command, mode):
+        Utils.validate_mode(mode)
+        self.send_command(f"{command}{mode}")
+        print(self.receive_response())
+    
+    def log_in(self):
+        user_db = Utils.load_db()
+        while not self.logged_in:
+            print("You are not authenticated/registered in the system. Available commands are 'USER', 'HELP', 'LOG'.")
+            cmd = input("ftp>> ")
+            if cmd == 'HELP':
+                self.send_command("HELP")
+            else:
+                spliter_cmd = cmd.split()
+                if len(spliter_cmd) == 2 and spliter_cmd[0] == 'USER':
+                    password = input("ftp>> PASS: ")
+                    if Utils.authenticate_user(user_db, spliter_cmd[1], password):
+                        self.logged_in = True
+                        self.send_command(f"USER {spliter_cmd[1]}")
+                        self.send_command(f"PASS {password}")
+                    else:
+                        print("Error: Invalid Username or Password")
+                # El comando LOG es una cosa interna nuestra, no hay que llamar al servidor ni nada
+                if len(spliter_cmd) == 1 and spliter_cmd[0] == 'LOG':
+                    username = input("ftp>> USER: ")
+                    userpass = input("ftp>> PASS: ")
+                    Utils.add_user(user_db, username, userpass)
+                    self.logged_in = True
+                else:
+                    print("Error: Invalid command")
 
     #Metodo que llamara a todas las funcionalidades del cliente
-    def ftp_client(self):
+    def ftp_client(self):    
+        self.logged_in()
         while True:
             user_input = input("ftp>> ").strip().split()
             cmd , args = Utils.recv_cmd(user_input)

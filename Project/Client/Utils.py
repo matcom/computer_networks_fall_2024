@@ -1,3 +1,4 @@
+import json
 #utils.py
 
 Commands =  ["USER", "PASS", "ACCT", "CWD", "CDUP","SMNT", "REIN", "QUIT", "PORT", "PASV",
@@ -19,6 +20,19 @@ def recv_cmd(entry):
 def validate_args(cmd , args):
     if not args:
         raise ValueError(f"Error: No arguments provided for the command {cmd}.")
+    
+# Método para validar el comando TYPE
+def validate_type(type):
+    if not type in "A,E,I,N,T,C,M".split(","):
+        raise ValueError(f"Error: Invalid Type {type}")
+    
+def validate_stru(stru):
+    if not stru in "F,R,P".split(","):
+        raise ValueError(f"Error: Invalid Struct {stru}")
+    
+def validate_mode(mode):
+    if not mode in "F,R,P".split(","):
+        raise ValueError(f"Error: Invalid Mode {mode}")
 
 # Calcular distancia de levenshtein
 def levenshtein_distance(s1, s2):
@@ -45,3 +59,26 @@ def Get_suggestion(command):
             lev = newLev
             sug = c
     return sug
+
+# Base de Datos para los usuarios
+
+def load_db():
+    with open('user_database.json', 'r') as file:
+        return json.load(file)
+
+def save_user(user_db):
+    with open('user_database.json', 'r') as file:
+        json.dump(user_db, file, indent=4)
+
+def add_user(user_db, username, password):
+    user_db.append({'user': username, 'pass': password})
+    save_user(user_db)
+
+def user_exists(user_db, username):
+    return any(user['user'] == username for user in user_db)
+
+def authenticate_user(user_db, username, password):
+    for user in user_db:
+        if user['user'] == username and user['pass'] == password:
+            return True
+    return False

@@ -71,7 +71,7 @@ class Client_test:
             response = self.command_handlers[command](command, args)
             
             # Asegura cerrar el socket de datos
-            if(self.data_socket)
+            if(self.data_socket):
                 self.data_socket.close()
             
             return response
