@@ -93,20 +93,24 @@ class FTPClient:
 
 
 def main():
-    if len(sys.argv) < 8:
-        print("Uso: python client.py -p PORT -h HOST -u USER -w PASS -c COMMAND -a ARG1 -b ARG2")
-        return
-
     # Parsear argumentos
     args = {}
     for i in range(1, len(sys.argv), 2):
         args[sys.argv[i]] = sys.argv[i + 1]
 
+    # Validar argumentos requeridos
+    required_args = ['-p', '-h', '-u', '-w']
+    for arg in required_args:
+        if arg not in args:
+            print(f"Falta el argumento requerido: {arg}")
+            print("Uso: python client.py -p PORT -h HOST -u USER -w PASS -c COMMAND [-a ARG1] [-b ARG2]")
+            return
+
     host = args['-h']
     port = int(args['-p'])
     user = args['-u']
     password = args['-w']
-    command = args['-c']
+    command = args.get('-c', '')
     arg1 = args.get('-a', '')
     arg2 = args.get('-b', '')
 
@@ -116,18 +120,28 @@ def main():
     if command == "LIST":
         client.list_files()
     elif command == "RETR":
+        if not arg1:
+            print("Falta el argumento requerido: -a para el comando RETR")
+            return
         client.retr(arg1)
     elif command == "STOR":
+        if not arg1:
+            print("Falta el argumento requerido: -a para el comando STOR")
+            return
         client.stor(arg1)
     elif command == "PWD":
         client.print_working_directory()
     elif command == "CWD":
+        if not arg1:
+            print("Falta el argumento requerido: -a para el comando CWD")
+            return
         client.change_working_directory(arg1)
-    else:
+    elif command:
         print(f"Comando '{command}' no reconocido.")
+    else:
+        print("No se proporcionó ningún comando.")
 
     client.quit()
-
 
 if __name__ == "__main__":
     main()
