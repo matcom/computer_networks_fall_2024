@@ -223,7 +223,30 @@ def cmd_RMD(arg, client_socket, current_dir, authenticated):
     except Exception:
         client_socket.send(b"550 Failed to remove directory.\r\n")
 
+def cmd_DELE(arg, client_socket, authenticated, current_dir):
+    """Comando DELE: Elimina un archivo del servidor."""
+    if not authenticated:
+        client_socket.send(b"530 Not logged in.\r\n")
+        return current_dir
 
+    if not arg:
+        client_socket.send(b"501 Syntax error in parameters or arguments.\r\n")
+        return current_dir
+
+    # Obtener la ruta completa del archivo
+    file_path = os.path.join(current_dir, arg)
+
+    # Comprobar si el archivo existe
+    if os.path.exists(file_path) and os.path.isfile(file_path):
+        try:
+            os.remove(file_path)  # Eliminar el archivo
+            client_socket.send(f"250 Deleted {arg}.\r\n".encode())
+        except Exception as e:
+            client_socket.send(f"550 Failed to delete {arg}: {str(e)}.\r\n".encode())
+    else:
+        client_socket.send(f"550 {arg}: No such file.\r\n".encode())
+    
+    return current_dir
 
 #-------------------------------------------------------------------------------------------------------------------------
 
