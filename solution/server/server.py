@@ -8,6 +8,9 @@ HOST = '127.0.0.1'  # Dirección IP del servidor
 PORT = 21         # Puerto FTP
 BUFFER_SIZE = 1024
 USERS = {"user": "pass"}  # Usuario y contraseña válidos
+FILE_ROOT = 'files'
+
+state: dict = {}
 
 def handle_user_command(client_socket: socket, args): 
     user = args[0] if args else ""
@@ -26,16 +29,36 @@ def handle_pass_command(client_socket: socket, args, user):
         client_socket.send(to_json({"status_code" : "530", "message": "Login Failed."}))   
         return False
     
-def handle_list_command(client_socket: socket):
-    files = os.listdir('files')
+def handle_list_command(client_socket: socket, user: str):
+    files = os.listdir(f'{FILE_ROOT}/{state[user]}')
     client_socket.send(to_json({"status_code" : "150", "message": "Here comes the directory listing.", "data": files}))
     
-def handle_retr_command(client_socket: socket, args):
+def handle_pwd_command(client_socket: socket, user: str):
+    client_socket.send(to_json({"status_code" : "257", "message": "Directory created.", "data": '/' if state[user] == '' else f'{state[user]}'}))
+    
+def handle_cwd_command(client_socket: socket, args, user: str):
+    dirname = args[0] if args else ""
+    try:
+        path = f'{FILE_ROOT}/{dirname}'
+        if not os.path.isdir(path):
+            raise FileNotFoundError
+        
+        if(dirname == '/' or dirname == '.'):
+            state[user] = ''
+        else:
+            state[user] = f'{dirname}/'
+        
+        client_socket.send(to_json({"status_code" : "250", "message": "Directory changed."}))
+    except FileNotFoundError:
+        client_socket.send(to_json({"status_code" : "550", "message": "Requested action not taken. Directory does not exist."}))
+    
+def handle_retr_command(client_socket: socket, args, user: str):
     filename = args[0] if args else ""
     try:
+        pointer = open(f'{FILE_ROOT}/{state[user]}{filename}', 'rb')
+        
         client_socket.send(to_json({"status_code" : "150", "message": "Opening data connection."}))
         
-        pointer = open(f'files/{filename}', 'rb')
         client_socket.sendfile(pointer)
         pointer.close()
         
@@ -43,12 +66,12 @@ def handle_retr_command(client_socket: socket, args):
     except FileNotFoundError:
         client_socket.send(to_json({"status_code" : "550", "message": "Requested action not taken. File unavailable."}))
 
-def handle_stor_command(client_socket: socket, args):
+def handle_stor_command(client_socket: socket, args, user: str):
     filename = args[0] if args else ""
     try:
         client_socket.send(to_json({"status_code" : "150", "message": "Opening data connection."}))
         
-        pointer = open(f'files/{filename}', 'wb')
+        pointer = open(f'{FILE_ROOT}/{state[user]}{filename}', 'wb')
         pointer.write(client_socket.recv(BUFFER_SIZE))
         pointer.close()
         
@@ -56,10 +79,10 @@ def handle_stor_command(client_socket: socket, args):
     except FileNotFoundError:
         client_socket.send(to_json({"status_code" : "550", "message": "Requested action not taken. File unavailable."}))
         
-def handle_rnfr_command(client_socket: socket, args):
+def handle_rnfr_command(client_socket: socket, args, user: str):
     filename = args[0] if args else ""
     try:
-        pointer = open(f'files/{filename}', 'rb')
+        pointer = open(f'{FILE_ROOT}/{state[user]}{filename}', 'rb')
         pointer.close()
         
         client_socket.send(to_json({"status_code" : "350", "message": "Ready for RNTO."}))
@@ -68,35 +91,35 @@ def handle_rnfr_command(client_socket: socket, args):
         client_socket.send(to_json({"status_code" : "550", "message": "Requested action not taken. File unavailable."}))
         return None
         
-def handle_rnto_command(client_socket: socket, old_filename: str, args):
+def handle_rnto_command(client_socket: socket, old_filename: str, args, user: str):
     new_filename = args[0] if args else ""
     try:
-        os.rename(f'files/{old_filename}', f'files/{new_filename}')
+        os.rename(f'{FILE_ROOT}/{state[user]}{old_filename}', f'{FILE_ROOT}/{state[user]}{new_filename}')
         
         client_socket.send(to_json({"status_code" : "250", "message": "Rename successful."}))
     except FileNotFoundError:
         client_socket.send(to_json({"status_code" : "550", "message": "Requested action not taken. File unavailable."}))
 
-def handle_dele_command(client_socket: socket, args):
+def handle_dele_command(client_socket: socket, args, user: str):
     filename = args[0] if args else ""
     try:
-        os.remove(f'files/{filename}')
+        os.remove(f'{FILE_ROOT}/{state[user]}{filename}')
         client_socket.send(to_json({"status_code" : "250", "message": "Requested file action okay, completed."}))
     except FileNotFoundError:
         client_socket.send(to_json({"status_code" : "550", "message": "Requested action not taken. File unavailable."}))
 
-def handle_mkd_command(client_socket: socket, args):
+def handle_mkd_command(client_socket: socket, args, user: str):
     dirname = args[0] if args else ""
     try:
-        os.mkdir(f'files/{dirname}')
+        os.mkdir(f'{FILE_ROOT}/{state[user]}{dirname}')
         client_socket.send(to_json({"status_code" : "257", "message": "Directory created."}))
     except FileExistsError:
         client_socket.send(to_json({"status_code" : "550", "message": "Requested action not taken. Directory already exists."}))
         
-def handle_rmd_command(client_socket: socket, args):
+def handle_rmd_command(client_socket: socket, args, user: str):
     dirname = args[0] if args else ""
     try:
-        os.rmdir(f'files/{dirname}')
+        os.rmdir(f'{FILE_ROOT}/{state[user]}{dirname}')
         client_socket.send(to_json({"status_code" : "250", "message": "Directory removed."}))
     except FileNotFoundError:
         client_socket.send(to_json({"status_code" : "550", "message": "Requested action not taken. Directory does not exist."}))
@@ -117,28 +140,32 @@ def handle_client(client_socket: socket):
         command = data['command']
         args = data['args']
         
-        print(command)
-        
         if command == "USER":
             user = handle_user_command(client_socket, args)
+            if state.get(user) is None:
+                state[user] = ''
         elif command == "PASS":
             authenticated = handle_pass_command(client_socket, args, user)
         elif command == "LIST" and authenticated:
-            handle_list_command(client_socket)
+            handle_list_command(client_socket, user)
+        elif command == "PWD" and authenticated:
+            handle_pwd_command(client_socket, user)
+        elif command == "CWD" and authenticated:
+            handle_cwd_command(client_socket, args, user)
         elif command == "RETR" and authenticated:
-            handle_retr_command(client_socket, args)
+            handle_retr_command(client_socket, args, user)
         elif command == "STOR" and authenticated:
-            handle_stor_command(client_socket, args)
+            handle_stor_command(client_socket, args, user)
         elif command == "RNFR" and authenticated:
-            filename = handle_rnfr_command(client_socket, args)
+            filename = handle_rnfr_command(client_socket, args, user)
         elif command == "RNTO" and authenticated and filename:
-            handle_rnto_command(client_socket, filename, args)
+            handle_rnto_command(client_socket, filename, args, user)
         elif command == "DELE" and authenticated:
-            handle_dele_command(client_socket, args)
+            handle_dele_command(client_socket, args, user)
         elif command == "MKD" and authenticated:
-            handle_mkd_command(client_socket, args)
+            handle_mkd_command(client_socket, args, user)
         elif command == "RMD" and authenticated:
-            handle_rmd_command(client_socket, args)
+            handle_rmd_command(client_socket, args, user)
         elif command == "QUIT":
             handle_quit_command(client_socket)
             break

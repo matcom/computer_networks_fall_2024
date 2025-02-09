@@ -44,6 +44,25 @@ def handle_command_list(conn: connection):
     else:
         print(rsp.message)
         
+def handle_command_pwd(conn: connection):
+    data = from_json(conn.send(to_json({'command': 'PWD', 'args': []})))
+    rsp = response(data['status_code'], data['message'], data['data'])
+    
+    if(rsp.status_code == '257'):
+        log(rsp.message)
+        print(rsp.data)
+    else:
+        print(rsp.message)
+        
+def handle_command_cwd(conn: connection, dirname: str):
+    data = from_json(conn.send(to_json({'command': 'CWD', 'args': [dirname]})))
+    rsp = response(data['status_code'], data['message'])
+    
+    if(rsp.status_code == '250'):
+        log(rsp.message)
+    else:
+        print(rsp.message)
+        
 def handle_command_retr(conn: connection, filename: str):
     data = from_json(conn.send(to_json({'command': 'RETR', 'args': [filename]})))
     rsp = response(data['status_code'], data['message'])
@@ -134,7 +153,11 @@ def close_connection(conn: connection):
 
 def handle_command(conn: connection, command, arg1, arg2):
     if command == 'LIST':
-        handle_command_list(conn, arg1)
+        handle_command_list(conn)
+    elif command == 'PWD':
+        handle_command_pwd(conn)
+    elif command == 'CWD':
+        handle_command_cwd(conn, arg1)
     elif command == 'RETR':
         handle_command_retr(conn, arg1)
     elif command == 'STOR':
