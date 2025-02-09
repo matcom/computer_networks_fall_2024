@@ -155,6 +155,16 @@ def main():
             print("Falta el argumento requerido: -a para el comando CWD")
             return
         client.change_working_directory(arg1)
+    elif command == "RNFR":
+        if not arg1 or not arg2:
+            print("Faltan los argumentos requeridos: -a y -b para el comando RNFR")
+            return
+        client.rename(arg1, arg2)
+    elif command == "DELE":
+        if not arg1:
+            print("Falta el argumento requerido: -a para el comando DELE")
+            return
+        client.delete(arg1)
     elif command:
         print(f"Comando '{command}' no reconocido.")
     else:
