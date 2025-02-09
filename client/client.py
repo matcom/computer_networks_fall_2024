@@ -6,7 +6,7 @@ import struct
 
 BUFFER_SIZE = 1024
 TYPE = 'A'
-MODE = 'B'
+MODE = 'S'
 DATA_SOCKET = None                  # Socket de transferencia utilizado para transferencia de datos
 
 # Funciones -------------------------------------------------------------------------------------------------------------------
@@ -146,9 +146,15 @@ def cmd_STOR_APPE_STOU(socket, *args, command):
     print(response)
 
     # Verificar si el archivo existe
-    if not os.path.exists(args[0]):
-        print(f"La ruta {args[0]} no es una ruta válida.")
-        return
+    target_path = args[0]
+    if not os.path.isfile(target_path):
+        target_path = os.path.join(os.getcwd(), args[0])
+        print(target_path)
+        if not os.path.isfile(target_path):
+            print(f"La ruta {args[0]} no es una ruta válida.")
+            return
+
+
     # Verificar tipo de archivo para configurar permisos de lectura
     if TYPE == 'A':
         r_mode = 'r'
@@ -161,18 +167,39 @@ def cmd_STOR_APPE_STOU(socket, *args, command):
     try:
         # Enviar el comando STOR o APPE
         response = send(socket, f'{command} {os.path.basename(args[0])}')
+        if response.startswith('5'):
+            data_socket.close()
+            return response
         print(response)
 
         # Abrir el archivo en modo binario para leer y enviar su contenido
         with open(args[0], r_mode) as file:
-            while True:
-                chunk = file.read(BUFFER_SIZE)
-                if not chunk:
-                    break # Se sale del bucle cuando no hay más datos para enviar
-                if TYPE == 'A':
-                    data_socket.sendall(chunk.encode())
-                else:
-                    data_socket.sendall(chunk)
+            if MODE == 'S':
+                while True:
+                    chunk = file.read(BUFFER_SIZE)
+                    if not chunk:
+                        break # Se sale del bucle cuando no hay más datos para enviar
+                    if TYPE == 'A':
+                        data_socket.sendall(chunk.encode())
+                    else:
+                        data_socket.sendall(chunk)
+            else:
+                while True:
+                    data = file.read(BUFFER_SIZE)  # Leer en bloques de 1024 bytes
+                    if not data:
+                        break  # Fin del archivo
+
+                    # Crear encabezado del bloque (DATA)
+                    block_header = struct.pack(">BH", 0x00, len(data))  # (Tipo, Tamaño)
+                    if TYPE == 'A':
+                        data_socket.sendall(block_header + data.encode())  # Enviar bloque
+                    else:
+                        data_socket.sendall(block_header + data)  # Enviar bloque
+
+                # Enviar bloque EOF al final
+                eof_header = struct.pack(">BH", 0x80, 0)  # Tipo EOF, Tamaño 0
+                data_socket.sendall(eof_header)
+
     finally:
         # Asegurarse de que el socket de datos se cierre correctamente
         data_socket.close()
@@ -273,26 +300,15 @@ def cmd_LIST_NLST(socket, *args, command):
     finally:
         # Asegurarse de que el socket de datos se cierre correctamente
         data_socket.close()
-    decoded_data = data.decode()
-    return decoded_data
+        decoded_data = data.decode()
+        return decoded_data
 
 def cmd_PORT(comm_socket, *args):
     """Envía el comando PORT al servidor FTP para especificar el puerto de datos del cliente."""
+    global DATA_SOCKET
     args_len = len(args)
     response = argument_handler(2,2,args_len)
     print(response)
-    
-    if not isinstance(args[1], int):
-        raise TypeError("El argumento 'PORT' debe ser un entero.")
-    if not isinstance(ip, str):
-        raise TypeError("El argumento 'IP' debe ser una cadena.")
-    # Validando puerto
-    if args[1] < 1 or args[1] > 65535:
-        raise ValueError("El puerto debe estar en el rango de 1 a 65535.")
-    # Validando IP
-    ip_parts = args[0].split('.')
-    if len(ip_parts) != 4:
-        raise ValueError("La dirección IP debe tener exactamente cuatro partes.")
 
     # Iniciando socket de datos local
     data_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -412,6 +428,7 @@ try:
     elif command == 'DELE': # Elimina el directorio especificado
         print(generic_command_by_type(ftp_socket, *cmd_args, command=command, command_type='A'))
     elif command == 'LIST': # Recibe una lista de archivos en un directorio especificado
+        print("print lista")
         print(cmd_LIST_NLST(ftp_socket, *cmd_args, command=command))
     elif command == 'NLST': # Recibe una lista de nombres de archivos en un directorio especificado
         print(cmd_LIST_NLST(ftp_socket, *cmd_args, command=command))
