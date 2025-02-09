@@ -133,6 +133,15 @@ def cmd_REIN(client_socket, current_dir):
     client_socket.send(b"220 Service ready for new user.\r\n")
     return None, False, os.getcwd()  # Restablece el usuario y autenticación, y vuelve a la raíz del servidor
 
+def cmd_PWD(client_socket, current_dir, authenticated):
+    if not authenticated:
+        client_socket.send(b"530 Not logged in.\r\n")  # Usuario no autenticado
+    else:
+        try:
+            client_socket.send(f'257 "{current_dir}" is the current directory.\r\n'.encode())
+        except Exception:
+            client_socket.send(b"550 Failed to retrieve current directory.\r\n")  # Error inesperado
+
 
 
 
