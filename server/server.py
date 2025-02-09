@@ -101,6 +101,16 @@ def cmd_PASS(arg, client_socket, authenticated, username, current_dir, client_ip
             return None, False
     return current_dir, False
 
+def cmd_ACCT(arg, client_socket, authenticated, username):
+    if authenticated:
+        client_socket.send(b"202 No hay necesidad de esta informacion adicional.\r\n")
+    elif username is None:
+        client_socket.send(b"503 Bad sequence of commands.\r\n")
+    elif not arg:
+        client_socket.send(b"501 Syntax error in parameters or arguments.\r\n")
+    else:
+        client_socket.send(b"230 User logged in, proceed.\r\n")  # En este caso, ACCT no es obligatorio
+
 
 
 
