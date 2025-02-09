@@ -104,11 +104,25 @@ class FTPClient:
         else:
             raise Exception(f"Error al eliminar el archivo '{filename}'.")
 
+    def make_directory(self, directory):
+        response = self.send_command(f'MKD {directory}')
+        if "257" in response:  # Respuesta exitosa de MKD
+            print(f"Directorio '{directory}' creado correctamente.")
+        else:
+            raise Exception(f"Error al crear el directorio '{directory}'.")
+
+    def remove_directory(self, directory):
+        response = self.send_command(f'RMD {directory}')
+        if "250" in response:  # Respuesta exitosa de RMD
+            print(f"Directorio '{directory}' eliminado correctamente.")
+        else:
+            raise Exception(f"Error al eliminar el directorio '{directory}'.")
 
     def quit(self):
         self.send_command('QUIT')
         self.control_socket.close()
         print("Conexión cerrada.")
+
 
 
 def main():
@@ -165,6 +179,16 @@ def main():
             print("Falta el argumento requerido: -a para el comando DELE")
             return
         client.delete(arg1)
+    elif command == "MKD":
+        if not arg1:
+            print("Falta el argumento requerido: -a para el comando MKD")
+            return
+        client.make_directory(arg1)
+    elif command == "RMD":
+        if not arg1:
+            print("Falta el argumento requerido: -a para el comando RMD")
+            return
+        client.remove_directory(arg1)
     elif command:
         print(f"Comando '{command}' no reconocido.")
     else:
