@@ -71,7 +71,10 @@ class FTPClient:
         data_socket.close()
         print(f"Archivo '{filename}' subido correctamente.")
 
-
+    def quit(self):
+        self.send_command('QUIT')
+        self.control_socket.close()
+        print("Conexión cerrada.")
 
 
 def main():
