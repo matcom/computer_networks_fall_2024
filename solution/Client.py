@@ -44,7 +44,7 @@ class IRCClient:
 
             return response.strip()  # Eliminamos espacios en blanco sobrantes
         except Exception as e:
-            return f"❌ Error al recibir respuesta: {e}"
+            return f"Error al recibir respuesta: {e}"
 
 
     def start_receiving(self):
@@ -160,6 +160,7 @@ class IRCClient:
         self.send_command("QUIT :Saliendo del servidor")
         self.sock.close()
         self.connected= False
+        print('Desconectado del servidor')
 
 def parse_arguments():
     parser = argparse.ArgumentParser(description="Parser de pruebas para cliente IRC")
@@ -181,6 +182,7 @@ if __name__ == "__main__":
     client.receive_response()
     # Ejecutar el comando desde el test
     client.handle_command(args.c, argument)
-    response = client.receive_response()
-    # Mostrar la respuesta del servidor
-    print(response)
+    if args.c != "/quit":
+        response = client.receive_response()  
+        # Mostrar la respuesta del servidor
+        print(response)    
