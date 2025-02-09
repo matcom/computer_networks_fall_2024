@@ -1,8 +1,6 @@
 from typing import Callable, List, Tuple
 from src.status import HTTPStatus
 
-#some type definitions
-
 class Method:
   def __init__(self, method: str, function: Callable[[object], Tuple[int, str]]):
     self.method = method

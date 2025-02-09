@@ -10,7 +10,7 @@ def handle_client(client_socket: socket.socket):
       request_info, body = receive_request(client_socket)
       if not request_info:
         break
-      print("Solicitud recibida")
+      print("Request received")
       status, body = r.router.handle(request_info["uri"], request_info["method"], body)
       headers = httpResponse.build_headers(status, body)
       headers = httpResponse.stringify_headers(headers)
@@ -24,7 +24,7 @@ def handle_client(client_socket: socket.socket):
     client_socket.send(response.encode())
   finally:
     client_socket.close()
-    print("conexión cerrada")
+    print("Connection closed")
     
 def receive_request(client_socket):
   head = ""
@@ -37,7 +37,7 @@ def receive_request(client_socket):
       if head.endswith(basic_rules.crlf * 2):
         break
   except TimeoutError:
-    print("Conexión cerrada por timeout")	
+    print("Connection closed due to timeout")
     return None, None
   except Exception as e:
     print(f"Error: {e}")
@@ -54,13 +54,13 @@ def start_server(host='127.0.0.1', port=8080):
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server_socket.bind((host, port))
     server_socket.listen(5)
-    print(f"Servidor escuchando en {host}:{port}...")
+    print(f"Server listening on {host}:{port}...")
 
     while True:
         client_socket, addr = server_socket.accept()
         client_socket.settimeout(10)
-        print(f"Conexión aceptada de {addr}")
+        print(f"Connection accepted from {addr}")
         client_handler = threading.Thread(target=handle_client, args=(client_socket,))
         client_handler.start()
   except:
-    print('Hubo un error fatal')
+    print('Fatal Error')
