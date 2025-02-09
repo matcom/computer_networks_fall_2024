@@ -7,7 +7,7 @@ on:
 
 jobs:
   test-protocol-with-repo-variables:
-    if: ${{ vars.USE_CUSTOM_VARIABLES == 'true' }}
+    if: ${{ github.event_name == 'workflow_dispatch' && vars.USE_CUSTOM_VARIABLES == 'true' || vars.USE_CUSTOM_VARIABLES == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - name: Cloning repository
@@ -17,7 +17,7 @@ jobs:
             chmod -R +x .
             export PROTOCOL=${{vars.PROTOCOL}} && ./tests/setup_and_run.sh
   test-protocol-with-env-variables:
-    if: ${{ vars.USE_CUSTOM_VARIABLES != 'true' }}
+    if: ${{ github.event_name == 'workflow_dispatch' && vars.USE_CUSTOM_VARIABLES != 'true' || vars.USE_CUSTOM_VARIABLES != 'true' }}
     runs-on: ubuntu-latest
     steps:
       - name: Cloning repository

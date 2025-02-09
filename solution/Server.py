@@ -49,6 +49,8 @@ class IRCServer:
 
         if command == "NICK":
             return self.change_nick(client_socket, argument)
+        elif command == "MODE":
+            return self.handle_mode(client_socket, argument)
         elif command == "USER":
             return "Usuario registrado."
         elif command == "JOIN":
@@ -64,7 +66,7 @@ class IRCServer:
         elif command == "NAMES":
             return self.list_users(argument)
         elif command == "WHOIS":
-            return self.whois_user(argument)
+            return self.whois_user(client_socket, argument)
         elif command == "TOPIC":
             return self.show_topic(argument)
         elif command == "QUIT":
@@ -101,15 +103,17 @@ class IRCServer:
             return "Error: Formato incorrecto"
         target, message = parts
         sender = self.clients[client_socket]
-        c= [client for _ , client in self.clients.items()]
+        c = [client for _, client in self.clients.items()]
+        
         # Mensaje a un usuario
         if target in c:
-            destination_sock= None
+            destination_sock = None
             for sock, client in self.clients.items():
-                if client== target: destination_sock= sock
+                if client == target: 
+                    destination_sock = sock
             destination_sock.sendall((f"[Mensaje privado de {sender}] {message}\r\n").encode())
             return "Mensaje enviado"
-
+        
         # Mensaje a un canal
         elif target in self.channels:
             if client_socket not in self.channels[target]:
@@ -120,7 +124,8 @@ class IRCServer:
                     member.sendall((f"[{target}] Mensaje de {sender}: {message}\r\n").encode())
             return f"Mensaje enviado a {target}"
 
-        return "Error: Usuario o canal no encontrado"
+        # Si no es ni usuario ni canal, devolver mensaje de error
+        return "Error: No hay ningún usuario con ese nombre" if target not in self.channels else "Error: Usuario o canal no encontrado"
 
     def send_notice(self, client_socket, argument):
         parts = argument.split(" ", 1)
@@ -151,14 +156,14 @@ class IRCServer:
             return f"Usuarios en {channel}: {list_users}"
         return "Error: Canal no encontrado"
 
-    def whois_user(self, user):
+    def whois_user(self,client_socket, user):
         if user in [client for sock, client in self.clients.items()]:         
             for channel in self.channels:
                 for user_socket in self.channels[channel]:
                     if self.clients[user_socket] == user:
-                        user_socket.sendall((f"Usuario {user} en el canal {channel}\r\n").encode())
+                        client_socket.sendall((f"Usuario {user} en el canal {channel}\r\n").encode())
 
-            return "Lista Completada"                        
+            return "Lista Completada"              
         else: return 'Usuario no encontrado'                
 
 
@@ -177,6 +182,48 @@ class IRCServer:
         for channel in self.channels:
             if client_socket in self.channels[channel]:
                 self.channels[channel].remove(client_socket)
+
+    def handle_mode(self, client_socket, argument):
+        parts = argument.split()
+        if len(parts) < 3:
+            return "Error: Formato correcto: MODE <canal> +o <usuario>"
+            
+        channel, mode, target_nick = parts
+        
+        # Verificar que el canal existe
+        if channel not in self.channels:
+            return "Error: Canal no encontrado"
+            
+        # Verificar que el usuario está en el canal
+        if client_socket not in self.channels[channel]:
+            return "Error: No estás en el canal"
+            
+        # Verificar que el usuario objetivo existe
+        target_socket = None
+        for sock, nick in self.clients.items():
+            if nick == target_nick:
+                target_socket = sock
+                break
+                
+        if not target_socket:
+            return "Error: Usuario no encontrado"
+            
+        if mode == "+o":
+            if not hasattr(self, 'channel_operators'):
+                self.channel_operators = {}
+            if channel not in self.channel_operators:
+                self.channel_operators[channel] = []
+                
+            self.channel_operators[channel].append(target_socket)
+            
+            # Notificar a todos los usuarios del canal
+            message = f"{self.clients[client_socket]} ha dado estado de operador a {target_nick} en {channel}"
+            for member in self.channels[channel]:
+                member.sendall(f"{message}\r\n".encode())
+            
+            return f"Modo establecido: {target_nick} es ahora operador en {channel}"
+            
+        return "Error: Modo no soportado"
 
 if __name__ == "__main__":
     server = IRCServer()
