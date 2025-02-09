@@ -9,9 +9,10 @@ from src.status import HTTPStatus
 class httpClient:
     def __init__(self, url):
         try:
-            host, port, path = httpMessage.get_url_info(url)
+           secure, host, port, path = httpMessage.get_url_info(url)
         except Exception as e:
             raise InvalidURLError(f"Invalid URL: {url}", url) from e
+        self.secure = secure
         self.host = host
         self.port = port
         self.url = url
