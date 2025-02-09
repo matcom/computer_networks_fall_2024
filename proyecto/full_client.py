@@ -63,6 +63,28 @@ class FTPClient:
         
         return response
     
+    def send_stor_command(self, sock, data_sock, command, *args):
+        full_command = f"{command} {' '.join(args)}".strip()
+        sock.send(f"{full_command}\r\n".encode())
+        
+        response = ""
+        while True:
+            data = sock.recv(1024).decode()
+            if not data:  # Si no hay más datos, salir del bucle
+                break
+            if "150" in data:
+                if self.send_file(data_sock, args[0]):
+                    print("Archivo enviado exitosamente")
+                else:
+                    print("Error al enviar archivo")
+            response += data
+            
+            # Verificar si la respuesta termina con un código de estado (por ejemplo, "226")
+            if re.search(r"226 .*\r\n", response) or data.startswith("5"):
+                break
+        
+        return response
+    
     def send_command_multiresponse(self, sock, command, *args):
         full_command = f"{command} {' '.join(args)}".strip()
         sock.send(f"{full_command}\r\n".encode())
@@ -74,7 +96,7 @@ class FTPClient:
                 break
             response += data
             # Verificar si la respuesta termina con un código de estado (por ejemplo, "226")
-            if re.search(r"226 .*\r\n", response):
+            if re.search(r"226 .*\r\n", response) or data.startswith("5"):
                 break
         
         return response
@@ -82,11 +104,15 @@ class FTPClient:
     def send_file(self, sock, filename):
         """Envía un archivo al servidor"""
         try:
+            print(filename)
             with open(filename, 'rb') as f:
-                data = f.read(1024)
-                while data:
-                    sock.sendall(data)
-                    data = f.read(1024)
+                while True:
+                    data = f.read(4096)
+                    print(data)
+                    if not data:
+                        break
+                    sock.send(data)
+            sock.send(b'EOF')
             return True
         except Exception as e:
             print(f"Error al enviar archivo: {e}")
@@ -203,18 +229,9 @@ class FTPClient:
 
                                     filename = args[0]
                                     if cmd == "STOR":
-                                        if os.path.exists(filename):                                    # Enviar el archivo
-                                            if self.send_file(data_sock, filename):
-                                                print("Archivo enviado exitosamente")
-                                            else:
-                                                print("Error al enviar archivo")
-                                            response = self.send_command_multiresponse(client_socket, "STOR", filename)
+                                        if os.path.exists(filename):
+                                            response = self.send_stor_command(client_socket, data_sock, "STOR", filename)
                                             print(response)
-                                            if "150" in response:
-                                                if self.send_file(data_sock, filename):
-                                                    print("Archivo enviado exitosamente")
-                                                else:
-                                                    print("Error al enviar archivo")
                                         else:
                                             print("Archivo no encontrado")
 

@@ -366,15 +366,20 @@ class ServerFTP:
 
             # Aceptar la conexión de datos
             self.data_socket, _ = self.pasv_socket.accept()
+            print("Conexión de datos establecida.")
 
             # Recibir el archivo
             with open(file_path, 'wb') as f:
+                print("Leyendo el archivo")
                 while True:
-                    print("hola")
-                    data = self.data_socket.recv(1024)
-                    if not data:
+                    data = self.data_socket.recv(4096)
+                    print("Data recivida")
+                    print(data)
+                    if b'EOF' in data:
+                        f.write(data.split(b'EOF')[0])  # Escribe los datos antes del marcador EOF
                         break
                     f.write(data)
+                    print("Data escrita")
 
             # Confirmar que la transferencia se completó
             client_socket.send(b"226 Transferencia completa\r\n")
