@@ -111,6 +111,23 @@ def cmd_ACCT(arg, client_socket, authenticated, username):
     else:
         client_socket.send(b"230 User logged in, proceed.\r\n")  # En este caso, ACCT no es obligatorio
 
+def cmd_SMNT(arg, client_socket, authenticated, current_dir):
+    if not authenticated:
+        client_socket.send(b"530 Not logged in.\r\n")
+    elif arg is None or not arg.strip():
+        client_socket.send(b"501 Syntax error in parameters or arguments.\r\n")
+    elif not os.path.isdir(arg):
+        client_socket.send(b"550 Failed to mount directory structure.\r\n")
+    else:
+        try:
+            os.chdir(arg)  # Cambia la estructura de trabajo
+            client_socket.send(b"250 Directory structure mounted successfully.\r\n")
+            return os.getcwd()  # Devuelve la nueva ruta actual
+        except Exception:
+            client_socket.send(b"550 Failed to mount directory structure.\r\n")
+
+    return current_dir  # Si no se cambia, devuelve el directorio actual
+
 
 
 
