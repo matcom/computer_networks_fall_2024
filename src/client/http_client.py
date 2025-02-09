@@ -1,16 +1,10 @@
 import socket
-import logging
 from http_parser import parse_http_url,parse_http_response
 from exceptions import NotConnection
 
 # GLOBAL VARIABLES
 _versionHttp = 'HTTP/1.1'
 default_port = 80
-
-logging.basicConfig(
-    level=logging.WARNING,
-    format='%(asctime)s - %(levelname)s - %(message)s'
-)
 
 class HttpClient:
     
@@ -59,7 +53,6 @@ class HttpClient:
         if not self.mySocket:
             raise NotConnection("La conexión no está abierta")
 
-        logging.info("INFO - sending\n%s", data)
         #enviar los datos al servidor 
         self.mySocket.sendall(data)
     
@@ -93,8 +86,6 @@ def final_request (method="GET",url="/",headers = None,body =""):
     finally:
         # cierra la conexion
         conn.close()
-    
-    logging.debug("%s %s %s", data, data.body, data.headers)
     
     # devuelve la respuesta parseada
     return data

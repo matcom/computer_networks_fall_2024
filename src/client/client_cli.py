@@ -4,14 +4,15 @@ import sys
 from http_client import  final_request
 from http_response import HTTPResponse
 from http_parser import categorize_args
+from exceptions import InvalidHeaderFormat
 
 def main(sys_args):
     
     parser = argparse.ArgumentParser(description="HTTP Client CLI", add_help=False)
-    parser.add_argument("-m", "--method", required=True, help="HTTP method (e.g., GET, POST)")
-    parser.add_argument("-u", "--url", required=True, help="Request URL")
-    parser.add_argument("-h", "--header", type=str, default="{}", help="Request headers in JSON format (e.g., '{\"User-Agent\": \"device\"}')")
-    parser.add_argument("-d", "--data", type=str, default="", help="Request body data")
+    parser.add_argument("-m", "--method", required=True, help="Metodo HTTP (GET,POST,DELETE)")
+    parser.add_argument("-u", "--url", required=True, help="URL de la solicitud")
+    parser.add_argument("-h", "--header", type=str, default="{}", help="Encabezado JSON de al solicitud (e.g., '{\"User-Agent\": \"device\"}')")
+    parser.add_argument("-d", "--data", type=str, default="", help="Cuerpo de la solicitud")
 
     # Parse arguments
     args = parser.parse_args(categorize_args(sys_args))
@@ -20,8 +21,7 @@ def main(sys_args):
     try:
         headers = json.loads(args.header)
     except json.JSONDecodeError:
-        print("Invalid header format. Please provide valid JSON.")
-        sys.exit(1)
+        raise InvalidHeaderFormat("❌ Error:Formato de encabezado inválido. Por favor, proporcione un JSON válido.")
 
     # Make the HTTP request
     response: HTTPResponse = final_request(method=args.method, url=args.url, headers=headers, body=args.data)
