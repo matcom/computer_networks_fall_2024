@@ -10,7 +10,7 @@ class SMTPConnection:
     Clase para gestionar la conexión TCP subyacente con un servidor SMTP.
     """
 
-    def __init__(self, host: str, port: int = 25, timeout: float = 10.0):
+    def __init__(self, host: str, port: int = 25, timeout: float = 50.0):
         """
         Inicializa la conexión SMTP y establece la conexión automáticamente.
 
