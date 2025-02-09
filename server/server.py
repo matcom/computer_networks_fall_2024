@@ -173,6 +173,27 @@ def cmd_CDUP(client_socket, current_dir, root_dir, authenticated):
     client_socket.send(b"250 Directory successfully changed.\r\n")
     return new_dir
 
+def cmd_MKD(arg, client_socket, current_dir, authenticated):
+    if not authenticated:
+        client_socket.send(b"530 Not logged in.\r\n")
+        return
+
+    if not arg:
+        client_socket.send(b"501 Syntax error in parameters or arguments.\r\n")
+        return
+
+    new_dir = os.path.join(current_dir, arg)
+
+    if os.path.exists(new_dir):
+        client_socket.send(b"550 Directory already exists.\r\n")
+        return
+
+    try:
+        os.makedirs(new_dir)
+        client_socket.send(f'257 "{arg}" directory created successfully.\r\n'.encode())
+    except Exception:
+        client_socket.send(b"550 Failed to create directory.\r\n")
+
 
 
 #-------------------------------------------------------------------------------------------------------------------------
