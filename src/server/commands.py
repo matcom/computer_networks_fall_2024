@@ -1,14 +1,27 @@
 class CommandHandler:
     @staticmethod
     def ehlo(session, domain: str):
-        session.reset()
+        # Reiniciar solo los campos relacionados con el correo electrónico
+        session.mail_from = None
+        session.recipients = []
+        session.data = []
+        
+        # Actualizar el host del cliente
         session.client_host = domain
-        return (
-            "250-smtp.server.com Hello\r\n"
-            "250-STARTTLS\r\n"
-            "250-AUTH PLAIN LOGIN\r\n"
-            "250 OK\r\n"
-        )
+        
+        # Construir la respuesta EHLO
+        response = "250-smtp.server.com Hello\r\n"
+        
+        # Agregar capacidades basadas en el estado de la sesión
+        if not session.tls_active:
+            response += "250-STARTTLS\r\n"  # Ofrecer STARTTLS si no está activo
+        
+        if session.tls_active:
+            response += "250-AUTH PLAIN LOGIN\r\n"  # Ofrecer AUTH si TLS está activo
+        
+        response += "250 OK\r\n"
+        
+        return response
 
     @staticmethod
     def starttls(session):

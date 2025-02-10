@@ -34,8 +34,17 @@ class SMTPServer:
                     break
                 
                 command, arg = CommandParser.parse(data)
-                response = self.process_command(client_socket, session, command, arg)
-                client_socket.send(response.encode())
+                
+                # Procesar comando y obtener posible socket seguro
+                result = self.process_command(client_socket, session, command, arg)
+                
+                if command == "STARTTLS":
+                    # Reemplazar el socket por el seguro
+                    client_socket = result  # result es el socket seguro
+                    continue  # Saltar al siguiente ciclo del bucle
+                
+                # Enviar respuesta para otros comandos
+                client_socket.send(result.encode())
                 
                 if command == "QUIT":
                     break
@@ -43,9 +52,11 @@ class SMTPServer:
             client_socket.close()
 
     def process_command(self, client_socket, session, command, arg):
+        if command == "STARTTLS":
+            return self.upgrade_tls(client_socket, session)  # Retorna el socket seguro
+        
         handler = {
             "EHLO": lambda: CommandHandler.ehlo(session, arg),
-            "STARTTLS": lambda: self.upgrade_tls(client_socket, session),
             "MAIL": lambda: CommandHandler.mail_from(session, arg.split(":")[1].strip()),
             "RCPT": lambda: CommandHandler.rcpt_to(session, arg.split(":")[1].strip()),
             "DATA": lambda: CommandHandler.data(client_socket),
@@ -56,14 +67,16 @@ class SMTPServer:
 
     def upgrade_tls(self, client_socket, session):
         response = CommandHandler.starttls(session)
-        client_socket.send(response.encode())
+        client_socket.send(response.encode())  # Envía "220 Ready to start TLS"
         
+        # Crear contexto TLS
         context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
         context.load_cert_chain(certfile=self.certfile, keyfile=self.keyfile)
         
+        # Envolver el socket en TLS (sin cerrar el original)
         secure_socket = context.wrap_socket(client_socket, server_side=True)
-        session.tls_active = True
+        secure_socket.do_handshake()  # Realizar handshake TLS
         
-        # Reemplazar el socket original
-        client_socket.close()
-        return "250 TLS negotiation successful\r\n"
+        session.tls_active = True
+                
+        return secure_socket  # Retornar el socket seguro
