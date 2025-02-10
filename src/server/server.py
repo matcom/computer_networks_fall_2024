@@ -12,8 +12,8 @@ def handle_client(client_socket: socket.socket):
                 break
             print("Request received")
             status, body, headers = r.router.handle(request_info["uri"], request_info["method"], body)
-            headers = httpResponse.build_headers(status, body)
-            headers.update(headers)
+            new_headers = httpResponse.build_headers(status, body)
+            headers.update(new_headers)
             headers = httpResponse.stringify_headers(headers)
             response = httpResponse.build_res(status, "OK", headers, body=body)
             client_socket.send(response.encode())
@@ -21,7 +21,7 @@ def handle_client(client_socket: socket.socket):
                 break
     except Exception as e:
         print(f"Error: {e}")
-        response = httpResponse.build_res(HTTPStatus.INTERNAL_SERVER_ERROR, "Error")
+        response = httpResponse.build_res(HTTPStatus.INTERNAL_SERVER_ERROR.value, "Error")
         client_socket.send(response.encode())
     finally:
         client_socket.close()
@@ -63,5 +63,5 @@ def start_server(host='127.0.0.1', port=8080):
             print(f"Connection accepted from {addr}")
             client_handler = threading.Thread(target=handle_client, args=(client_socket,))
             client_handler.start()
-    except:
-        print('Fatal Error')
+    except Exception as e:
+        print(f'Fatal Error {e}')
