@@ -32,4 +32,17 @@ class ChatWindow:
         self.entry_widget.bind("<Return>", self.send_message)
         self.window.protocol("WM_DELETE_WINDOW", self.on_close)
 
+    def show(self):
+        # Start the Tkinter event loop
+        self.window.mainloop()
+
+    def send_message(self, event):
+        # Get the message from the entry widget and send it to the controller
+        message = self.entry_widget.get() 
+        self.controller.send_message(message, self.name)
+        # print("canal self.name "+ self.name)
+        self.display_message(message, self.controller.user_nick)
+
+        # Clear the entry widget
+        self.entry_widget.delete(0, tk.END)
 
