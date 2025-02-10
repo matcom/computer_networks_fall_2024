@@ -3,9 +3,12 @@
 from .exceptions import SMTPException, TemporarySMTPException, PermanentSMTPException
 from .response import SMTPResponse
 import base64
-import base64
-import hmac
-from hashlib import md5
+import random
+import string
+
+def generate_boundary():
+    chars = string.ascii_letters + string.digits
+    return "BOUNDARY_" + "".join(random.choice(chars) for _ in range(16))
 
 def validate_email(email):
     import re
@@ -36,35 +39,21 @@ def credentials_for_login_authentication( username: str, password: str):
     password_b64 = base64.b64encode(password.encode('us-ascii')).decode()
     return username_b64, password_b64
 
-def credentials_for_cram_md5_authentication(response: SMTPResponse, username: str, password: str) -> str:
-    """
-    Credenciales encriptadas del cliente utilizando CRAM-MD5.
+def encode_attachment(filepath: str):
+    import base64
     
-    :param response: Respuesta del servidor después de la autenticación.
-    :param username: Nombre de usuario.
-    :param password: Contraseña del usuario.
-    :return: Respuesta del servidor después de la autenticación.
-    """
-
-    challenge = base64.b64decode(response.message.strip())
-    digest = hmac.new(password.encode(), challenge, md5).hexdigest()
-    credentials = f"{username} {digest}"
-    encoded_credentials = base64.b64encode(credentials.encode()).decode()
-    
-    return encoded_credentials
-
-def credentials_for_xoauth2_authentication(username: str, token: str) -> str:
-    """
-    Credenciales encriptadas del cliente utilizando XOAUTH2.
-
-    :param username: Dirección de correo del usuario.
-    :param token: Token de acceso OAuth2.
-    :return: Respuesta del servidor después de la autenticación.
-    """
-
-    # Formato del token XOAUTH2
-    credentials = f"user={username}\x01auth=Bearer {token}\x01\x01"
-    encoded_credentials = base64.b64encode(credentials.encode()).decode()
-
-    return encoded_credentials
- 
+    try:
+        with open(filepath, "rb") as f:
+            file_data = f.read()
+        
+        encoded = base64.b64encode(file_data).decode("us-ascii")
+        
+        # Dividir en líneas de 76 caracteres (requerido por el estándar)
+        chunked = "\r\n".join(
+            [encoded[i:i+76] for i in range(0, len(encoded), 76)]
+        )
+        
+        return chunked
+        
+    except Exception as e:
+        raise SMTPException(f"Error al adjuntar archivo: {e}")

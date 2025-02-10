@@ -3,7 +3,7 @@
 from .response import SMTPResponse
 from .connection import SMTPConnection
 from .exceptions import SMTPException, TemporarySMTPException, PermanentSMTPException
-from .utils import credentials_for_login_authentication, credentials_for_cram_md5_authentication,credentials_for_plain_authentication,credentials_for_xoauth2_authentication
+from .utils import credentials_for_login_authentication, credentials_for_plain_authentication
 class SMTPCommands:
     """
     Clase para gestionar y enviar comandos SMTP específicos a través de una conexión.
@@ -73,20 +73,7 @@ class SMTPCommands:
             
             # Enviar contraseña en Base64
             return self._send_command(f"{password_b64}\r\n")
-                                
-        if mechanism == "CRAM-MD5":
-            
-            response = self._send_command("AUTH CRAM-MD5\r\n")
-            if not response.is_provisional():
-                return response
-            
-            encoded_credentials = credentials_for_cram_md5_authentication(response, username, password)   
-
-            return self._send_command(f"{encoded_credentials}\r\n")
-                   
-        else:
-            raise SMTPException(f"Mecanismo de autenticación no soportado: {mechanism}")
-          
+                                          
     def mail_from(self, sender: str, size: int = None) -> SMTPResponse:
         """
         Envía el comando MAIL FROM al servidor SMTP.

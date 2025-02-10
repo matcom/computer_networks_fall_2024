@@ -4,8 +4,9 @@ from .connection import SMTPConnection
 from .commands import SMTPCommands
 from .response import SMTPResponse
 from .exceptions import SMTPException, TemporarySMTPException, PermanentSMTPException
-from .utils import validate_email
+from .utils import validate_email, generate_boundary, encode_attachment
 import json
+
           
 class SMTPClient:
     """
@@ -144,6 +145,7 @@ class SMTPClient:
             response = self.commands.data(formatted_message)
         
             return response.to_json()
+            
         
         except TemporarySMTPException as e:
             print(f"Error temporal: {e}. Puedes reintentar más tarde.")
@@ -154,7 +156,78 @@ class SMTPClient:
         except Exception as e:
             print(f"Error inesperado: {e}")
             
-    def format_headers(self, headers, sender, recipients):
+    
+    def send_mail_with_attachments(self, sender: str, recipients: list, subject: str, body: str, headers: str | dict = None, attachments: list = None):
+        """
+        Envía un correo electrónico utilizando la conexión SMTP establecida.
+
+        :param sender: Dirección del remitente.
+        :param recipients: Lista de direcciones de los destinatarios.
+        :param subject: Asunto del correo.
+        :param body: Cuerpo del correo.
+        """
+        
+        try:
+            response = self.commands.mail_from(sender)
+            
+            if response.is_permanent_error() or response.is_provisional():
+                return response.to_json()
+            
+            for recipient in recipients:
+                response = self.commands.rcpt_to(recipient)
+                
+                if response.is_permanent_error() or response.is_provisional():
+                    return response.to_json()
+                     
+            # Construir mensaje MIME manualmente
+            boundary = generate_boundary() # Debe ser único por mensaje
+            headers_string = self.format_headers(headers, sender, recipients, boundary)
+            
+            # Cuerpo principal del mensaje
+            message = [
+                f"{headers_string}",
+                f"Subject: {subject}",
+                "",
+                f"--{boundary}",
+                "Content-Type: text/plain; charset=us-ascii",
+                "Content-Transfer-Encoding: 7bit",
+                "",
+                body
+            ]
+
+            # Agregar archivos adjuntos
+            if attachments:
+                for filepath in attachments:
+                    attachment_content = encode_attachment(filepath)
+                    filename = filepath.split("/")[-1]  # Obtener nombre del archivo
+                    message += [
+                        f"--{boundary}",
+                        "Content-Type: application/octet-stream",
+                        "Content-Transfer-Encoding: base64",
+                        f"Content-Disposition: attachment; filename=\"{filename}\"",
+                        "",
+                        attachment_content
+                    ]
+
+            # Cierre del boundary
+            message += [f"--{boundary}--", ""]
+
+            # Unir todas las partes
+            formatted_message = "\r\n".join(message)
+            
+            response = self.commands.data(formatted_message)
+            return response.to_json()
+        
+        except TemporarySMTPException as e:
+            print(f"Error temporal: {e}. Puedes reintentar más tarde.")
+        except PermanentSMTPException as e:
+            print(f"Error permanente: {e}. No puedes continuar con esta operación.")
+        except SMTPException as e:
+            print(f"Error general de SMTP: {e}")
+        except Exception as e:
+            print(f"Error inesperado: {e}")
+            
+    def format_headers(self, headers, sender, recipients, boundary=None):
         """
         Formatea y valida los headers para asegurar que cumplan con RFC 5322.
 
@@ -220,11 +293,12 @@ class SMTPClient:
             else:
                 raise SMTPException(f"El header '{key}' no esta permitido.")
 
-        # # Agregar valores por defecto si no están presentes
         if "MIME-Version" not in validated_headers:
             validated_headers["MIME-Version"] = "1.0"
-        
-        if "Content-Type" not in validated_headers:
+            
+        if boundary:
+            validated_headers["Content-Type"] = f'multipart/mixed; boundary="{boundary}"'
+        elif "Content-Type" not in validated_headers:
             validated_headers["Content-Type"] = "text/plain; charset=us-ascii"
 
         # Convertir a formato string con `\r\n`
