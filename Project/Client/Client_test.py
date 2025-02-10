@@ -45,15 +45,15 @@ class Client_test:
     # Autenticarse mediante usuario y contrasena
     def auth(self):
         self.send_command("USER" , self.user)
-        user_response = self.receive_response()
-        print(user_response)
+        #user_response = self.receive_response()
+        #print(user_response)
 
         self.send_command("PASS",self.password)
-        password_response =  self.receive_response()
-        print(password_response)
+        #password_response =  self.receive_response()
+        #print(password_response)
 
-        if "230" in password_response:
-            self.logged_in = True
+        #if "230" in password_response:
+        #    self.logged_in = True
     
     # Ejecuta un comando
     def execute_command(self, command, args=None):
