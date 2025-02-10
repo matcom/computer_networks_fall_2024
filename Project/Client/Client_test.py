@@ -197,8 +197,9 @@ def start_client(argvs):
     ftp_client = Client_test(server, port, username, password )
     ftp_client.connect()
     ftp_client.auth()
-    ftp_client.execute_command(command, argument1) # esto hay que modificarlo para ajustarse a la entrada de los tests
-
+    response = ftp_client.execute_command(command, argument1) # esto hay que modificarlo para ajustarse a la entrada de los tests
+    print(response)
+    
 if __name__ == "__main__":
     # Configura el parser de argumentos
     parser = argparse.ArgumentParser(description="Cliente FTP en Python", add_help=False)
