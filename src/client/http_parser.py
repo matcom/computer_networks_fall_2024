@@ -5,7 +5,7 @@ from exceptions import UrlIncorrect
 
 def parse_http_url(url):
     # Expresión regular para parsear la URL
-    regex = r'^(http://)?([^:/\s]+)(?::(\d+))?(/[^?\s]*)?(\?[^#\s]*)?$'
+    regex = r'^(https?://)?([^:/\s]+)(?::(\d+))?(/[^?\s]*)?(\?[^#\s]*)?$'
     match = re.match(regex, url)
     
     if not match:
@@ -13,7 +13,7 @@ def parse_http_url(url):
     
     scheme = match.group(1) or "http://"  # Si no tiene esquema, asignamos "http://"
     host = match.group(2)
-    port = match.group(3) or 80  # Si no tiene puerto, asignamos el puerto por defecto 80
+    port = match.group(3) or (443 if scheme.startswith("https") else 80)   # Si no tiene puerto, asignamos el puerto por defecto 80
     path = match.group(4) or "/"  # Si no tiene path, asignamos "/"
     query = match.group(5) or ""  # Si no tiene query, dejamos como cadena vacía
     
