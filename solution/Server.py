@@ -134,7 +134,7 @@ class IRCServer:
         else: 
             self.clients.append(new_cli)  
             self.channels['#General'].add_user(new_cli)    
-            return f":user NICK {new_nick}"
+            return f":Usuario NICK {new_nick}"
 
 
     def join_channel(self, client_socket, channel):
@@ -181,7 +181,7 @@ class IRCServer:
             if not self.channels[target].is_on_channel(sender):
                 return f":442 :{self.NUMERIC_REPLIES['442']}"
             
-            self.channels[target].broadcast(f":{sender.nick}! PRIVMSG #{target} {message}", sender)
+            self.channels[target].broadcast(f":{sender.nick}! PRIVMSG {target} {message}", sender)
             return f"Mensaje enviado a {target}"
 
         # Si no es ni usuario ni canal, devolver mensaje de error
@@ -199,30 +199,26 @@ class IRCServer:
             if not self.channels[target].is_on_channel(sender):
                 return f':442 :{self.NUMERIC_REPLIES['442']}'
             
-            self.channels[target].broadcast(f":{sender.nick} NOTICE #{target} {message}", sender)
+            self.channels[target].broadcast(f":{sender.nick} NOTICE {target} {message}", sender)
             return f"Mensaje enviado a {target}"
 
         return  f':401 :{self.NUMERIC_REPLIES['401']}'
 
 
     def list_channels(self):
-        channels= ", ".join(self.channels.keys())
+        channels= " ".join(self.channels.keys())
         return f"Lista de Canales: {channels}" 
 
     def list_users(self, channel):
         if channel in self.channels:
             list_users = " ".join(str(client.nick) for client in self.channels[channel].users if client in self.clients)
-            return f":353 usuario = #{channel} :{list_users}"
+            return f":353 {channel} :{list_users}"
         return f':401 :{self.NUMERIC_REPLIES['401']}'
 
     def whois_user(self,client_socket, user):
-        sender = next((item for item in self.clients if item.socket== client_socket), None)
         client = next((item for item in self.clients if item.nick == user), None)
         if client and client.visibility:         
-            for _, channel in self.channels.items():
-                if channel.is_on_channel(client):
-                    sender.send_message(f"Usuario {user} en el canal {channel.name}")
-            return ""  
+            return f':312 host:{client_socket.getpeername()[0]} nick:{client.nick}'
         else: return f':401 :{self.NUMERIC_REPLIES['401']}'              
 
     def handle_topic(self, client_socket, argument):
@@ -244,10 +240,10 @@ class IRCServer:
         client = next((item for item in self.clients if item.socket == client_socket), None)
 
         if not self.channels[channel].is_on_channel(client):
-            return f':442 #{channel} :{self.NUMERIC_REPLIES['442']}'
+            return f':442 {channel} :{self.NUMERIC_REPLIES['442']}'
         
         if self.channels[channel].t and not self.channels[channel].is_operator(client):
-            return f":482 #{channel} :{self.NUMERIC_REPLIES['482']}"
+            return f":482 {channel} :{self.NUMERIC_REPLIES['482']}"
         
         self.channels[channel].topic = new_topic
         self.channels[channel].broadcast(f':{client.nick}! TOPIC #{channel} :{new_topic}', client)
@@ -257,7 +253,7 @@ class IRCServer:
     def show_topic(self, client_socket, channel):
         client = next((item for item in self.clients if item.socket == client_socket), None)      
         if channel in self.channels:
-            return f'332 {client.nick} #{channel}: {self.channels[channel].topic}'
+            return f'332 {channel}: {self.channels[channel].topic}'
         return f':401 :{self.NUMERIC_REPLIES['401']}'
         
 
@@ -275,8 +271,8 @@ class IRCServer:
                         if self.channels[channel].is_operator(sender):
                             self.channels[channel].remove_user(addressee)
                             addressee.send_message(f'Has sido expulsado del canal {channel} por {reason}')
-                            self.channels[channel].broadcast(f":{sender.nick}! KICK #{channel} {addressee.nick} :{reason}", sender)
-                            return f":{sender.nick}! KICK #{channel} {addressee.nick} :{reason}"
+                            self.channels[channel].broadcast(f":{sender.nick}! KICK {channel} {addressee.nick} :{reason}", sender)
+                            return f":{sender.nick}! KICK {channel} {addressee.nick} :{reason}"
                         return f":482 #{channel} :{self.NUMERIC_REPLIES['482']}"
                     return f':441 #{channel}: {self.NUMERIC_REPLIES['441']}'  
                 return f':442 #{channel} :{self.NUMERIC_REPLIES['442']}' 
@@ -315,7 +311,7 @@ class IRCServer:
         client = next((item for item in self.clients if item.socket == client_socket), None)
         # Verificar si el usuario es operador del canal
         if not self.channels[channel].is_operator(client):
-            return f":482 #{channel} :{self.NUMERIC_REPLIES['482']}"
+            return f":482 {channel} :{self.NUMERIC_REPLIES['482']}"
 
         param_index = 0
         for i, mode in enumerate(modes[1:]):  # Skip the +/- character

@@ -76,96 +76,80 @@ class IRCClient:
     def handle_message(self, message):
         """Maneja el mensaje recibido del servidor y procesa los comandos."""
         try:
-            # Si el mensaje está vacío, ignorarlo
             if not message:
                 return
             
-            # Dividir el mensaje en sus componentes
             parts = message.split(' ', 1)
             first_part = parts[0]
             content = parts[1] if len(parts) > 1 else ""
             
             # Manejar códigos numéricos
-            if first_part.startswith(':') and first_part[1:].isdigit():
-                code = str(first_part[1:])
-                self.handle_numeric_response(code, content)
+            if self._handle_numeric_message(first_part, content):
                 return
             
-            # Manejar comandos específicos
-            if first_part == "PING":
-                # Responder inmediatamente al PING para mantener la conexión
-                self.send_command(f"PONG {content}")
+            # Manejar PING
+            if self._handle_ping(first_part, content):
                 return
             
             # Manejar mensajes que comienzan con ':'
             if message.startswith(':'):
-                # Extraer el origen y el comando
                 try:
                     source, cmd, *params = message[1:].split(' ')
-                    nick = source.split('!')[0] if '!' in source else source
-                    
-                    if cmd == "PRIVMSG":
-                        target = params[0]
-                        msg_content = ' '.join(params[1:])[1:] # Eliminar el ':' inicial
-                        if target.startswith('#'):
-                            print(f"[{target}] {nick}: {msg_content}")
-                        else:
-                            print(f"Mensaje privado de {nick}: {msg_content}")
-                        
-                    elif cmd == "JOIN":
-                        channel = params[0]
-                        print(f"{nick} se ha unido al canal {channel}")
-                        
-                    elif cmd == "PART":
-                        channel = params[0]
-                        print(f"{nick} ha abandonado el canal {channel}")
-                        
-                    elif cmd == "QUIT":
-                        reason = ' '.join(params)[1:] if params else "No reason given"
-                        print(f"{nick} se ha desconectado: {reason}")
-                        
-                    elif cmd == "NICK":
-                        new_nick = params[0]
-                        print(f"{nick} ahora se conoce como {new_nick}")
-
-                    elif cmd == "KICK":
-                        channel = params[0]  # Canal de donde se expulsó al usuario
-                        kicked_user = params[1]  # Usuario expulsado
-                        reason = ' '.join(params[2:])[1:] if len(params) > 2 else "Sin razón especificada"
-                        print(f"{kicked_user} ha sido expulsado de {channel} por {nick}: {reason}")    
-                        
-                    elif cmd == "MODE":
-                        target = params[0]
-                        modes = ' '.join(params[1:])
-                        print(f"{nick} estableció modo {modes} en {target}")
-                        
-                    elif cmd == "TOPIC":
-                        channel = params[0]
-                        topic = ' '.join(params[1:])[1:] if len(params) > 1 else ""
-                        print(f"{nick} cambió el topic en {channel} a: {topic}")
-                        
-                    elif cmd == "NOTICE":
-                        target = params[0]
-                        notice_content = ' '.join(params[1:])[1:]
-                        print(f"NOTICE de {nick}: {notice_content}")
-                        
-                    else:
-                        print(f"Mensaje del servidor: {message}")
-                    
+                    self._handle_user_commands(source, cmd, params)
                 except Exception as e:
                     print(f"Error al procesar mensaje con prefijo: {e}")
                     print(f"Mensaje original: {message}")
-            
             else:
                 print(f"Mensaje del servidor: {message}")
             
         except Exception as e:
             print(f"Error al procesar mensaje: {e}")
 
+    def _handle_numeric_message(self, first_part, content):
+        """Maneja mensajes con códigos numéricos"""
+        if first_part.startswith(':') and first_part[1:].isdigit():
+            code = str(first_part[1:])
+            self.handle_numeric_response(code, content)
+            return True
+        return False
+
+    def _handle_ping(self, first_part, content):
+        """Maneja mensajes PING"""
+        if first_part == "PING":
+            self.send_command(f"PONG {content}")
+            return True
+        return False
+
+    def _handle_user_commands(self, source, cmd, params):
+        """Maneja comandos relacionados con usuarios"""
+        nick = source.split('!')[0] if '!' in source else source
+        
+        if cmd == "PRIVMSG":
+            self._handle_privmsg(nick, params)
+        elif cmd == "JOIN":
+            print(f"{nick} se ha unido al canal {params[0]}")
+        elif cmd == "PART":
+            print(f"{nick} ha abandonado el canal {params[0]}")
+        elif cmd == "QUIT":
+            reason = ' '.join(params)[1:] if params else "No reason given"
+            print(f"{nick} se ha desconectado: {reason}")
+        elif cmd == "NICK":
+            print(f"{nick} ahora se conoce como {params[0]}")
+
+    def _handle_privmsg(self, nick, params):
+        """Maneja mensajes privados"""
+        target = params[0]
+        msg_content = ' '.join(params[1:])[1:]
+        if target.startswith('#'):
+            print(f"[{target}] {nick}: {msg_content}")
+        else:
+            print(f"Mensaje privado de {nick}: {msg_content}")
+
     def handle_numeric_response(self, code, content):
         """Procesa los códigos numéricos del servidor IRC."""
         responses = {
             '001': "Bienvenido al servidor IRC",
+            '312': f"Información del usuario: {content}",
             '331': "No hay topic establecido",
             '332': f"Topic del canal: {content}",
             '353': f"Lista de usuarios: {content}",
@@ -228,15 +212,27 @@ class IRCClient:
 
     def join_channel(self, channel):
         """Se une a un canal enviando el comando JOIN."""
-        if channel:
-            self.send_command(f"JOIN {channel}")
-        else: print('Error: Debes proporcionar un canal')    
+        if not channel:
+            print('Error: Debes proporcionar un canal')
+            return
+        
+        if not channel.startswith('#'):
+            print('Error: El nombre del canal debe comenzar con #')
+            return
+        
+        self.send_command(f"JOIN {channel}")
 
     def part_channel(self, channel):
         """Sale de un canal enviando el comando PART."""
-        if channel:
-            self.send_command(f"PART {channel}")
-        else: print('Error: Debe proporcionar un canal')    
+        if not channel:
+            print('Error: Debe proporcionar un canal')
+            return
+        
+        if not channel.startswith('#'):
+            print('Error: El nombre del canal debe comenzar con #')
+            return
+        
+        self.send_command(f"PART {channel}")
 
     def send_private_message(self, argument):
         try:
@@ -266,9 +262,15 @@ class IRCClient:
     
     def list_users(self, channel):
         """Lista los usuarios de un canal específico."""
-        if channel:
-            self.send_command(f"NAMES {channel}")
-        else: print('Error: Debe proporcionar un canal')    
+        if not channel:
+            print('Error: Debe proporcionar un canal')
+            return
+        
+        if not channel.startswith('#'):
+            print('Error: El nombre del canal debe comenzar con #')
+            return
+        
+        self.send_command(f"NAMES {channel}")
 
     def whois_user(self, user):
         """Obtiene información sobre un usuario."""
@@ -292,14 +294,18 @@ class IRCClient:
             parts = argument.split(" ", 1)
             if len(parts) < 1:
                 return "Error: Debes proporcionar un canal"
+            
             channel = parts[0]
+            if not channel.startswith('#'):
+                return "Error: El nombre del canal debe comenzar con #"
+            
             topic = parts[1] if len(parts) > 1 else ""
             if topic:
                 self.send_command(f"TOPIC {channel} :{topic}")
             else:
                 self.send_command(f"TOPIC {channel}")
         except IndexError:
-            print('Formato Invalido')        
+            print('Formato Inválido')        
 
     def handle_mode(self, argument):
         print("Falta")        
