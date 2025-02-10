@@ -38,7 +38,8 @@ class SMTPClient:
             self.auth_methods = None
             for line in response.message.splitlines():
                 if "AUTH" in line:
-                    self.auth_methods = line.split("AUTH")[1].strip().split(' ')
+                    self.auth_methods = line.split(' ')
+                    self.auth_methods.pop(0)
                 elif "STARTTLS" in line:
                     self.supports_tls = True
                         
@@ -64,7 +65,8 @@ class SMTPClient:
         self.auth_methods = None
         for line in response.message.splitlines():
             if "AUTH" in line:
-                self.auth_methods = line.split("AUTH")[1].strip().split(' ')
+                self.auth_methods = line.split(' ')
+                self.auth_methods.pop(0)
     
     def disconnect(self):
         """
@@ -123,9 +125,6 @@ class SMTPClient:
         :param body: Cuerpo del correo.
         """
         
-        # if not validate_email(sender) or not all(validate_email(recipient) for recipient in recipients):
-        #     raise SMTPException("Invalid email address")
-        
         try:
             response = self.commands.mail_from(sender)
             
@@ -138,23 +137,22 @@ class SMTPClient:
                 if response.is_permanent_error() or response.is_provisional():
                     return response.to_json()
             
-            #
+            # Formatear los headers
             headers_string = self.format_headers(headers, sender, recipients)
 
             # Incluir Subject manualmente
             formatted_message = f"{headers_string}\r\nSubject: {subject}\r\n\r\n{body}"
-            #formatted_message = f"Subject: {subject}\r\n\r\n{body}"    
             
             response = self.commands.data(formatted_message)
         
             return response.to_json()
         
-        # except TemporarySMTPException as e:
-        #     print(f"Error temporal: {e}. Puedes reintentar más tarde.")
-        # except PermanentSMTPException as e:
-        #     print(f"Error permanente: {e}. No puedes continuar con esta operación.")
-        # except SMTPException as e:
-        #     print(f"Error general de SMTP: {e}")
+        except TemporarySMTPException as e:
+            print(f"Error temporal: {e}. Puedes reintentar más tarde.")
+        except PermanentSMTPException as e:
+            print(f"Error permanente: {e}. No puedes continuar con esta operación.")
+        except SMTPException as e:
+            print(f"Error general de SMTP: {e}")
         except Exception as e:
             print(f"Error inesperado: {e}")
             

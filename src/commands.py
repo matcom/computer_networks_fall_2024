@@ -28,26 +28,6 @@ class SMTPCommands:
         raw_response = self.connection.receive()
         return SMTPResponse(raw_response)
 
-    # def _send_command(self, command: str) -> SMTPResponse:
-    #     """
-    #     Envía un comando al servidor SMTP y analiza la respuesta.
-        
-    #     :param command: Comando SMTP en formato de texto.
-    #     :return: Instancia deSMTPResponse con la respuesta del servido.
-    #     """
-    #     try:
-    #         self.connection.send(command)
-    #         raw_response = self.connection.receive()
-    #         response = SMTPResponse(raw_response)
-    #         response.raise_for_status()  # Lanza excepción si hay un error
-    #         return response
-    #     except SMTPException as e:
-    #         # Repropagar errores específicos de SMTP
-    #         raise e
-    #     except Exception as e:
-    #         # Manejar errores inesperados
-    #         raise SMTPException(f"Error inesperado al enviar el comando '{command}': {e}")
-        
     def ehlo(self, domain: str) -> SMTPResponse:
         """
         Envía el comando EHLO al servidor SMTP. Si no es soportado, intenta con HELO.
@@ -55,8 +35,6 @@ class SMTPCommands:
         :param domain: Dominio que identifica al cliente.
         :return: Respuesta del servidor al comando EHLO o HELO.
         """
-        if not domain or not isinstance(domain, str):
-            raise ValueError("El dominio debe ser una cadena válida.")
 
         response = self._send_command(f"EHLO {domain}\r\n")
         if response.is_permanent_error():  # EHLO no soportado, intentar HELO
@@ -78,44 +56,34 @@ class SMTPCommands:
         if mechanism.upper() == "PLAIN":
             encoded_credentials = credentials_for_plain_authentication(username, password)
             response = self._send_command(f"AUTH PLAIN {encoded_credentials}\r\n")
-            
-            if not response.is_success():
-                raise SMTPException(f"Error durante la autenticación PLAIN: {response}")
-                
+                         
             return response
 
         if mechanism.upper() == "LOGIN":
-            
+            # Enviar AUTH LOGIN
             response = self._send_command("AUTH LOGIN\r\n")
-            if not response.is_provisional():
-                raise SMTPException(f"Error al iniciar LOGIN: {response}")
+            if not response.is_provisional():  # Esperar 334
+                return response
             
+            # Enviar nombre de usuario en Base64
             username_b64, password_b64 = credentials_for_login_authentication(username, password)
-            
             response = self._send_command(f"{username_b64}\r\n")
-            if not response.is_success():
-                raise SMTPException(f"Error durante la autenticación del usuario en LOGIN: {response}")
+            if not response.is_provisional():  # Esperar 334
+                return response
             
-            response = self._send_command(f"{password_b64}\r\n")
-            if not response.is_success():
-                raise SMTPException(f"Error durante la autenticación de la contraseña en LOGIN: {response}")
-                
-            return response
-        
+            # Enviar contraseña en Base64
+            return self._send_command(f"{password_b64}\r\n")
+                                
         if mechanism == "CRAM-MD5":
             
             response = self._send_command("AUTH CRAM-MD5\r\n")
             if not response.is_provisional():
-                raise SMTPException(f"Error al iniciar CRAM-MD5: {response}")
+                return response
             
             encoded_credentials = credentials_for_cram_md5_authentication(response, username, password)   
 
-            response = self._send_command(f"{encoded_credentials}\r\n")
-            if not response.is_success():
-                raise SMTPException(f"Error durante la autenticación en CRAM-MD5: {response}")
-
-            return response
-        
+            return self._send_command(f"{encoded_credentials}\r\n")
+                   
         else:
             raise SMTPException(f"Mecanismo de autenticación no soportado: {mechanism}")
           
@@ -127,12 +95,11 @@ class SMTPCommands:
         :param size: Tamaño del mensaje en bytes (opcional).
         :return: Respuesta del servidor al comando MAIL FROM.
         """
-        # if not sender or not isinstance(sender, str):
-        #     raise ValueError("El remitente debe ser una dirección de correo válida.")
 
         parameters = f" SIZE={size}" if size else ""
+        
         return self._send_command(f"MAIL FROM:{sender}\r\n")
-        #return self._send_command(f"MAIL FROM:<{sender}>{parameters}\r\n")
+        return self._send_command(f"MAIL FROM:<{sender}>{parameters}\r\n")
 
     def rcpt_to(self, recipient: str, notify: str = None) -> SMTPResponse:
         """
@@ -142,12 +109,11 @@ class SMTPCommands:
         :param notify: Parámetro opcional NOTIFY (por ejemplo, SUCCESS,FAILURE).
         :return: Respuesta del servidor al comando RCPT TO.
         """
-        # if not recipient or not isinstance(recipient, str):
-        #     raise ValueError("El destinatario debe ser una dirección de correo válida.")
-
+        
         parameters = f" NOTIFY={notify}" if notify else ""
+        
         return self._send_command(f"RCPT TO:{recipient}\r\n")
-        #return self._send_command(f"RCPT TO:<{recipient}>{parameters}\r\n")
+        return self._send_command(f"RCPT TO:<{recipient}>{parameters}\r\n")
 
     def data(self, message: str) -> SMTPResponse:
         """
@@ -160,7 +126,7 @@ class SMTPCommands:
         # Enviar DATA y esperar la respuesta 354
         initial_response = self._send_command("DATA\r\n")
         if not initial_response.is_provisional():  # `354` es provisional (3xx)
-            raise SMTPException(f"Error al iniciar DATA: {initial_response}")
+            return initial_response
 
         # Formatear el mensaje correctamente
         lines = message.splitlines()  # Dividir en líneas
@@ -197,8 +163,7 @@ class SMTPCommands:
         :param address: Dirección de correo a verificar.
         :return: Respuesta del servidor al comando VRFY.
         """
-        if not address or not isinstance(address, str):
-            raise ValueError("La dirección debe ser una cadena válida.")
+        
         return self._send_command(f"VRFY {address}\r\n")
 
     def expn(self, alias: str) -> SMTPResponse:
@@ -208,8 +173,7 @@ class SMTPCommands:
         :param alias: Alias o lista de correo a expandir.
         :return: Respuesta del servidor al comando EXPN.
         """
-        if not alias or not isinstance(alias, str):
-            raise ValueError("El alias debe ser una cadena válida.")
+        
         return self._send_command(f"EXPN {alias}\r\n")
 
     def help(self, command: str = None) -> SMTPResponse:

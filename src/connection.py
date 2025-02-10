@@ -99,26 +99,20 @@ class SMTPConnection:
         Inicia una conexión TLS segura con el servidor SMTP.
         """
         try:
-            # Solicitar al servidor que inicie una conexión cifrada
+        # Solicitar al servidor que inicie una conexión cifrada
             self.send("STARTTLS\r\n")
             response = self.receive()
-                        
-            if not response.startswith("2"):
+
+            if not response.startswith("220"):
                 raise ConnectionError(f"El servidor rechazó STARTTLS: {response}")
 
-            # Cerrar el socket antes de aplicar TLS (necesario en algunos servidores)
-            self.socket.shutdown(socket.SHUT_RDWR)
-            
-            # Encapsular el socket en un contexto TLS
+            # Encapsular el socket en un contexto TLS (sin cerrar el socket)
             context = ssl.create_default_context()
-            self.socket = context.wrap_socket(self.socket, server_hostname=self.server_address[0])
-            
-            # Agregar una pausa para evitar "Broken pipe"
-            time.sleep(0.5)
-
-            # Recibir cualquier mensaje pendiente antes de enviar EHLO
-            leftover_data = self.receive()
-            logging.info("Datos después de STARTTLS: " + leftover_data)
-            logging.info("Conexión TLS establecida con éxito.")
+            context.check_hostname = False
+            context.verify_mode = ssl.CERT_NONE
+            self.socket = context.wrap_socket(
+                self.socket, 
+                server_hostname=self.host  # Usa self.host en lugar de server_address[0]
+            )
         except Exception as e:
             raise ConnectionError(f"Error al iniciar TLS: {e}")
