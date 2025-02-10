@@ -1,4 +1,5 @@
 import base64
+import re
 
 class CommandHandler:
     @staticmethod
@@ -31,35 +32,90 @@ class CommandHandler:
             return "454 TLS already active\r\n"
         return "220 Ready to start TLS\r\n"
 
+    # Expresión regular para validación básica de emails (RFC 5322 simplificado)
+    EMAIL_REGEX = re.compile(r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$")
+
     @staticmethod
-    def mail_from(session, address: str):
+    def _validate_email_format(address: str) -> bool:
+        """Valida el formato básico de una dirección de correo"""
+        return CommandHandler.EMAIL_REGEX.match(address) is not None
+
+    @staticmethod
+    def _parse_address(arg: str) -> str:
+        """Extrae la dirección del formato MAIL FROM:<address> o RCPT TO:<address>"""
+        if arg.startswith("<") and arg.endswith(">"):
+            return arg[1:-1]
+        return arg
+
+    @staticmethod
+    def mail_from(session, arg: str):
         if not session.tls_active:
             return "530 Must issue STARTTLS first\r\n"
         if not session.authenticated:
             return "530 Authentication required\r\n"
+        
+        address = CommandHandler._parse_address(arg)
+        
+        if not CommandHandler._validate_email_format(address):
+            return "501 Invalid email format\r\n"
+        
         session.mail_from = address
         return "250 OK\r\n"
 
     @staticmethod
-    def rcpt_to(session, address: str):
+    def rcpt_to(session, arg: str):
         if not session.tls_active:
             return "530 Must issue STARTTLS first\r\n"
         if not session.authenticated:
             return "530 Authentication required\r\n"
+        if not session.mail_from:
+            return "503 Need MAIL command before RCPT\r\n"
+        
+        address = CommandHandler._parse_address(arg)
+        
+        if not CommandHandler._validate_email_format(address):
+            return "501 Invalid email format\r\n"
+        
+        # # Límite máximo de destinatarios (ej: 100)
+        # if len(session.recipients) >= 100:
+        #     return "452 Too many recipients\r\n"
+        
         session.recipients.append(address)
         return "250 OK\r\n"
 
     @staticmethod
-    def data(client_socket):
+    def data(session, client_socket):
+        if not session.mail_from:
+            return "503 Need MAIL command\r\n"
+        if not session.recipients:
+            return "503 Need RCPT command\r\n"
+        
         client_socket.send(b"354 End data with <CR><LF>.<CR><LF>\r\n")
-        message = []
+        buffer = bytearray()
+        
         while True:
-            data = client_socket.recv(1024).decode()
-            if data.strip() == ".":
-                break
-            message.append(data)
-        return "250 Message accepted\r\n"
-
+            data = client_socket.recv(1024)
+            if not data:
+                return "421 Connection timed out\r\n"
+            
+            buffer.extend(data)
+            
+            if b"\r\n.\r\n" in buffer:
+                end_index = buffer.index(b"\r\n.\r\n")
+                message = buffer[:end_index]
+                
+                # Guardar mensaje en la sesión
+                session.data = message.decode('us-ascii', errors='replace')
+                
+                # Reset de transacción
+                session.mail_from = None
+                session.recipients = []
+                
+                return "250 Message accepted\r\n"
+            
+            if len(buffer) > 10_485_760:  # 10MB límite
+                return "552 Message size exceeds limit\r\n"
+    
     @staticmethod
     def quit():
         return "221 Bye\r\n"
@@ -79,7 +135,7 @@ class CommandHandler:
     @staticmethod
     def auth_plain(session, credential: str):
         try:
-            decoded_credential = base64.b64decode(credential).decode('utf-8')
+            decoded_credential = base64.b64decode(credential).decode('us-ascii')
             parts = decoded_credential.split('\0')
             if len(parts) == 3:
                 username, password = parts[1], parts[2]
@@ -102,7 +158,7 @@ class CommandHandler:
         else:
             # Decodificar el username
             try:
-                username = base64.b64decode(credential).decode('utf-8')
+                username = base64.b64decode(credential).decode('us-ascii')
                 session.auth_username = username
                 # Solicitar la contraseña
                 return "334 UGFzc3dvcmQ6\r\n"  # "Password:" en base64
@@ -112,7 +168,7 @@ class CommandHandler:
     @staticmethod
     def auth_login_password(session, password_credential: str):
         try:
-            password = base64.b64decode(password_credential).decode('utf-8')
+            password = base64.b64decode(password_credential).decode('us-ascii')
             # Verificar credenciales (ejemplo simple)
             if session.auth_username == "user" and password == "pass":
                 session.authenticated = True

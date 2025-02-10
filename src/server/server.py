@@ -71,7 +71,7 @@ class SMTPServer:
             "EHLO": lambda: CommandHandler.ehlo(session, arg),
             "MAIL": lambda: CommandHandler.mail_from(session, arg.split(":")[1].strip()),
             "RCPT": lambda: CommandHandler.rcpt_to(session, arg.split(":")[1].strip()),
-            "DATA": lambda: CommandHandler.data(client_socket),
+            "DATA": lambda: CommandHandler.data(session,client_socket),
             "QUIT": CommandHandler.quit,
             "AUTH": lambda: CommandHandler.auth(session, arg.split()[0], arg.split()[1] if len(arg.split()) > 1 else None),
         }.get(command, lambda: "500 Unknown command\r\n")
