@@ -159,18 +159,18 @@ def cmd_CWD(arg, client_socket, current_dir, authenticated):
 
 def cmd_CDUP(client_socket, current_dir, root_dir, authenticated):
     if not authenticated:
-        client_socket.send(b"530 Not logged in.\r\n")
+        client_socket.sendall(b"530 Not logged in.\r\n")
         return current_dir
 
-    # Intentar moverse al directorio padre
-    new_dir = os.path.dirname(current_dir)
-
-    # Verificar que no se salga de la raíz del usuario
-    if os.path.commonpath([new_dir, root_dir]) != root_dir:
-        client_socket.send(b"550 Access denied.\r\n")
+    # Obtener el directorio padre sin salir de root_dir
+    new_dir = os.path.abspath(os.path.join(current_dir, '..'))
+    
+    # Verificar que new_dir no esté fuera del root_dir
+    if not new_dir.startswith(root_dir):
+        client_socket.sendall(b"550 Access denied.\r\n")
         return current_dir
 
-    client_socket.send(b"250 Directory successfully changed.\r\n")
+    client_socket.sendall(b"250 Directory successfully changed.\r\n")
     return new_dir
 
 def cmd_MKD(arg, client_socket, current_dir, authenticated):
@@ -278,23 +278,6 @@ def cmd_MODE(arg, client_socket):
         client_socket.send(b"200 Mode set to Block.\r\n")
         # Aquí podrías agregar lógica para el modo Block si fuera necesario.
         return 'B'
-    else:
-        client_socket.send(b"501 Syntax error in parameters or arguments.\r\n")
-
-def cmd_STRU(arg, client_socket):
-    """Maneja el comando STRU, que establece la estructura del archivo a transferir."""
-    if not arg:
-        client_socket.send(b"501 Syntax error in parameters or arguments.\r\n")
-        return
-
-    arg = arg.upper()
-
-    if arg == "F":
-        client_socket.send(b"200 Structure set to File (F).\r\n")
-    elif arg == "R":
-        client_socket.send(b"504 Record structure not implemented.\r\n")
-    elif arg == "P":
-        client_socket.send(b"504 Page structure not implemented.\r\n")
     else:
         client_socket.send(b"501 Syntax error in parameters or arguments.\r\n")
 
@@ -891,7 +874,7 @@ def cmd_PORT(client_socket, port_command, current_dir, DATA_SOCKET):
 #-------------------------------------------------------------------------------------------------------------------------
 
 
-def handle_command(command, client_socket, current_dir, username, authenticated, client_ip, Type, Mode, rename_from_path, DATA_SOCKET):
+def handle_command(command, client_socket, current_dir, root_dir, username, authenticated, client_ip, Type, Mode, rename_from_path, DATA_SOCKET):
     parts = command.strip().split(" ", 1)
     cmd = parts[0].upper()
     arg = parts[1] if len(parts) > 1 else None
@@ -900,6 +883,7 @@ def handle_command(command, client_socket, current_dir, username, authenticated,
         username = cmd_USER(arg, client_socket, client_ip)
     elif cmd == "PASS":
         current_dir, authenticated = cmd_PASS(arg, client_socket, authenticated, username, current_dir, client_ip)
+        root_dir = current_dir
     elif cmd == "ACCT":
         cmd_ACCT(arg, client_socket, authenticated, username)
     elif cmd == "SMNT":
@@ -970,7 +954,7 @@ def handle_command(command, client_socket, current_dir, username, authenticated,
     else:
         client_socket.send(b"502 Command not implemented.\r\n")
 
-    return username, authenticated, current_dir, Type, Mode, rename_from_path, DATA_SOCKET
+    return username, authenticated, current_dir, root_dir, Type, Mode, rename_from_path, DATA_SOCKET
 
 def handle_client(client_socket, address):
     client_ip = address[0]  # Obtener la IP del cliente
@@ -984,6 +968,7 @@ def handle_client(client_socket, address):
     
     last_activity_time = time.time()  # Registro de la última actividad
     current_dir = os.getcwd()
+    root_dir = os.getcwd()
     username = None
     authenticated = False
     Type = 'A'
@@ -1004,7 +989,7 @@ def handle_client(client_socket, address):
                 break
 
             print(f"Comando recibido de {address}: {data.strip()}")
-            username, authenticated, current_dir, Type, Mode, rename_from_path, DATA_SOCKET = handle_command(data, client_socket, current_dir, username, authenticated, address, Type, Mode, rename_from_path, DATA_SOCKET)
+            username, authenticated, current_dir, root_dir, Type, Mode, rename_from_path, DATA_SOCKET = handle_command(data, client_socket, current_dir, root_dir, username, authenticated, address, Type, Mode, rename_from_path, DATA_SOCKET)
 
             # Actualizamos el tiempo de actividad
             last_activity_time = current_time
