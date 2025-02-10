@@ -74,9 +74,117 @@ class IRCClient:
             self.handle_message(message)
 
     def handle_message(self, message):
-        """Maneja el mensaje recibido."""
-        print(f"Mensaje del servidor: {message}")
+        """Maneja el mensaje recibido del servidor y procesa los comandos."""
+        try:
+            # Si el mensaje está vacío, ignorarlo
+            if not message:
+                return
+            
+            # Dividir el mensaje en sus componentes
+            parts = message.split(' ', 1)
+            first_part = parts[0]
+            content = parts[1] if len(parts) > 1 else ""
+            
+            # Manejar códigos numéricos
+            if first_part.startswith(':') and first_part[1:].isdigit():
+                code = int(first_part[1:])
+                self.handle_numeric_response(code, content)
+                return
+            
+            # Manejar comandos específicos
+            if first_part == "PING":
+                # Responder inmediatamente al PING para mantener la conexión
+                self.send_command(f"PONG {content}")
+                return
+            
+            # Manejar mensajes que comienzan con ':'
+            if message.startswith(':'):
+                # Extraer el origen y el comando
+                try:
+                    source, cmd, *params = message[1:].split(' ')
+                    nick = source.split('!')[0] if '!' in source else source
+                    
+                    if cmd == "PRIVMSG":
+                        target = params[0]
+                        msg_content = ' '.join(params[1:])[1:] # Eliminar el ':' inicial
+                        if target.startswith('#'):
+                            print(f"[{target}] {nick}: {msg_content}")
+                        else:
+                            print(f"Mensaje privado de {nick}: {msg_content}")
+                        
+                    elif cmd == "JOIN":
+                        channel = params[0]
+                        print(f"{nick} se ha unido al canal {channel}")
+                        
+                    elif cmd == "PART":
+                        channel = params[0]
+                        print(f"{nick} ha abandonado el canal {channel}")
+                        
+                    elif cmd == "QUIT":
+                        reason = ' '.join(params)[1:] if params else "No reason given"
+                        print(f"{nick} se ha desconectado: {reason}")
+                        
+                    elif cmd == "NICK":
+                        new_nick = params[0]
+                        print(f"{nick} ahora se conoce como {new_nick}")
+                        
+                    elif cmd == "MODE":
+                        target = params[0]
+                        modes = ' '.join(params[1:])
+                        print(f"{nick} estableció modo {modes} en {target}")
+                        
+                    elif cmd == "TOPIC":
+                        channel = params[0]
+                        topic = ' '.join(params[1:])[1:] if len(params) > 1 else ""
+                        print(f"{nick} cambió el topic en {channel} a: {topic}")
+                        
+                    elif cmd == "NOTICE":
+                        target = params[0]
+                        notice_content = ' '.join(params[1:])[1:]
+                        print(f"NOTICE de {nick}: {notice_content}")
+                        
+                    else:
+                        print(f"Mensaje del servidor: {message}")
+                    
+                except Exception as e:
+                    print(f"Error al procesar mensaje con prefijo: {e}")
+                    print(f"Mensaje original: {message}")
+            
+            else:
+                print(f"Mensaje del servidor: {message}")
+            
+        except Exception as e:
+            print(f"Error al procesar mensaje: {e}")
 
+    def handle_numeric_response(self, code, content):
+        """Procesa los códigos numéricos del servidor IRC."""
+        responses = {
+            001: "Bienvenido al servidor IRC",
+            331: "No hay topic establecido",
+            332: f"Topic del canal: {content}",
+            353: f"Lista de usuarios: {content}",
+            366: "Fin de la lista de usuarios",
+            401: "Usuario/Canal no encontrado",
+            403: "Canal no encontrado",
+            404: "No puedes enviar mensajes a este canal",
+            421: "Comando desconocido",
+            431: "No se ha especificado nickname",
+            432: "Nickname inválido",
+            433: "Nickname ya está en uso",
+            441: "Usuario no está en el canal",
+            442: "No estás en ese canal",
+            461: "Faltan parámetros",
+            472: "Modo desconocido",
+            473: "Canal solo para invitados",
+            474: "Estás baneado del canal",
+            475: "Clave incorrecta del canal",
+            482: "No eres operador del canal"
+        }
+        
+        if code in responses:
+            print(f"[{code}] {responses[code]}")
+        else:
+            print(f"Código {code}: {content}")
 
     def handle_command(self, command, argument):
         """Maneja el comando que llega desde los tests."""

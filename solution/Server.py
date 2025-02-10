@@ -23,6 +23,29 @@ class IRCServer:
         self.server_socket.listen(5)
         print(f"Servidor IRC escuchando en {self.host}:{self.port}")
 
+        self.NUMERIC_REPLIES = {
+            '001': 'Bienvenido al servidor IRC',
+            '331': 'No hay topic establecido',
+            '332': 'El topic es: %s',
+            '353': 'Lista de usuarios en el canal',
+            '366': 'Fin de la lista de usuarios',
+            '401': 'Usuario/Canal no encontrado',
+            '403': 'Canal no encontrado',
+            '404': 'No puedes enviar mensajes a este canal',
+            '421': 'Comando desconocido',
+            '431': 'No se ha especificado nickname',
+            '432': 'Nickname inválido',
+            '433': 'Nickname ya está en uso',
+            '441': 'Usuario no está en el canal',
+            '442': 'No estás en ese canal',
+            '461': 'Faltan parámetros',
+            '472': 'Modo desconocido',
+            '473': 'Canal solo para invitados',
+            '474': 'Estás baneado del canal',
+            '475': 'Clave incorrecta del canal',
+            '482': 'No eres operador del canal'
+        }
+
     def start(self):
         while True:
             client_socket, client_address = self.server_socket.accept()
@@ -33,8 +56,11 @@ class IRCServer:
 
 
     def handle_client(self, client_socket):
-        client_socket.sendall("Bienvenido al servidor IRC local\r\n".encode())
-        client_socket.sendall(f"Te has unido al canal General \r\n".encode())
+        """Maneja la conexión de un cliente."""
+        # Mensaje de bienvenida con código 001
+        client_socket.sendall(":server 001 * :Bienvenido al servidor IRC local\r\n".encode())
+        # Notificación de unión al canal General
+        client_socket.sendall(":server JOIN #General\r\n".encode())
 
         while True:
             data = client_socket.recv(4096)
@@ -56,7 +82,9 @@ class IRCServer:
         parts = data.split(" ", 1)
         command = parts[0]
         argument = parts[1] if len(parts) > 1 else ""
-
+        
+        sender = next((item for item in self.clients if item.socket == client_socket), None)
+        
         if command == "NICK":
             return self.change_nick(client_socket, argument)
         elif command == "MODE":
@@ -64,15 +92,20 @@ class IRCServer:
         elif command == "USER":
             return "Usuario registrado."
         elif command == "JOIN":
-            return self.join_channel(client_socket, argument)
+            response = self.join_channel(client_socket, argument)
+            if "Error" not in response:
+                return f":{sender.nick} JOIN {argument}"
         elif command == "PART":
-            return self.part_channel(client_socket, argument)
+            response = self.part_channel(client_socket, argument)
+            if "Error" not in response:
+                return f":{sender.nick} PART {argument}"
         elif command == "PRIVMSG":
             return self.send_private_message(client_socket, argument)
         elif command == "NOTICE":
             return self.send_notice(client_socket, argument)
         elif command == "LIST":
-            return self.list_channels()
+            channels = self.list_channels()
+            return f":server 322 {sender.nick} :{channels}"
         elif command == "NAMES":
             return self.list_users(argument)
         elif command == "WHOIS":
@@ -82,9 +115,9 @@ class IRCServer:
         elif command == "TOPIC":
             return self.handle_topic(client_socket, argument)
         elif command == "QUIT":
-            return "Desconectado del servidor."
+            return f":{sender.nick} QUIT :Leaving"
         else:
-            return self.send_private_message(client_socket, f'General {command} {argument}')
+            return f":server 421 {sender.nick} {command} :Unknown command"
 
 
     def change_nick(self, client_socket, new_nick):
