@@ -1,64 +1,69 @@
 import argparse
-from urllib.parse import urlencode
+import json
 from client import HTTPClient
+
+def parse_headers(header_string):
+    """Parse headers from a JSON string into a dictionary."""
+    if not header_string:
+        return {}
+    try:
+        headers = json.loads(header_string)
+        if not isinstance(headers, dict):
+            raise ValueError("Headers must be a JSON object.")
+        return headers
+    except json.JSONDecodeError:
+        raise ValueError("Invalid JSON format for headers.")
 
 def main():
     # Create the HTTP client
     client = HTTPClient()
 
     # Set up the argument parser
-    parser = argparse.ArgumentParser(description="HTTP Client for making requests from the command line.")
+    parser = argparse.ArgumentParser(description="HTTP Client for making requests from the command line.", add_help=False)
     
-    # Add arguments for HTTP method and URL
-    parser.add_argument("method", type=str, help="HTTP method (GET, POST, HEAD, DELETE, PATCH, PUT)")
-    parser.add_argument("url", type=str, help="URL to make the request to")
-    
-    # Optional arguments for request body, headers, and query parameters
-    parser.add_argument("--body", type=str, help="Request body (for POST, PUT, PATCH, DELETE)", default=None)
-    parser.add_argument("--headers", type=str, help="Request headers (format: 'Key: Value, Key2: Value2')", default=None)
-    parser.add_argument("--query", type=str, help="Query parameters (format: 'key1=value1&key2=value2')", default=None)
+    # Add arguments for HTTP method, URL, headers, and data
+    parser.add_argument("-m", "--method", type=str, required=True, help="HTTP method (GET, POST, HEAD, DELETE, PATCH, PUT)")
+    parser.add_argument("-u", "--url", type=str, required=True, help="URL to make the request to")
+    parser.add_argument("-h", "--headers", type=str, help="Request headers as a JSON string (e.g., '{\"User-Agent\": \"device\"}')", default="{}")
+    parser.add_argument("-d", "--data", type=str, help="Request body data", default=None)
 
     # Parse the arguments
     args = parser.parse_args()
 
-    # Add query parameters to the URL if provided
-    if args.query:
-        # Check if the URL already contains query parameters
-        separator = "&" if "?" in args.url else "?"
-        args.url += separator + args.query
-
-    # Convert headers from string to dictionary
-    headers = {}
-    if args.headers:
-        for header in args.headers.split(","):
-            if ":" in header:
-                key, value = header.split(":", 1)
-                headers[key.strip()] = value.strip()
+    # Parse headers from JSON string
+    try:
+        headers = parse_headers(args.headers)
+    except ValueError as e:
+        print(f"Error parsing headers: {e}")
+        return
 
     # Perform the HTTP request
     try:
         # Handle HEAD request
         if args.method.upper() == "HEAD":
+            if args.data:
+                print("Error: HEAD requests cannot include a body.")
+                return
             status_code, response_body = client.head(args.url, headers=headers)
         
         # Handle DELETE request
         elif args.method.upper() == "DELETE":
-            status_code, response_body = client.delete(args.url, body=args.body, headers=headers)
+            status_code, response_body = client.delete(args.url, body=args.data, headers=headers)
         
         # Handle PATCH request
         elif args.method.upper() == "PATCH":
-            status_code, response_body = client.patch(args.url, body=args.body, headers=headers)
+            status_code, response_body = client.patch(args.url, body=args.data, headers=headers)
         
         # Handle PUT request
         elif args.method.upper() == "PUT":
-            status_code, response_body = client.put(args.url, body=args.body, headers=headers)
+            status_code, response_body = client.put(args.url, body=args.data, headers=headers)
         
         # Handle other HTTP methods (e.g., GET, POST)
         else:
             status_code, response_body = client.http_request(
                 method=args.method.upper(),
                 url=args.url,
-                body=args.body,
+                body=args.data,
                 headers=headers
             )
 
