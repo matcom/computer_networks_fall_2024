@@ -60,7 +60,7 @@ class Client_test:
         if command in ["LIST", "STOR", "RETR", "STOU", "APPE"]:
             return self.handle_data_connection(command, args)
         else:
-            self.send_command(command, args)  # Pasar args a send_command
+            self.send_command(command, args[0])  # Pasar args a send_command
             return self.receive_response()
     
     # Ejecuta los comandos que requieren establecer conexion de datos
@@ -130,9 +130,10 @@ class Client_test:
         return self.receive_response()
           
     # Comando para recibir un archivo
-    def retrieve_file(self, command, filename):
+    def retrieve_file(self, command, args):
         Utils.validate_args(command, filename)
         
+        filename = args[0]
         # Enviar comando y recibir respuesta
         self.send_command(f"{command} {filename}")
         response = self.receive_response()
@@ -151,22 +152,23 @@ class Client_test:
         return end_response   
 
     # Comando para guardar un archivo    
-    def store_file(self, command, filename):
+    def store_file(self, command, args):
         # Maneja los comandos STOR, STOU Y APPEND
         Utils.validate_args(command, filename)
         
-        # Agregar la carpeta fuente desde donde se enviara el archivo
-        path = os.path.join(".local" , filename)
-        
-        # Chequear si el archivo existe localmente
-        if not os.path.exists(path):
-            return f"Error: File '{filename}' does not exist"
+        filename = args[1]
+        path = args[0]
         
         if command == "STOU":
             filename = f"{int(time.time())}_{filename}" # le agrega timestamp para hacer el nombre unico
             
         # Enviar comando
         self.send_command(f"{command} {filename}")
+        stor_response = self.receive_response()
+        print(stor_response)
+
+        if 150 in stor_response:
+            print("Sending file...")
         
         # Enviar archivo            
         with open(path, 'rb') as f:
@@ -193,7 +195,7 @@ def start_client(argvs):
     ftp_client = Client_test(server, port, username, password )
     ftp_client.connect()
     ftp_client.auth()
-    response = ftp_client.execute_command(command, argument1) # esto hay que modificarlo para ajustarse a la entrada de los tests
+    response = ftp_client.execute_command(command, [argument1, argument2]) # esto hay que modificarlo para ajustarse a la entrada de los tests
     print(response)
     
 if __name__ == "__main__":
