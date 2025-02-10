@@ -8,6 +8,7 @@ class IRCServer:
         self.host = host
         self.port = port
         self.clients= []
+        self.nicknames= []
         self.channels= {'#General': Channel('General')}
         self.channel_modes = {
             'o': 'operator privileges (op/deop)',
@@ -56,7 +57,7 @@ class IRCServer:
         # Mensaje de bienvenida con código 001
         client_socket.sendall(":001 :Bienvenido al servidor IRC local\r\n".encode())
         # Notificación de unión al canal General
-        client_socket.sendall(":Te has unido al canal #General\r\n".encode())
+        client_socket.sendall("Te has unido al canal #General\r\n".encode())
 
         while True:
             data = client_socket.recv(4096)
@@ -112,29 +113,54 @@ class IRCServer:
             return f":421 {sender.nick} {command} :Unknown command"
 
 
+    def add_nickname(self, nick):
+        """Agrega un nickname a la lista de nicknames."""
+        if nick not in self.nicknames:
+            self.nicknames.append(nick)
+            return True
+        return False
+
+    
+    def remove_nickname(self, nick):
+        """Elimina un nickname de la lista de nicknames."""
+        if nick in self.nicknames:
+            self.nicknames.remove(nick)
+            return True
+        return False
+
+    
     def change_nick(self, client_socket, new_nick):
-        new_cli = User(client_socket, new_nick)
-        cli = None
-        for client in self.clients:
-            if client.nick == new_nick and client.socket != client_socket:
-                return f':433 {client.nick} :{self.NUMERIC_REPLIES['433']}'
-            if client.socket == client_socket:
-                cli = client
-                
-        if cli: 
-            self.clients.remove(cli);
-            self.clients.append(new_cli)
+        client = next((item for item in self.clients if item.socket== client_socket), None)
+
+        if new_nick in self.nicknames:
+            return f':433 {new_nick} :{self.NUMERIC_REPLIES['433']}'
+        
+        elif client and client.nick == new_nick:
+            return f':433 {new_nick} :{self.NUMERIC_REPLIES['433']}'
+        
+        elif client and client in self.clients:
+            self.add_nickname(new_nick)
+            self.remove_nickname(client.nick)
+
+            for c in self.clients:
+                if c.socket == client_socket:
+                    c.nick = new_nick
+
             for _, channel in self.channels.items():
-                if channel.is_on_channel(cli):
-                    if channel.is_operator(cli):
-                        channel.add_operator(new_cli)
-                    channel.remove_user(cli)
-                    channel.add_user(new_cli)   
-            return f":{cli.nick} NICK {new_nick}"         
+                for c in channel.users:
+                    if c.socket == client_socket:
+                        c.nick = new_nick
+                        channel.broadcast(f":{c.nick}! NICK {new_nick}", c)
+                for c in channel.operators:
+                    if c.socket == client_socket:
+                        c.nick = new_nick
+   
+            return f":{client.nick}! NICK {new_nick}"         
         else: 
+            new_cli = User(client_socket, new_nick)
             self.clients.append(new_cli)  
             self.channels['#General'].add_user(new_cli)    
-            return f":Usuario NICK {new_nick}"
+            return f":Usuario! NICK {new_nick}"
 
 
     def join_channel(self, client_socket, channel):
@@ -142,12 +168,12 @@ class IRCServer:
         if channel not in self.channels:
             self.channels[channel]= Channel(channel)
             self.channels[channel].add_operator(client)
-            return f"Unido al canal {channel}."
+            return f"Te has unido al canal {channel}."
         if self.channels[channel].is_on_channel(client):
             return "El cliente ya está en el canal."
         self.channels[channel].add_user(client)
         self.channels[channel].broadcast(f":{client.nick}! JOIN #{channel}", client)
-        return f"Unido al canal {channel}."
+        return f"Te has unido al canal {channel}."
 
 
     def part_channel(self, client_socket, channel):
