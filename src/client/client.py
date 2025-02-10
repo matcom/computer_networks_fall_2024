@@ -1,4 +1,5 @@
 import socket
+import ssl
 from src.grammar import httpMessage, basic_rules, httpRequest, httpResponse
 from src.error.error import (
     InvalidURLError, ConnectionError, RequestBuildError, 
@@ -9,9 +10,10 @@ from src.status import HTTPStatus
 class httpClient:
     def __init__(self, url):
         try:
-            host, port, path = httpMessage.get_url_info(url)
+           secure, host, port, path = httpMessage.get_url_info(url)
         except Exception as e:
             raise InvalidURLError(f"Invalid URL: {url}", url) from e
+        self.secure = secure
         self.host = host
         self.port = port
         self.url = url
@@ -22,6 +24,11 @@ class httpClient:
         while redirect_count < max_redirects:
             try:
                 req_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                if self.secure:
+                    context = ssl.create_default_context()
+                    context.check_hostname = False
+                    context.verify_mode = ssl.CERT_NONE 
+                    req_socket = context.wrap_socket(req_socket, server_hostname=self.host)
                 req_socket.connect((self.host, self.port))
             except socket.error as e:
                 raise ConnectionError(f"Failed to connect to {self.host}:{self.port}", self.host, self.port) from e

@@ -39,14 +39,14 @@ class httpMessage:
   def get_http_version(min: int, max: int):
     return "HTTP" + "/" + str(min) + '.' + str(max)
   def get_url_info(url: str):
+    secure = False
+    default_port = 80
     if url.startswith("http://"):
         url = url[len("http://"):]
-        default_port = 80
     elif url.startswith("https://"):
         url = url[len("https://"):]
         default_port = 443
-    else:
-        default_port = 80
+        secure = True 
 
     slash_i = url.find("/")
     if slash_i == -1:
@@ -64,7 +64,7 @@ class httpMessage:
         host = host_port[:colon_i]
         port = int(host_port[colon_i + 1:])
 
-    return host, port, path
+    return secure, host, port, path
       
 
 class httpRequest:
