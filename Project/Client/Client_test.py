@@ -13,6 +13,7 @@ class Client_test:
         self.client_socket = socket(AF_INET, SOCK_STREAM)
         self.user = user 
         self.password = password
+        self.logged_in = False
         self.data_socket = None
         
         # Diccionario de comandos y sus funciones correspondientes
@@ -43,17 +44,16 @@ class Client_test:
     
     # Autenticarse mediante usuario y contrasena
     def auth(self):
-        user_response = send_command(client_socket, f"USER {self.user}")
+        self.send_command("USER" , self.user)
+        user_response = self.receive_response()
         print(user_response)
 
-        password_response = send_command(client_socket, f"PASS {self.password}")
+        self.send_command("PASS",self.password)
+        password_response =  self.receive_response()
         print(password_response)
 
         if "230" in password_response:
-            print("530 Authentication error. Please verify your credentials.")
-            return False
-
-        return True
+            self.logged_in = True
     
     # Ejecuta un comando
     def execute_command(self, command, args=None):
