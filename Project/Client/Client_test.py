@@ -131,9 +131,10 @@ class Client_test:
           
     # Comando para recibir un archivo
     def retrieve_file(self, command, args):
-        Utils.validate_args(command, filename)
         
         filename = args[0]
+        Utils.validate_args(command, filename)
+        
         # Enviar comando y recibir respuesta
         self.send_command(f"{command} {filename}")
         response = self.receive_response()
@@ -153,11 +154,12 @@ class Client_test:
 
     # Comando para guardar un archivo    
     def store_file(self, command, args):
+
         # Maneja los comandos STOR, STOU Y APPEND
-        Utils.validate_args(command, filename)
-        
         filename = args[1]
         path = args[0]
+
+        Utils.validate_args(command, filename)
         
         if command == "STOU":
             filename = f"{int(time.time())}_{filename}" # le agrega timestamp para hacer el nombre unico
