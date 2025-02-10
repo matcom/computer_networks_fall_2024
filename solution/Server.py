@@ -173,7 +173,7 @@ class IRCServer:
             return "El cliente ya está en el canal."
         self.channels[channel].add_user(client)
         self.channels[channel].broadcast(f":{client.nick}! JOIN #{channel}", client)
-        return f"Te has unido al canal {channel}."
+        return f"Unido al canal {channel}."
 
 
     def part_channel(self, client_socket, channel):
