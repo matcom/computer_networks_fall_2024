@@ -29,7 +29,7 @@ class Client_test:
     def send_command(self, command, args=None):
         if args:
             command = f"{command} {args}"  # Concatenar el comando con los argumentos
-        self.client_socket.sendall(f"{command}".encode())
+        self.client_socket.sendall(f"{command}\r\n".encode())
     
     # Recibir una respuesta del servidor
     def receive_response(self):
@@ -45,15 +45,15 @@ class Client_test:
     # Autenticarse mediante usuario y contrasena
     def auth(self):
         self.send_command("USER" , self.user)
-        #user_response = self.receive_response()
-        #print(user_response)
+        user_response = self.receive_response()
+        print(user_response)
 
         self.send_command("PASS",self.password)
-        #password_response =  self.receive_response()
-        #print(password_response)
+        password_response =  self.receive_response()
+        print(password_response)
 
-        #if "230" in password_response:
-        #    self.logged_in = True
+        if "230" in password_response:
+            self.logged_in = True
     
     # Ejecuta un comando
     def execute_command(self, command, args=None):
