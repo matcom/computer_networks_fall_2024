@@ -1,4 +1,5 @@
 import socket
+import json
 
 class HTTPClient:
     
@@ -86,10 +87,18 @@ class HTTPClient:
         status_code = int(status_line.split(" ")[1])
         
         # Return the status code and the body of the response
-        return {
+        response_dict = {
             "status": status_code,
-            "body": body.decode("utf-8", errors="ignore")
+            "body": body.decode("utf-8", errors="ignore"),
+            "headers": headers  # Optionally include headers in the response
         }
+        
+        # Convert the dictionary to JSON
+        response_json = json.dumps(response_dict, indent=4)
+        
+        # Return the JSON response
+        return response_json
+
     
     def head(self, url, headers=None):
         """Carry out a HEAD request and returns status_code and empty body."""
