@@ -4,66 +4,51 @@ import time
 from socket import *
 
 class Client:
-
     user_db = 'user_database.json'
-    #Constructor de la clase
+    # Constructor de la clase
     def __init__(self, ip_server, port):
         self.ip_server = ip_server
         self.port = port
+        self.source_file = ".local"
         self.client_socket = socket(AF_INET, SOCK_STREAM)
         self.data_socket = None
         self.logged_in = False
         # Diccionario de comandos y sus funciones correspondientes
         self.command_handlers = {
             "LIST": self.list_file,
-            "QUIT": lambda cmd: self.send_command(cmd),
-            "RNFR": lambda cmd: self.send_command(cmd),
-            "ABOR": lambda cmd: self.send_command(cmd),
-            "DELE": lambda cmd: self.send_command(cmd),
-            "RMD": lambda cmd: self.send_command(cmd),
-            "MKD": lambda cmd: self.send_command(cmd),
-            "PWD": lambda cmd: self.send_command(cmd),
-            "SITE": lambda cmd: self.send_command(cmd),
-            "SYST": lambda cmd: self.send_command(cmd),
-            "STAT": lambda cmd: self.send_command(cmd), #Puede o no recibir argumentos, tacto en el server
-            "HELP": lambda cmd: self.send_command(cmd), #La misma pincha que Stat, puede o no recibir argumentos
-            "NOOP": lambda cmd: self.send_command(cmd),
             "STOR": lambda cmd, args: self.store_file(cmd, args),
             "STOU": lambda cmd, args: self.store_file(cmd, args),
-            "RETR": lambda cmd, args: self.retrieve_file(cmd, args),
             "APPE": lambda cmd, args: self.store_file(cmd, args),
+            "RETR": lambda cmd, args: self.retrieve_file(cmd, args),
             "CWD": lambda cmd, args: self.change_directory(cmd, args),
             "PORT": lambda cmd, args: self.set_port(cmd, args),
-            "TYPE": lambda cmd, args: self.set_type(cmd, args),
-            "STRU": lambda cmd, args: self.set_stru(cmd, args),
-            "MODE": lambda cmd, args: self.set_mode(cmd, args),
         }
     
-    #Conectar con el servidor
+    # Conectar con el servidor
     def connect(self):
         self.client_socket.connect((self.ip_server, self.port))
         response = self.receive_response()
         print(f"{response}")
     
-    #Enviar comando al servidor
+    # Enviar comando al servidor
     def send_command(self, command, args=None):
         if args:
             command = f"{command} {args}"  # Concatenar el comando con los argumentos
         self.client_socket.sendall(f"{command}".encode())
     
-    #Recibir una respuesta del servidor
+    # Recibir una respuesta del servidor
     def receive_response(self):
         response = self.client_socket.recv(1024)
         return response.decode()
     
-    #Conecta el socket de datos para transferencia de informacion
+    # Conectar el socket de datos para transferencia de informacion
     def connect_data_socket(self):
         ip, port = self.enter_passive_mode()
         self.data_socket = socket(AF_INET, SOCK_STREAM)
         self.data_socket.settimeout(5)
         self.data_socket.connect((ip, port))
     
-    #Entrar en modo pasivo
+    # Entrar en modo pasivo
     def enter_passive_mode(self):
         try:
             self.send_command("PASV")
@@ -82,11 +67,14 @@ class Client:
         except Exception as e:
             print(f"Error in enter_passive_mode: {e}")
     
+    # Ejecutar comandos
     def execute_command(self, command, args=None):
         if command in ["LIST", "STOR", "RETR", "STOU", "APPE"]:
             return self.handle_data_connection(command, args)
+        if command == "USER":
+            return self.exec_user(command, args)
         else:
-            self.send_command(command, args)  # Pasar args a send_command
+            self.send_command(command, args)  
             return self.receive_response()
     
     # Manejar la conexión de datos para comandos que lo requieren
@@ -94,10 +82,13 @@ class Client:
         try:
             self.connect_data_socket()
             
-            #Ejecutar el comando
+            # Ejecutar el comando
             response = self.command_handlers[command](command, args)
             
-            self.data_socket.close()
+            # Se asegura que el socket de datos se cierre correctamente
+            if self.data_socket:
+                self.data_socket.close()
+            
             return response
             
         except Exception as e:
@@ -106,7 +97,7 @@ class Client:
                     
             return f"Error in {command}: {e}"
             
-    #Comando para listar archivos
+    # Comando para listar archivos
     def list_file(self, command, args=None):
         self.send_command(command)
         
@@ -118,16 +109,17 @@ class Client:
             all_data += data
         print("Files \n--------------------------")
         print(f"{all_data.decode()}\n")
+
+        self.data_socket.close()
         
         return self.receive_response()
-        
-        
-    #Comando para recibir archivos
+          
+    # Comando para recibir archivos
     def retrieve_file(self, command, filename):
         Utils.validate_args(command, filename)
         
-        #Agregar la carpeta fuente donde se descargara el archivo
-        path = f".local/{filename}"
+        # Agregar la carpeta fuente donde se descargara el archivo
+        path = os.path.join(self.source_file , filename)
         
         # Enviar comando y recibir respuesta
         self.send_command(f"{command} {filename}")
@@ -150,20 +142,20 @@ class Client:
         # Maneja los comandos STOR, STOU Y APPEND
         Utils.validate_args(command, filename)
         
-        #Agregar la carpeta fuente desde donde se enviara el archivo
-        path = f".local/{filename}"
+        # Agregar la carpeta fuente desde donde se enviara el archivo
+        path = os.path.join(self.source_file , filename)
         
-        #Chequear si el archivo existe localmente
+        # Chequear si el archivo existe localmente
         if not os.path.exists(path):
             return f"Error: File '{filename}' does not exist"
         
         if command == "STOU":
-            filename = f"{int(time.time())}_{filename}" #le agrega timestamp para hacer el nombre unico
+            filename = f"{int(time.time())}_{filename}" # le agrega timestamp para hacer el nombre unico
             
-        #Enviar comando
+        # Enviar comando
         self.send_command(f"{command} {filename}")
         
-        #Enviar archivo            
+        # Enviar archivo            
         with open(path, 'rb') as f:
             while True:
                 data = f.read(1024)
@@ -205,51 +197,63 @@ class Client:
             print(self.receive_response())
         else:
             print("La dirección IP y el puerto del cliente no están configurados.")
+    
+    def exec_user(self, cmd, args):
+        while True:
+            # Enviar comando USER
+            self.send_command(cmd , args)
+            user_response = self.receive_response()
+            
+            # Si el usuario no es valido
+            if "530" in user_response:
+                return user_response
+            
+            print(user_response)
 
-    def set_type(self, command, type):
-        Utils.validate_type(type)
-        self.send_command(f"{command}{type}")
-        print(self.receive_response())
-    
-    def set_stru(self, command, stru):
-        Utils.validate_stru(stru)
-        self.send_command(f"{command}{stru}")
-        print(self.receive_response())
-    
-    def set_mode(self, command, mode):
-        Utils.validate_mode(mode)
-        self.send_command(f"{command}{mode}")
-        print(self.receive_response())
-    
+            pass_input = input("ftp>> ").strip().split()
+            pass_cmd , pass_args = Utils.recv_cmd(pass_input)
+
+            # Enviar comando PASS
+            self.send_command(pass_cmd, pass_args)
+            password_response = self.receive_response()
+            break
+        
+        self.logged_in = "230" in password_response
+        return password_response
+            
     def log_in(self):
-        user_db = Utils.load_db()
-        while not self.logged_in:
-            print("You are not authenticated/registered in the system. Available commands are 'USER', 'HELP', 'LOG'.")
-            cmd = input("ftp>> ")
-            if cmd == 'HELP':
-                self.send_command("HELP")
-            else:
-                spliter_cmd = cmd.split()
-                if len(spliter_cmd) == 2 and spliter_cmd[0] == 'USER':
-                    password = input("ftp>> PASS: ")
-                    if Utils.authenticate_user(user_db, spliter_cmd[1], password):
-                        self.logged_in = True
-                        self.send_command(f"USER {spliter_cmd[1]}")
-                        self.send_command(f"PASS {password}")
-                    else:
-                        print("Error: Invalid Username or Password")
-                # El comando LOG es una cosa interna nuestra, no hay que llamar al servidor ni nada
-                if len(spliter_cmd) == 1 and spliter_cmd[0] == 'LOG':
-                    username = input("ftp>> USER: ")
-                    userpass = input("ftp>> PASS: ")
-                    Utils.add_user(user_db, username, userpass)
-                    self.logged_in = True
-                else:
-                    print("Error: Invalid command")
+        while True: 
+            username = input("Username : ")
+            
+            # Enviar comando USER
+            self.send_command("USER" , username)
+            user_response = self.receive_response()
+            
+            # Si el usuario no es valido
+            if "530" in user_response:
+                return user_response
+            
+            print(user_response)
+            password = input("Password : ")
+            
+            # Enviar comando PASS
+            self.send_command("PASS", password)
+            password_response = self.receive_response()
+            print(password_response)
+            
+            self.logged_in = "230" in password_response  # Autenticacion exitosa
+            
+            if not self.logged_in:
+                print("530 You are not authenticated in the system. Do you want to continue? (y/n) ")
+                stay = input().upper().startswith("N")
+                if stay:
+                    continue
+            break
+        
+    def exec(self):
+        if not self.logged_in:
+            print("530 You are not authenticated in the system. Available commands are: 'HELP', 'USER','SYST','QUIT'.")
 
-    #Metodo que llamara a todas las funcionalidades del cliente
-    def ftp_client(self):    
-        self.logged_in()
         while True:
             user_input = input("ftp>> ").strip().split()
             cmd , args = Utils.recv_cmd(user_input)
@@ -259,15 +263,25 @@ class Client:
             if not cmd:
                 continue
             
+            if not self.logged_in and cmd not in ["HELP" , "USER", "QUIT","SYST"]:
+                continue
+            
             response = self.execute_command(cmd, args)
             print(f"{response}")
             
-            #Verificar si la respuesta es de cierre de conexión
+            # Verificar si la respuesta es de cierre de conexión
             if response.startswith("221"):
                 print("Cerrando la conexión...")
                 self.client_socket.close()  
                 break
-            #Verificar si la respuesta es de comando desconocido
+            
+            # Verificar si la respuesta es de comando desconocido
             if response.startswith("500"):  
                 sug = Utils.Get_suggestion(cmd)
                 print(f"Command {cmd} not found, try with {sug}")
+
+    # Metodo para iniciar el cliente
+    def ftp_client(self):
+        self.connect()    
+        self.log_in()
+        self.exec()

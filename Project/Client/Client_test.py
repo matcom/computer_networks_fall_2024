@@ -1,6 +1,7 @@
 import Utils
 import os
 import time
+import argparse
 from socket import *
 
 class Client_test:
@@ -133,7 +134,7 @@ class Client_test:
         Utils.validate_args(command, filename)
         
         #Agregar la carpeta fuente donde se descargara el archivo
-        path = f".local/{filename}"
+        path = os.path.join(".local" , filename)
         
         # Enviar comando y recibir respuesta
         self.send_command(f"{command} {filename}")
@@ -159,7 +160,7 @@ class Client_test:
         Utils.validate_args(command, filename)
         
         # Agregar la carpeta fuente desde donde se enviara el archivo
-        path = f".local/{filename}"
+        path = os.path.join(".local" , filename)
         
         # Chequear si el archivo existe localmente
         if not os.path.exists(path):

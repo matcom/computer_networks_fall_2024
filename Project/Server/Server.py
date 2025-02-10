@@ -3,6 +3,7 @@ import os
 import platform
 import shutil
 import time
+import Utils
 
 class FTPServer:
     def __init__(self, port):
@@ -12,6 +13,7 @@ class FTPServer:
         self.server_socket.listen(1)
         self.conection_socket = None
         self.data_socket = None
+        self.username = None
         self.rename_from = None  
         print("Server Ready...")
         
@@ -31,7 +33,8 @@ class FTPServer:
             "RMD" : self.handle_rmd,
             "MKD" : self.handle_mkd,   
             "STOU": self.handle_stou,
-            "APPE": self.handle_appe
+            "APPE": self.handle_appe,
+            "USER": self.handle_user,
         }
 
     def send_response(self, connection, code, message):
@@ -46,7 +49,9 @@ class FTPServer:
         args = ' '.join(entry[1:])  # Unir los argumentos en un solo string
         
         return cmd , args
-    
+    def user_file_name(self):
+        return "." + self.username
+    # ------------ Comandos ------------------------------------------------------
     def handle_quit(self, connection, *args):
         self.send_response(connection, 221, "Goodbye")
     
@@ -61,9 +66,8 @@ class FTPServer:
         current_directory = os.getcwd()  # Obtener el directorio de trabajo actual
         self.send_response(connection, 257, f'"{current_directory}"')
     
-        
     def handle_dele(self, connection, filename):
-        file_path = os.path.join('.home', filename)  # Ruta del archivo a eliminar
+        file_path = os.path.join(self.user_file_name(), filename)  # Ruta del archivo a eliminar
         
         try:
             os.remove(file_path)  # Intentar eliminar el archivo
@@ -74,7 +78,7 @@ class FTPServer:
             self.send_response(connection, 550, f"Error deleting file: {str(e)}")  
     
     def handle_rmd(self, connection, dir_name):
-        file_path = os.path.join('.home' , dir_name) #ruta del directorio a eliminar
+        file_path = os.path.join(self.user_file_name() , dir_name) # ruta del directorio a eliminar
         try:
             shutil.rmtree(file_path)
             self.send_response(connection, 250, "Directory deleted successfully")
@@ -84,9 +88,9 @@ class FTPServer:
             self.send_response(connection, 550, f"Error deleting directory: {str(e)}")
     
     def handle_mkd(self, connection, dir_name):
-        file_path = os.path.join('.home' , dir_name) #ruta del directorio a eliminar
+        file_path = os.path.join(self.user_file_name() , dir_name) # ruta del directorio a crear
         try:
-            os.makedirs(file_path)
+            os.makedirs(file_path, exist_ok=True)
             self.send_response(connection, 250, "Directory created successfully")
         except Exception as e:
             self.send_response(connection, 550, f"Error creating directory: {str(e)}")
@@ -101,8 +105,8 @@ class FTPServer:
             self.send_response(connection, 503, "RNFR required first")  # Error si RNFR no fue llamado
             return
         
-        old_file_path = os.path.join('.home', self.rename_from)
-        new_file_path = os.path.join('.home', new_filename)
+        old_file_path = os.path.join(self.user_file_name(), self.rename_from)
+        new_file_path = os.path.join(self.user_file_name(), new_filename)
         
         try:
             os.rename(old_file_path, new_file_path) # Renombrar el archivo
@@ -116,7 +120,7 @@ class FTPServer:
     
     def enter_passive_mode(self, connection, *args):
         self.data_socket = socket(AF_INET, SOCK_STREAM)
-        self.data_socket.bind(('', 0))  # Bind explicitly to localhost
+        self.data_socket.bind(('', 0))
         self.data_socket.listen(1)
         
         addr = self.data_socket.getsockname()
@@ -129,11 +133,10 @@ class FTPServer:
         
         self.send_response(connection, 227, f"Entering Passive Mode {passive_str}")
         
-
     def handle_list(self, connection, *args):
         client_data, _ = self.data_socket.accept()
             
-        files = '\n'.join(os.listdir('.home'))
+        files = '\n'.join(os.listdir(self.user_file_name()))
         
         client_data.send(files.encode())
         
@@ -143,7 +146,7 @@ class FTPServer:
         self.send_response(connection, 226, "Transfer complete (File's List)")
 
     def handle_retr(self, connection, filename):
-        file_path = os.path.join('.home', filename)
+        file_path = os.path.join(self.user_file_name(), filename)
         
         if not os.path.exists(file_path):
             self.send_response(connection, 550, "File not found")
@@ -164,7 +167,7 @@ class FTPServer:
         self.send_response(connection, 226, "Transfer complete")
 
     def handle_store(self, connection, filename, mode='wb'):
-        file_path = ".home/" + filename
+        file_path = os.path.join(self.user_file_name(), filename)
         
         client_data, _ = self.data_socket.accept()
         with open(file_path, mode) as f:
@@ -185,6 +188,30 @@ class FTPServer:
     
     def handle_appe(self, connection, filename):
         return self.handle_store(connection, filename, mode='ab')
+    
+    def handle_user(self, connection, username):
+        user_db = Utils.load_db()
+        if Utils.user_exists(user_db, username):
+            self.send_response(connection, 331, "Username is correct, password required to log in.")
+            
+            command = self.connection_socket.recv(1024).decode().strip().split()
+            pass_cmd , password = self.recv_cmd(command)
+
+            if not pass_cmd or pass_cmd != "PASS":
+                self.send_response(connection, 503, "Unexpected command: 'PASS' was expected.")
+                return
+
+            if not Utils.authenticate_user(user_db, username, password):
+                self.send_response(connection, 530, "Login failed, incorrect password.")
+                return
+            
+            self.username = username
+            os.makedirs(f".{username}", exist_ok=True)
+            self.send_response(connection, 230, "User succesfully logged in.")
+        
+        else:
+            self.send_response(connection, 530, "Login failed, incorrect user.")
+
         
     def accept_conection(self):
         while True:
@@ -200,6 +227,10 @@ class FTPServer:
                 cmd , args = self.recv_cmd(command)
                 
                 #print(f"Debug: cmd:{cmd}, args:{args}")
+
+                if not self.username and cmd not in ["HELP" , "QUIT" , "USER", "SYST"]:
+                    self.send_response(self.conection_socket, 530, "Please log in using USER/PASS commands")
+                    continue
                 
                 if cmd in self.command_handlers:
                     self.command_handlers[cmd](self.connection_socket,args)
@@ -214,5 +245,5 @@ class FTPServer:
                 break
                      
 if __name__ == "__main__":
-    server = FTPServer(12000)
+    server = FTPServer(12001)
     server.accept_conection()

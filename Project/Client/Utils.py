@@ -1,5 +1,3 @@
-import json
-#utils.py
 
 Commands =  ["USER", "PASS", "ACCT", "CWD", "CDUP","SMNT", "REIN", "QUIT", "PORT", "PASV",
 "TYPE", "STRU", "MODE", "LIST", "RETR", "STOR", "STOU", "APPE", "ALLO", "REST", "RNFR",
@@ -22,9 +20,9 @@ def validate_args(cmd , args):
         raise ValueError(f"Error: No arguments provided for the command {cmd}.")
     
 # Método para validar el comando TYPE
-def validate_type(type):
-    if not type in "A,E,I,N,T,C,M".split(","):
-        raise ValueError(f"Error: Invalid Type {type}")
+def validate_type(ftp_type):
+    if not ftp_type in "A,E,I,N,T,C,M".split(","):
+        raise ValueError(f"Error: Invalid Type {ftp_type}")
     
 def validate_stru(stru):
     if not stru in "F,R,P".split(","):
@@ -59,26 +57,3 @@ def Get_suggestion(command):
             lev = newLev
             sug = c
     return sug
-
-# Base de Datos para los usuarios
-
-def load_db():
-    with open('user_database.json', 'r') as file:
-        return json.load(file)
-
-def save_user(user_db):
-    with open('user_database.json', 'r') as file:
-        json.dump(user_db, file, indent=4)
-
-def add_user(user_db, username, password):
-    user_db.append({'user': username, 'pass': password})
-    save_user(user_db)
-
-def user_exists(user_db, username):
-    return any(user['user'] == username for user in user_db)
-
-def authenticate_user(user_db, username, password):
-    for user in user_db:
-        if user['user'] == username and user['pass'] == password:
-            return True
-    return False

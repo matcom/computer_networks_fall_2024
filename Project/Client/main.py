@@ -7,7 +7,7 @@ def get_connection_details():
     
     while True:
         try:
-            port = input("Server Port (default: 12000): ").strip() or '12000'
+            port = input("Server Port (default: 12000): ").strip() or '12001'
             port = int(port)
             if 0 <= port <= 65535:
                 return server_ip, port
@@ -24,13 +24,7 @@ def main():
         print(f"\nConnecting to {server_ip}:{server_port}...")
         ftp_client = Client(server_ip, server_port)
         
-        # Conectar al servidor
-        ftp_client.connect()
-        
-        # Iniciar el bucle de comandos
-        print("\nFTP Client ready. Type 'QUIT' to exit.")
-        print("-" * 50)
-        
+        # Inicia el cliente
         ftp_client.ftp_client()
         
     except ConnectionRefusedError:
