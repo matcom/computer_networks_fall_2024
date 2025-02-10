@@ -49,7 +49,7 @@ def main(sys_args):
     try:
         headers = json.loads(args.header)
     except json.JSONDecodeError:
-        raise InvalidHeaderFormat("❌ Error: Invalid header format. Please provide valid JSON.")
+        raise InvalidHeaderFormat("❌ Error:Formato de encabezado inválido. Por favor, proporcione un JSON válido.")
 
     response: HTTPResponse = final_request(method=args.method, url=args.url, headers=headers, body=args.data)
 
