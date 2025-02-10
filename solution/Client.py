@@ -87,7 +87,7 @@ class IRCClient:
             
             # Manejar códigos numéricos
             if first_part.startswith(':') and first_part[1:].isdigit():
-                code = int(first_part[1:])
+                code = str(first_part[1:])
                 self.handle_numeric_response(code, content)
                 return
             
@@ -127,6 +127,12 @@ class IRCClient:
                     elif cmd == "NICK":
                         new_nick = params[0]
                         print(f"{nick} ahora se conoce como {new_nick}")
+
+                    elif cmd == "KICK":
+                        channel = params[0]  # Canal de donde se expulsó al usuario
+                        kicked_user = params[1]  # Usuario expulsado
+                        reason = ' '.join(params[2:])[1:] if len(params) > 2 else "Sin razón especificada"
+                        print(f"{kicked_user} ha sido expulsado de {channel} por {nick}: {reason}")    
                         
                     elif cmd == "MODE":
                         target = params[0]
@@ -159,26 +165,25 @@ class IRCClient:
     def handle_numeric_response(self, code, content):
         """Procesa los códigos numéricos del servidor IRC."""
         responses = {
-            001: "Bienvenido al servidor IRC",
-            331: "No hay topic establecido",
-            332: f"Topic del canal: {content}",
-            353: f"Lista de usuarios: {content}",
-            366: "Fin de la lista de usuarios",
-            401: "Usuario/Canal no encontrado",
-            403: "Canal no encontrado",
-            404: "No puedes enviar mensajes a este canal",
-            421: "Comando desconocido",
-            431: "No se ha especificado nickname",
-            432: "Nickname inválido",
-            433: "Nickname ya está en uso",
-            441: "Usuario no está en el canal",
-            442: "No estás en ese canal",
-            461: "Faltan parámetros",
-            472: "Modo desconocido",
-            473: "Canal solo para invitados",
-            474: "Estás baneado del canal",
-            475: "Clave incorrecta del canal",
-            482: "No eres operador del canal"
+            '001': "Bienvenido al servidor IRC",
+            '331': "No hay topic establecido",
+            '332': f"Topic del canal: {content}",
+            '353': f"Lista de usuarios: {content}",
+            '366': "Fin de la lista de usuarios",
+            '401': "Usuario/Canal no encontrado",
+            '403': "Canal no encontrado",
+            '404': "No puedes enviar mensajes a este canal",
+            '421': "Comando desconocido",
+            '431': "No se ha especificado nickname",
+            '432': "Nickname inválido",
+            '433': "Nickname ya está en uso",
+            '441': "Usuario no está en el canal",
+            '442': "No estás en ese canal",
+            '461': "Faltan parámetros",
+            '472': "Modo desconocido",
+            '482': "No eres operador del canal",
+            '502': "Un usuario solo puede cambiar sus propios modos"
+            
         }
         
         if code in responses:
@@ -234,20 +239,26 @@ class IRCClient:
         else: print('Error: Debe proporcionar un canal')    
 
     def send_private_message(self, argument):
-        """Envía un mensaje privado a un usuario o canal."""
-        parts = argument.split(" ", 1)
-        if len(parts) < 2:
-            print ("Error: Debes proporcionar un destinatario y un mensaje")
-        target, message = parts
-        self.send_command(f"PRIVMSG {target} :{message}")
+        try:
+            """Envía un mensaje privado a un usuario o canal."""
+            parts = argument.split(" ", 1)
+            if len(parts) < 2:
+                print ("Error: Debes proporcionar un destinatario y un mensaje")
+            target, message = parts
+            self.send_command(f"PRIVMSG {target} :{message}")
+        except IndexError:
+            print("Formato invalido")    
 
     def send_notice(self, argument):
         """Envía un mensaje NOTICE a un usuario o canal."""
-        parts = argument.split(" ", 1)
-        if len(parts) < 2:
-            print ("Error: Debes proporcionar un destinatario y un mensaje")
-        target, message = parts
-        self.send_command(f"NOTICE {target} {argument}") 
+        try:
+            parts = argument.split(" ", 1)
+            if len(parts) < 2:
+                print ("Error: Debes proporcionar un destinatario y un mensaje")
+            target, message = parts
+            self.send_command(f"NOTICE {target} {argument}") 
+        except IndexError:
+            print("Formato invalido")    
     
     def list_channels(self):
         """Solicita la lista de canales al servidor."""
@@ -277,15 +288,18 @@ class IRCClient:
     
     def change_topic(self, argument):
         """Cambia o consulta el tema de un canal."""
-        parts = argument.split(" ", 1)
-        if len(parts) < 1:
-            return "Error: Debes proporcionar un canal"
-        channel = parts[0]
-        topic = parts[1] if len(parts) > 1 else ""
-        if topic:
-            self.send_command(f"TOPIC {channel} :{topic}")
-        else:
-            self.send_command(f"TOPIC {channel}")
+        try:
+            parts = argument.split(" ", 1)
+            if len(parts) < 1:
+                return "Error: Debes proporcionar un canal"
+            channel = parts[0]
+            topic = parts[1] if len(parts) > 1 else ""
+            if topic:
+                self.send_command(f"TOPIC {channel} :{topic}")
+            else:
+                self.send_command(f"TOPIC {channel}")
+        except IndexError:
+            print('Formato Invalido')        
 
     def handle_mode(self, argument):
         print("Falta")        
