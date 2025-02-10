@@ -69,10 +69,10 @@ class IRCServer:
             if response:
                 client_socket.sendall((response + "\r\n").encode())
 
-        client_socket.close()
         client = next((item for item in self.clients if item.socket == client_socket), None)
         self.clients.remove(client)
-        self.remove_client_from_channels(client_socket)
+        self.remove_client_from_channels(client)
+        client_socket.close()
         print("Cliente desconectado")        
 
 
@@ -108,6 +108,7 @@ class IRCServer:
         elif command == "TOPIC":
             return self.handle_topic(client_socket, argument)
         elif command == "QUIT":
+            self.remove_client_from_channels(sender)
             return f":{sender.nick} QUIT :Leaving"
         else:
             return f":421 {sender.nick} {command} :Unknown command"
@@ -172,15 +173,15 @@ class IRCServer:
         if self.channels[channel].is_on_channel(client):
             return "El cliente ya está en el canal."
         self.channels[channel].add_user(client)
-        self.channels[channel].broadcast(f":{client.nick}! JOIN #{channel}", client)
-        return f"Unido al canal {channel}."
+        self.channels[channel].broadcast(f":{client.nick}! JOIN {channel}", client)
+        return f"Te has unido al canal {channel}."
 
 
     def part_channel(self, client_socket, channel):
         client = next((item for item in self.clients if item.socket== client_socket), None)
         if channel in self.channels and self.channels[channel].is_on_channel(client):
             self.channels[channel].remove_user(client)
-            self.channels[channel].broadcast(f":{client.nick}! PART #{channel}")
+            self.channels[channel].broadcast(f":{client.nick}! PART {channel}")
             return f"Saliste de {channel}."
         return f':442 :{self.NUMERIC_REPLIES['442']}'
 
@@ -199,7 +200,7 @@ class IRCServer:
             for client in self.clients:
                 if client.nick == target: 
                     destination_sock = client.socket
-            destination_sock.sendall((f":{sender.nick}! PRIVMSG {target} {message}\r\n").encode())
+            destination_sock.sendall((f":{sender.nick}! PRIVMSG {target} :{message}\r\n").encode())
             return "Mensaje enviado"
         
         # Mensaje a un canal
@@ -207,7 +208,7 @@ class IRCServer:
             if not self.channels[target].is_on_channel(sender):
                 return f":442 :{self.NUMERIC_REPLIES['442']}"
             
-            self.channels[target].broadcast(f":{sender.nick}! PRIVMSG {target} {message}", sender)
+            self.channels[target].broadcast(f":{sender.nick}! PRIVMSG {target} :{message}", sender)
             return f"Mensaje enviado a {target}"
 
         # Si no es ni usuario ni canal, devolver mensaje de error
@@ -272,14 +273,14 @@ class IRCServer:
             return f":482 {channel} :{self.NUMERIC_REPLIES['482']}"
         
         self.channels[channel].topic = new_topic
-        self.channels[channel].broadcast(f':{client.nick}! TOPIC #{channel} :{new_topic}', client)
-        return f':{client.nick}! TOPIC #{channel} :{new_topic}'
+        self.channels[channel].broadcast(f':{client.nick}! TOPIC {channel} {new_topic}', client)
+        return f':{client.nick}! TOPIC {channel} {new_topic}'
 
 
     def show_topic(self, client_socket, channel):
         client = next((item for item in self.clients if item.socket == client_socket), None)      
         if channel in self.channels:
-            return f'332 {channel}: {self.channels[channel].topic}'
+            return f':332 {channel}: {self.channels[channel].topic}'
         return f':401 :{self.NUMERIC_REPLIES['401']}'
         
 
@@ -299,16 +300,15 @@ class IRCServer:
                             addressee.send_message(f'Has sido expulsado del canal {channel} por {reason}')
                             self.channels[channel].broadcast(f":{sender.nick}! KICK {channel} {addressee.nick} :{reason}", sender)
                             return f":{sender.nick}! KICK {channel} {addressee.nick} :{reason}"
-                        return f":482 #{channel} :{self.NUMERIC_REPLIES['482']}"
-                    return f':441 #{channel}: {self.NUMERIC_REPLIES['441']}'  
-                return f':442 #{channel} :{self.NUMERIC_REPLIES['442']}' 
+                        return f":482 {channel} :{self.NUMERIC_REPLIES['482']}"
+                    return f':441 {channel}: {self.NUMERIC_REPLIES['441']}'  
+                return f':442 {channel} :{self.NUMERIC_REPLIES['442']}' 
             return  f':401 :{self.NUMERIC_REPLIES['401']}'
         except IndexError:
             return f":461 :{self.NUMERIC_REPLIES['461']}"
 
 
-    def remove_client_from_channels(self, client_socket):
-        client = next((item for item in self.clients if item.socket == client_socket), None)
+    def remove_client_from_channels(self, client):
         for _, channel in self.channels.items():
             channel.remove_user(client)
 

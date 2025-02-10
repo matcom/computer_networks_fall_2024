@@ -126,7 +126,7 @@ class IRCClient:
         return False
 
     def _handle_user_commands(self, source, cmd, params):
-        """Maneja comandos relacionados con usuarios"""
+        """Maneja comandos relacionados con usuarios."""
         nick = source.split('!')[0] if '!' in source else source
         
         if cmd == "PRIVMSG":
@@ -140,6 +140,19 @@ class IRCClient:
             print(f"{nick} se ha desconectado: {reason}")
         elif cmd == "NICK":
             print(f"{nick} ahora se conoce como {params[0]}")
+        elif cmd == "TOPIC":
+            channel = params[0]
+            topic = ' '.join(params[1:])[1:]  # Eliminar el ':' inicial
+            print(f"El tema del canal {channel} ha cambiado a: {topic}")
+        elif cmd == "NOTICE":
+            target = params[0]
+            notice_content = ' '.join(params[1:])[1:]  # Eliminar el ':' inicial
+            print(f"[NOTICE] {nick} a {target}: {notice_content}")
+        elif cmd == "KICK":
+            channel = params[0]
+            kicked_user = params[1]
+            reason = ' '.join(params[2:])[1:] if len(params) > 2 else "Sin razón especificada"
+            print(f"{kicked_user} ha sido expulsado del canal {channel} por {nick}: {reason}")
 
     def _handle_privmsg(self, nick, params):
         """Maneja mensajes privados"""
@@ -246,7 +259,7 @@ class IRCClient:
             if len(parts) < 2:
                 print ("Error: Debes proporcionar un destinatario y un mensaje")
             target, message = parts
-            self.send_command(f"PRIVMSG {target} :{message}")
+            self.send_command(f"PRIVMSG {target} {message}")
         except IndexError:
             print("Formato invalido")    
 
@@ -254,9 +267,11 @@ class IRCClient:
         """Envía un mensaje NOTICE a un usuario o canal."""
         try:
             parts = argument.split(" ", 1)
-            if len(parts) < 2:
+            if len(parts) < 2:    
                 print ("Error: Debes proporcionar un destinatario y un mensaje")
-            self.send_command(f"NOTICE {argument}") 
+
+            target, message= parts    
+            self.send_command(f"NOTICE {target} {argument}") 
         except IndexError:
             print("Formato invalido")    
     
