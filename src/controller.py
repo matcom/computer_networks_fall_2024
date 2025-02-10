@@ -1,5 +1,7 @@
 from server_interface import ServerInterface
 from main_window import MainWindow
+from chat_window import ChatWindow
+
 
 class ClientController:
     def __init__(self):
@@ -35,13 +37,13 @@ class ClientController:
     def part_channel(self, channel):
         self.send_message("PART "+ channel)
 
-    # def join_channel_async(self, channel, callback=None): 
-    #     self.chat_windows[channel] = ChatWindow(self, channel) 
-    #     # self.chat_windows[channel].show()
-    #     self.main_window.window.after(0, self.chat_windows[channel].show)
-    #     self.main_window.window.after(0, self.chat_windows[channel].display_message, "- now you are talking in "+channel)
-    #     if callback is not None:
-    #         callback()
+    def join_channel_async(self, channel, callback=None): 
+        self.chat_windows[channel] = ChatWindow(self, channel) 
+        # self.chat_windows[channel].show()
+        self.main_window.window.after(0, self.chat_windows[channel].show)
+        self.main_window.window.after(0, self.chat_windows[channel].display_message, "- now you are talking in "+channel)
+        if callback is not None:
+            callback()
 
     def handle_user_input(self, input, channel=None):
         if self.server_interface is None:       # send error message back
@@ -72,5 +74,4 @@ class ClientController:
             print(channel+" "+message)
       
         self.server_interface.send_message(message)
-    
     
