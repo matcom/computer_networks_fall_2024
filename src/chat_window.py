@@ -46,3 +46,26 @@ class ChatWindow:
         # Clear the entry widget
         self.entry_widget.delete(0, tk.END)
 
+    def display_message(self, message, sender=None):
+        current_time = datetime.now().strftime('%H:%M:%S')
+        # Prepend the timestamp to the message
+        current_time = "[{}] ".format(current_time)
+        self.text_widget.insert(tk.END, current_time, 'timestamp')
+
+        if sender is None:
+            self.text_widget.insert(tk.END, message + "\n")
+        else:
+            # Display the sender in bold and the message in the text widget
+            self.text_widget.insert(tk.END, "<", 'bold')
+            self.text_widget.insert(tk.END, sender, 'bold')
+            self.text_widget.insert(tk.END, "> ", 'bold')
+            self.text_widget.insert(tk.END, message + "\n")
+
+    def on_close(self):
+        # Remove this ChannelWindow from the chat_windows dictionary
+        if self.name in self.controller.chat_windows and '#' in self.name :
+            self.controller.handle_user_command("/PART "+self.name) 
+        elif self.name in self.controller.chat_windows and '#' not in self.name :
+            self.controller.remove_channel_window(self.name)
+        else:
+            self.window.destroy()
