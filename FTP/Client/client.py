@@ -112,16 +112,16 @@ class FTPClient:
         response = self.send_command("RNFR", old_name)
         if self._parse_code(response) != 350:
             raise FTPClientError(self._parse_code(response), "RNFR fallido")
-        self.rename_from_name = old_name
+        #self.rename_from_name = old_name
 
     def rename_to(self, new_name: str):
         """Completa renombrado (RNTO)"""
-        if not self.rename_from_name:
-            raise FTPClientError(503, "Secuencia RNFR/RNTO incorrecta")
+        #if not self.rename_from_name:
+        #    raise FTPClientError(503, "Secuencia RNFR/RNTO incorrecta")
         response = self.send_command("RNTO", new_name)
         if self._parse_code(response) != FTPResponseCode.FILE_ACTION_COMPLETED:
             raise FTPClientError(self._parse_code(response), "RNTO fallido")
-        self.rename_from_name = ""
+        #self.rename_from_name = ""
 
     def rename_file(self, old_name: str, new_name: str):
         """Maneja la secuencia completa RNFR/RNTO"""
@@ -138,7 +138,7 @@ class FTPClient:
 
         # Enviar comando RETR
         response = self.send_command("RETR", remote_path)
-        # Aceptamos como válidos los códigos preliminares 125 o 150
+
         if self._parse_code(response) not in (125, 150):
             raise FTPTransferError(self._parse_code(response), "Error en RETR")
 
