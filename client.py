@@ -93,12 +93,8 @@ class HTTPClient:
             "headers": f"{headers}"  # Optionally include headers in the response
         }
         
-        # Convert the dictionary to JSON
-        response_json = json.dumps(response_dict, indent=4)
-        print(json.loads(response_json))
-        return json.loads(response_json)
-        # Return the JSON response
-        
+        response = json.dumps(response_dict, indent=4)
+        return response
     def head(self, url, headers=None):
         """Carry out a HEAD request and returns status_code and empty body."""
         return self.http_request("HEAD", url, headers=headers)
