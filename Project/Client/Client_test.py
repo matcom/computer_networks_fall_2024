@@ -133,26 +133,22 @@ class Client_test:
     def retrieve_file(self, command, filename):
         Utils.validate_args(command, filename)
         
-        #Agregar la carpeta fuente donde se descargara el archivo
-        path = os.path.join(".local" , filename)
-        
         # Enviar comando y recibir respuesta
         self.send_command(f"{command} {filename}")
         response = self.receive_response()
+        print(response)
             
         # Verificar si se encontro el archivo
         if not response.startswith('550'):
-            
             #Proceder a descargarlo
-            with open(path, 'wb') as f:
-                while True:
-                    data = self.data_socket.recv(1024)
-                    if not data:
-                        break
-                    f.write(data)
-
+            data = self.data_socket.recv(1024).decode()
+            while data:
+                print(data , end="")
+                data = self.data_socket.recv(1024).decode()
         self.data_socket.close()            
-        return response    
+        
+        end_response = self.receive_response() 
+        return end_response   
 
     # Comando para guardar un archivo    
     def store_file(self, command, filename):
