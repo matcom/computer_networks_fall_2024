@@ -48,7 +48,7 @@ router = Router([
         Method("CONNECT", lambda request: (HTTPStatus.OK.value, "CONNECT response", {}))
     ]),
     Endpoint("/redirect", [
-        Method("GET", lambda request: (HTTPStatus.MOVED_PERMANENTLY.value, "", { "Location": "/"}))  
+        Method("GET", lambda request: (HTTPStatus.MOVED_PERMANENTLY.value, "", { "Location": "localhost:8080/"}))  
     ]),
     Endpoint("/hello", [
         Method("GET", lambda request: (HTTPStatus.OK.value, "Hello, world!", {}))
