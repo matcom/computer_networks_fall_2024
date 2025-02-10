@@ -13,7 +13,7 @@ class SMTPResponse:
         :param raw_response: Respuesta completa del servidor en formato de texto.
         """
         if not raw_response or not isinstance(raw_response, str):
-            raise ValueError("La respuesta debe ser una cadena no vacía.")
+            raise ValueError("La respuesta no debe ser una cadena no vacía.")
 
         self.raw_response = raw_response
         self.code = self._extract_code()

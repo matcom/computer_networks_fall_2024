@@ -38,8 +38,7 @@ class SMTPClient:
             self.auth_methods = None
             for line in response.message.splitlines():
                 if "AUTH" in line:
-                    self.auth_methods = line.split(' ')
-                    self.auth_methods.pop(0)
+                    self.auth_methods = line[line.index('AUTH')+5:].split(' ')
                 elif "STARTTLS" in line:
                     self.supports_tls = True
                         
@@ -65,8 +64,7 @@ class SMTPClient:
         self.auth_methods = None
         for line in response.message.splitlines():
             if "AUTH" in line:
-                self.auth_methods = line.split(' ')
-                self.auth_methods.pop(0)
+                self.auth_methods = line[line.index('AUTH')+5:].split(' ')
     
     def disconnect(self):
         """
@@ -113,7 +111,7 @@ class SMTPClient:
         """
         Se verifica si el servidor SMTP soporta TLS.
         """
-        return self.connect_by_tls
+        return self.supports_tls
     
     def send_mail(self, sender: str, recipients: list, subject: str, body: str, headers: str | dict = None):
         """
