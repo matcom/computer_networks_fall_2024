@@ -18,11 +18,13 @@ def parse_arguments():
     }
 
 def main():
-    args = parse_arguments()
-    
-    client = httpClient(args["url"])
-    response = client.send_request(method=args["method"], header=args["headers"], data=args["data"])
-    print(json.dumps(response, indent=4))
+    try:
+        args = parse_arguments()
+        client = httpClient(args["url"])
+        response = client.send_request(method=args["method"], header=args["headers"], data=args["data"])
+        print(json.dumps(response, indent=4))
+    except Exception as e:
+        print(f"Fatal Error: {e}")
     
 if __name__=="__main__":
     main()

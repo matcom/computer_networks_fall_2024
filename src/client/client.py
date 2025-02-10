@@ -32,7 +32,6 @@ class httpClient:
                 req_socket.connect((self.host, self.port))
             except socket.error as e:
                 raise ConnectionError(f"Failed to connect to {self.host}:{self.port}", self.host, self.port) from e
-            
             try:
                 if method == "CONNECT":
                     uri = f"{self.host}:{self.port}"
@@ -52,8 +51,6 @@ class httpClient:
                 response = self.receive_response(req_socket)
             except Exception as e:
                 raise ResponseReceiveError("Failed to receive response") from e
-            finally:
-                req_socket.close()
             
             if response["status"] in (HTTPStatus.MOVED_PERMANENTLY.value, HTTPStatus.FOUND.value, HTTPStatus.SEE_OTHER.value, HTTPStatus.TEMPORARY_REDIRECT.value):
                 redirect_count += 1
@@ -61,7 +58,7 @@ class httpClient:
                 if not new_url:
                     raise ResponseParseError("Redirection response missing 'Location' header", response["headers"])
                 try:
-                    self.host, self.port, self.path = httpMessage.get_url_info(new_url)
+                    _, self.host, self.port, self.path = httpMessage.get_url_info(new_url)
                 except Exception as e:
                     raise InvalidURLError(f"Invalid URL in 'Location' header: {new_url}", new_url) from e
                 if response["status"] == HTTPStatus.SEE_OTHER.value:
@@ -69,6 +66,7 @@ class httpClient:
                     data = ""
             else:
                 return response
+            req_socket.close()
         
         raise ResponseReceiveError("Too many redirects")
 
