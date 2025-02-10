@@ -196,7 +196,7 @@ def start_client(argvs):
 
     ftp_client = Client_test(server, port, username, password )
     ftp_client.connect()
-    ftp_client.auth()
+    #ftp_client.auth()
     #ftp_client.execute_command(command, argument1) # esto hay que modificarlo para ajustarse a la entrada de los tests
 
 if __name__ == "__main__":
