@@ -23,6 +23,7 @@ class Client_test:
             "STOU": lambda cmd, args: self.store_file(cmd, args),
             "RETR": lambda cmd, args: self.retrieve_file(cmd, args),
             "APPE": lambda cmd, args: self.store_file(cmd, args),
+            "RNFR": lambda cmd, args: self.rename_from_to(cmd, args)
         }
 
     # Enviar comando al servidor
@@ -141,7 +142,7 @@ class Client_test:
         print(response)
             
         # Verificar si se encontro el archivo
-        if not response.startswith('550'):
+        if not '550' in response:
             #Proceder a descargarlo
             data = self.data_socket.recv(1024).decode()
             while data:
@@ -169,7 +170,7 @@ class Client_test:
         stor_response = self.receive_response()
         print(stor_response)
 
-        if 150 in stor_response:
+        if "150" in stor_response:
             print("Sending file...")
         
         # Enviar archivo            
@@ -185,6 +186,20 @@ class Client_test:
         # Recibir confirmacion de transferencia completa            
         return self.receive_response()
     
+    def rename_from_to(self, cmd, args):
+        old_name = args[0]
+        new_name = args[1]
+
+        self.send_command(cmd,old_name)
+        rnfr_response = self.receive_response()
+        
+        if "350" in rnfr_response:
+            print(rnfr_response)
+            self.send_command("RNTO",new_name)
+            return self.receive_response()
+        
+        return rnfr_response
+            
 def start_client(argvs):    
     server = argvs.host
     port = argvs.port
