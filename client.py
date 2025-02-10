@@ -88,18 +88,17 @@ class HTTPClient:
         
         # Return the status code and the body of the response
         response_dict = {
-            "status": status_code,
-            "body": body.decode("utf-8", errors="ignore"),
-            "headers": headers  # Optionally include headers in the response
+            "status": f"{status_code}",
+            "body": f"{body.decode('utf-8', errors='ignore')}",
+            "headers": f"{headers}"  # Optionally include headers in the response
         }
         
         # Convert the dictionary to JSON
         response_json = json.dumps(response_dict, indent=4)
-        
+        print(json.loads(response_json))
+        return json.loads(response_json)
         # Return the JSON response
-        return response_json
-
-    
+        
     def head(self, url, headers=None):
         """Carry out a HEAD request and returns status_code and empty body."""
         return self.http_request("HEAD", url, headers=headers)
