@@ -96,6 +96,10 @@ class IRCClient:
             return self.list_users(argument)
         elif command == "/whois":
             return self.whois_user(argument)
+        elif command == '/kick':
+            return self.kick_user(argument)
+        elif command == '/mode':
+            return self.handle_mode(argument)
         elif command == "/topic":
             return self.change_topic(argument)
         elif command == "/quit":
@@ -105,21 +109,27 @@ class IRCClient:
 
     def change_nick(self, new_nick):
         """Cambia el nickname enviando el comando al servidor."""
-        self.send_command(f"NICK {new_nick}")
+        if new_nick:
+            self.send_command(f"NICK {new_nick}")
+        else: print('Error: Debes proporcionar un nickname')   
 
     def join_channel(self, channel):
         """Se une a un canal enviando el comando JOIN."""
-        self.send_command(f"JOIN {channel}")
+        if channel:
+            self.send_command(f"JOIN {channel}")
+        else: print('Error: Debes proporcionar un canal')    
 
     def part_channel(self, channel):
         """Sale de un canal enviando el comando PART."""
-        self.send_command(f"PART {channel}")
+        if channel:
+            self.send_command(f"PART {channel}")
+        else: print('Error: Debe proporcionar un canal')    
 
     def send_private_message(self, argument):
         """Envía un mensaje privado a un usuario o canal."""
         parts = argument.split(" ", 1)
         if len(parts) < 2:
-            return "Error: Debes proporcionar un destinatario y un mensaje"
+            print ("Error: Debes proporcionar un destinatario y un mensaje")
         target, message = parts
         self.send_command(f"PRIVMSG {target} :{message}")
 
@@ -127,7 +137,7 @@ class IRCClient:
         """Envía un mensaje NOTICE a un usuario o canal."""
         parts = argument.split(" ", 1)
         if len(parts) < 2:
-            return "Error: Debes proporcionar un destinatario y un mensaje"
+            print ("Error: Debes proporcionar un destinatario y un mensaje")
         target, message = parts
         self.send_command(f"NOTICE {target} {argument}") 
     
@@ -137,11 +147,25 @@ class IRCClient:
     
     def list_users(self, channel):
         """Lista los usuarios de un canal específico."""
-        self.send_command(f"NAMES {channel}")
+        if channel:
+            self.send_command(f"NAMES {channel}")
+        else: print('Error: Debe proporcionar un canal')    
 
     def whois_user(self, user):
         """Obtiene información sobre un usuario."""
-        self.send_command(f"WHOIS {user}")
+        if user:
+            self.send_command(f"WHOIS {user}")
+        else: print('Error: Debe proporcionar un nickname')    
+
+    def kick_user(self, argument):
+        try:
+            parts = argument.split(" ", 2)
+            channel = parts[0]
+            user = parts[1]
+            reason = parts[2] if len(parts) > 2 else "No reason given"
+            self.send_command(f'KICK {channel} {user} {reason}')
+        except IndexError:
+            print ("Error: Uso correcto: /kick <canal> <usuario> [motivo]")
     
     def change_topic(self, argument):
         """Cambia o consulta el tema de un canal."""
@@ -154,6 +178,9 @@ class IRCClient:
             self.send_command(f"TOPIC {channel} :{topic}")
         else:
             self.send_command(f"TOPIC {channel}")
+
+    def handle_mode(self, argument):
+        print("Falta")        
     
     def quit_server(self):
         """Sale del servidor IRC enviando el comando QUIT."""

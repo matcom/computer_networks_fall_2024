@@ -3,6 +3,8 @@ class Channel:
         self.name = name
         self.users = []
         self.operators = []
+        self.t = False
+        self.m= False
         self.topic = f"Bienvenido al canal {name}"
         
     def add_user(self, user):
@@ -29,11 +31,23 @@ class Channel:
                 
     def add_operator(self, user):
         """Hace operador a un usuario"""
-        if user in self.users and user not in self.operators:
+        if user not in self.operators:
+            self.add_user(user)
             self.operators.append(user)
+            return True
+        return False
+    
+    def remove_operator(self, user):
+        """"Elimina un usuario de la lista de operadores"""
+        if user in self.users and user in self.operators:
+            self.operators.remove(user)
             return True
         return False
         
     def is_operator(self, user):
         """Verifica si un usuario es operador"""
         return user in self.operators
+    
+    def is_on_channel(self, user):
+        """Verifica si un user está en un channel"""
+        return user in self.users
