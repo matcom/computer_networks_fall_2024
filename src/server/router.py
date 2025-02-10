@@ -2,7 +2,7 @@ from typing import Callable, List, Tuple
 from src.status import HTTPStatus
 
 class Method:
-    def __init__(self, method: str, function: Callable[[object], Tuple[int, str]]):
+    def __init__(self, method: str, function: Callable[[object], Tuple[int, str, dict]]):
         self.method = method
         self.function = function
 
@@ -26,31 +26,34 @@ class Router:
             allowed_methods = [m.method for m in route.methods]
 
             if method == "OPTIONS":
-                return HTTPStatus.OK, "", {"Allow": ", ".join(allowed_methods)}
+                return HTTPStatus.OK.value, "", {"Allow": ", ".join(allowed_methods)}
 
             for m in route.methods:
                 if m.method == method:
                     return m.handle(request)
 
-            return HTTPStatus.METHOD_NOT_ALLOWED, "Method Not Allowed", {"Allow": ", ".join(allowed_methods)}
+            return HTTPStatus.METHOD_NOT_ALLOWED.value, "Method Not Allowed", {"Allow": ", ".join(allowed_methods)}
 
-        return HTTPStatus.NOT_FOUND, "Not Found", {}
+        return HTTPStatus.NOT_FOUND.value, "Not Found", {}
 
 router = Router([
     Endpoint("/", [
-        Method("GET", lambda request: (HTTPStatus.OK, "bienvenidos al himalaya")),
-        Method("POST", lambda request: (HTTPStatus.CREATED, "Resource created")),
-        Method("PUT", lambda request: (HTTPStatus.OK, "Resource updated")),
-        Method("DELETE", lambda request: (HTTPStatus.NO_CONTENT, "")),
-        Method("HEAD", lambda request: (HTTPStatus.OK, "")),
-        Method("OPTIONS", lambda request: (HTTPStatus.OK, "")),
-        Method("TRACE", lambda request: (HTTPStatus.OK, "TRACE response")),
-        Method("CONNECT", lambda request: (HTTPStatus.OK, "CONNECT response"))
+        Method("GET", lambda request: (HTTPStatus.OK.value, "bienvenidos al himalaya", {})),
+        Method("POST", lambda request: (HTTPStatus.CREATED.value, "Resource created", {})),
+        Method("PUT", lambda request: (HTTPStatus.OK.value, "Resource updated", {})),
+        Method("DELETE", lambda request: (HTTPStatus.NO_CONTENT.value, "", {})),
+        Method("HEAD", lambda request: (HTTPStatus.OK.value, "", {})),
+        Method("OPTIONS", lambda request: (HTTPStatus.OK.value, "", {})),
+        Method("TRACE", lambda request: (HTTPStatus.OK.value, "TRACE response", {})),
+        Method("CONNECT", lambda request: (HTTPStatus.OK.value, "CONNECT response", {}))
+    ]),
+    Endpoint("/redirect", [
+        Method("GET", lambda request: (HTTPStatus.MOVED_PERMANENTLY.value, "", { "Location": "/"}))  
     ]),
     Endpoint("/hello", [
-        Method("GET", lambda request: (HTTPStatus.OK, "Hello, world!"))
+        Method("GET", lambda request: (HTTPStatus.OK.value, "Hello, world!", {}))
     ]),
     Endpoint("/goodbye", [
-        Method("GET", lambda request: (HTTPStatus.OK, "Goodbye, world!"))
+        Method("GET", lambda request: (HTTPStatus.OK.value, "Goodbye, world!", {}))
     ])
 ])
