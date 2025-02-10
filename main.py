@@ -16,6 +16,7 @@ def parse_headers(header_string):
 
 def main():
     # Create the HTTP client
+    print("Creating client")
     client = HTTPClient()
 
     # Set up the argument parser
