@@ -86,7 +86,7 @@ class HTTPClient:
         status_code = int(status_line.split(" ")[1])
         
         # Return the status code and the body of the response
-        return status_code, body.decode("utf-8", errors="ignore")
+        return {status_code, body.decode("utf-8", errors="ignore")}
     
     def head(self, url, headers=None):
         """Carry out a HEAD request and returns status_code and empty body."""

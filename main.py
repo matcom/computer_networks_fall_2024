@@ -48,19 +48,19 @@ def main():
         
         # Handle DELETE request
         elif args.method.upper() == "DELETE":
-            status_code, response_body = client.delete(args.url, body=args.data, headers=headers)
+            return client.delete(args.url, body=args.data, headers=headers)
         
         # Handle PATCH request
         elif args.method.upper() == "PATCH":
-            status_code, response_body = client.patch(args.url, body=args.data, headers=headers)
+            return client.patch(args.url, body=args.data, headers=headers)
         
         # Handle PUT request
         elif args.method.upper() == "PUT":
-            status_code, response_body = client.put(args.url, body=args.data, headers=headers)
+            return client.put(args.url, body=args.data, headers=headers)
         
         # Handle other HTTP methods (e.g., GET, POST)
         else:
-            status_code, response_body = client.http_request(
+            return client.http_request(
                 method=args.method.upper(),
                 url=args.url,
                 body=args.data,
