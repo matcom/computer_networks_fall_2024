@@ -60,6 +60,10 @@ class Client_test:
     def execute_command(self, command, args=None):
         if command in ["LIST", "STOR", "RETR", "STOU", "APPE"]:
             return self.handle_data_connection(command, args)
+            
+        elif command == "RNFR":
+            return self.rename_from_to(command, args)
+
         else:
             self.send_command(command, args[0])  # Pasar args a send_command
             return self.receive_response()
@@ -199,7 +203,7 @@ class Client_test:
             return self.receive_response()
         
         return rnfr_response
-            
+
 def start_client(argvs):    
     server = argvs.host
     port = argvs.port
