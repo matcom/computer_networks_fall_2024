@@ -256,8 +256,7 @@ class IRCClient:
             parts = argument.split(" ", 1)
             if len(parts) < 2:
                 print ("Error: Debes proporcionar un destinatario y un mensaje")
-            target, message = parts
-            self.send_command(f"NOTICE {target} {message}") 
+            self.send_command(f"NOTICE {argument}") 
         except IndexError:
             print("Formato invalido")    
     
