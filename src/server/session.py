@@ -1,11 +1,9 @@
 class Session:
     def __init__(self):
-        self.reset()
-    
-    def reset(self):
+        self.client_host = None
         self.mail_from = None
         self.recipients = []
         self.data = []
         self.tls_active = False
         self.authenticated = False
-        self.client_host = ""
+        self.auth_username = None 

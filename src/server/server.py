@@ -46,6 +46,18 @@ class SMTPServer:
                 # Enviar respuesta para otros comandos
                 client_socket.send(result.encode())
                 
+                if command == "AUTH" and "334" in result:
+                    # Manejar el flujo de autenticación para AUTH LOGIN
+                    while True:
+                        data = client_socket.recv(1024)
+                        if not data:
+                            break
+                        credential = data.decode().strip()
+                        result = CommandHandler.auth_login_password(session, credential)
+                        client_socket.send(result.encode())
+                        if "235" in result or "535" in result:
+                            break
+                
                 if command == "QUIT":
                     break
         finally:
@@ -61,6 +73,7 @@ class SMTPServer:
             "RCPT": lambda: CommandHandler.rcpt_to(session, arg.split(":")[1].strip()),
             "DATA": lambda: CommandHandler.data(client_socket),
             "QUIT": CommandHandler.quit,
+            "AUTH": lambda: CommandHandler.auth(session, arg.split()[0], arg.split()[1] if len(arg.split()) > 1 else None),
         }.get(command, lambda: "500 Unknown command\r\n")
         
         return handler()
