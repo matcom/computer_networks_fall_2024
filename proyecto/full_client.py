@@ -53,7 +53,7 @@ class FTPClient:
         
         response = ""
         while True:
-            data = sock.recv(1024).decode()
+            data = sock.recv(8192).decode()
             if not data:  # Si no hay más datos, salir del bucle
                 break
             response += data
@@ -69,7 +69,7 @@ class FTPClient:
         
         response = ""
         while True:
-            data = sock.recv(1024).decode()
+            data = sock.recv(8192).decode()
             if not data:  # Si no hay más datos, salir del bucle
                 break
             if "150" in data:
@@ -91,7 +91,7 @@ class FTPClient:
         
         response = ""
         while True:
-            data = sock.recv(1024).decode()
+            data = sock.recv(8192).decode()
             if not data:  # Si no hay más datos, salir del bucle
                 break
             response += data
@@ -107,7 +107,7 @@ class FTPClient:
             print(filename)
             with open(filename, 'rb') as f:
                 while True:
-                    data = f.read(4096)
+                    data = f.read()
                     print(data)
                     if not data:
                         break
@@ -125,8 +125,8 @@ class FTPClient:
             download_path = os.path.join(self.downloads_folder, filename)
             with open(download_path, 'wb') as f:
                 while True:
-                    data = sock.recv(1024)
-                    if not data or b"226" in data:  # Detectar fin de transferencia
+                    data = sock.recv(8192)
+                    if not data:  # Detectar fin de transferencia
                         break
                     f.write(data)
             print(f"Archivo guardado en: {download_path}")
@@ -164,7 +164,7 @@ class FTPClient:
         client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         try:
             client_socket.connect((self.host, self.port))
-            print(client_socket.recv(1024).decode())
+            print(client_socket.recv(8192).decode())
 
             while True:
                 try:
@@ -190,7 +190,7 @@ class FTPClient:
 
                     if cmd in self.commands_help:
                         # Manejo especial para comandos que requieren modo pasivo
-                        if cmd in ["LIST", "RETR", "STOR", "APPE"]:
+                        if cmd in ["LIST", "RETR", "STOR", "APPE", "NLST"]:
                             # Enviar el comando PASV y obtener la respuesta
                             response = self.send_command(client_socket, "PASV")
                             print(response)
@@ -214,11 +214,12 @@ class FTPClient:
                             data_sock.connect((ip, port))
 
                             try:
-                                if cmd == "LIST":
-                                    response = self.send_command_multiresponse(client_socket, "LIST")
+                                if cmd == "LIST" or cmd == "NLST":
+                                    path = args[0] if args else '.'
+                                    response = self.send_command_multiresponse(client_socket, cmd, path)
                                     print(response)
                                     if "150" in response:
-                                        data = data_sock.recv(4096).decode()
+                                        data = data_sock.recv(8192).decode()
                                         print(data)
                                     data_sock.close()  # Cerrar el socket de datos
 
@@ -246,18 +247,12 @@ class FTPClient:
 
                                     elif cmd == "APPE":
                                         if os.path.exists(filename):
-                                            response = self.send_command_multiresponse(client_socket, "APPE", filename)
+                                            response = self.send_stor_command(client_socket, data_sock, "APPE", filename)
                                             print(response)
-                                            if "150" in response:
-                                                if self.send_file(data_sock, filename):
-                                                    print("Archivo anexado exitosamente")
-                                                else:
-                                                    print("Error al anexar archivo")
                                         else:
                                             print("Archivo no encontrado")
                             finally:
-                                data_sock.close()  # Cerrar el socket de datos
-
+                                data_sock.close()  # Cerrar el socket de datos    
                         else:
                             # Comandos que no requieren modo pasivo
                             response = self.send_command(client_socket, cmd, *args)

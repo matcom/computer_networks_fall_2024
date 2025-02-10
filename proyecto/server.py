@@ -1,13 +1,16 @@
 import socket
-import os
 from pathlib import Path
 import shutil
+import tempfile
 
 class ServerFTP:
     def __init__(self, host='0.0.0.0', port=21):
         self.host = host
         self.port = port
         self.current_user = None
+        self.users = {
+            "joel": "joel"
+        }
         self.authenticated = False  # Nuevo atributo para rastrear la autenticación
         self.base_dir = Path.cwd()
         self.current_dir = self.base_dir
@@ -51,6 +54,16 @@ class ServerFTP:
         self.structure = 'F'      # File por defecto
         self.mode = 'S'          # Stream por defecto
         self.data_socket = None
+        self.structs = {
+            "F": "File",
+            "R": "Record",
+            "P": "Page"
+        }
+        self.modes = {
+            "S": "Stream",
+            "B": "Block",
+            "C": "Compressed"
+        }
 
     def start(self):
         server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -70,7 +83,8 @@ class ServerFTP:
         
         while True:
             try:
-                data = client_socket.recv(1024).decode().strip()
+                data = client_socket.recv(8192).decode().strip()
+                print(data)
                 if not data:
                     break
 
@@ -102,22 +116,42 @@ class ServerFTP:
 
     # Implementación de comandos
     def handle_user(self, client_socket, args):
-        self.current_user = args[0] if args else None
-        client_socket.send(b"331 Usuario OK, esperando contrasena\r\n")
+        if not args or len(args) > 1:
+            client_socket.send(b"501 Sintaxis invalida\r\n")
+            return
+        
+        self.current_user = args[0]
+        if (self.current_user in self.users):
+            client_socket.send(b"331 Usuario OK, esperando contrasena\r\n")
+        else:
+            self.current_user = None
+            client_socket.send(b"530 Usuario invalido\r\n")
 
     def handle_pass(self, client_socket, args):
+        if not args or len(args) > 1:
+            client_socket.send(b"501 Sintaxis invalida\r\n")
+            return
+        
+        password = args[0]
         if self.current_user:
-            self.authenticated = True  # Cliente autenticado
-            client_socket.send(b"230 Usuario logueado exitosamente\r\n")
+            if password == self.users[self.current_user]:
+                self.authenticated = True  # Cliente autenticado
+                client_socket.send(b"230 Usuario logueado exitosamente\r\n")
+            else:
+                client_socket.send(b"530 Contrasena incorrecta\r\n")
         else:
             client_socket.send(b"503 Primero ingrese el usuario\r\n")
 
     def handle_pwd(self, client_socket, args):
+        if args:
+            client_socket.send(b"501 Sintaxis invalida\r\n")
+            return
+        
         response = f"257 \"{self.current_dir.relative_to(self.base_dir)}\"\r\n"
         client_socket.send(response.encode())
 
     def handle_cwd(self, client_socket, args):
-        if not args:
+        if not args or len(args) > 1:
             client_socket.send(b"501 Sintaxis invalida\r\n")
             return
         try:
@@ -138,8 +172,10 @@ class ServerFTP:
             
     def handle_cdup(self, client_socket, args):
         """Maneja el comando CDUP (cambiar al directorio padre)"""
+        if args:
+            client_socket.send(b"501 Sintaxis invalida\r\n")
+            return
         try:
-            print("Entrando en handle_cdup")
             print("Este directorio: ", self.current_dir)
             print("Directorio base: ", self.base_dir)
             if self.current_dir == self.base_dir:
@@ -158,14 +194,21 @@ class ServerFTP:
                 
     def handle_list(self, client_socket, args):
         """Maneja el comando LIST (listar archivos)"""
+        if args and len(args) > 1:
+            client_socket.send(b"501 Sintaxis invalida\r\n")
+            return
+        
         try:
+            print(args)
+            path = self.current_dir / args[0] if args else self.current_dir
             client_socket.send(b"150 Iniciando transferencia\r\n")
             
+            print(path)
             # Aceptar la conexión de datos
             self.data_socket, _ = self.pasv_socket.accept()
             
             # Enviar la lista de archivos
-            files = "\r\n".join(str(f.name) for f in self.current_dir.iterdir())
+            files = "\r\n".join(str(f.name) for f in path.iterdir())
             self.data_socket.send(files.encode())
             
             client_socket.send(b"226 Transferencia completa\r\n")
@@ -176,7 +219,7 @@ class ServerFTP:
             client_socket.send(b"550 Error al listar archivos\r\n")
 
     def handle_mkd(self, client_socket, args):
-        if not args:
+        if not args or len(args) > 1:
             client_socket.send(b"501 Sintaxis invalida\r\n")
             return
         try:
@@ -187,7 +230,7 @@ class ServerFTP:
             client_socket.send(b"550 Error al crear directorio\r\n")
 
     def handle_rmd(self, client_socket, args):
-        if not args:
+        if not args or len(args) > 1:
             client_socket.send(b"501 Sintaxis invalida\r\n")
             return
         try:
@@ -201,7 +244,7 @@ class ServerFTP:
             client_socket.send(b"550 Error al eliminar directorio\r\n")
 
     def handle_dele(self, client_socket, args):
-        if not args:
+        if not args or len(args) > 1:
             client_socket.send(b"501 Sintaxis invalida\r\n")
             return
         try:
@@ -215,7 +258,7 @@ class ServerFTP:
             client_socket.send(b"550 Error al eliminar archivo\r\n")
 
     def handle_rnfr(self, client_socket, args):
-        if not args:
+        if not args or len(args) > 1:
             client_socket.send(b"501 Sintaxis invalida\r\n")
             return
         file_path = (self.current_dir / args[0])
@@ -226,8 +269,11 @@ class ServerFTP:
             client_socket.send(b"550 Archivo no existe\r\n")
 
     def handle_rnto(self, client_socket, args):
-        if not self.rename_from or not args:
+        if not self.rename_from:
             client_socket.send(b"503 Comando RNFR requerido primero\r\n")
+            return
+        if not args or len(args) > 1:
+            client_socket.send(b"501 Sintaxis invalida\r\n")
             return
         try:
             new_path = (self.current_dir / args[0])
@@ -239,6 +285,9 @@ class ServerFTP:
             self.rename_from = None
 
     def handle_syst(self, client_socket, args):
+        if args:
+            client_socket.send(b"501 Sintaxis invalida\r\n")
+            return
         client_socket.send(b"215 UNIX Type: L8\r\n")
 
     def handle_help(self, client_socket, args):
@@ -247,26 +296,62 @@ class ServerFTP:
         client_socket.send(response.encode())
 
     def handle_noop(self, client_socket, args):
+        if args:
+            client_socket.send(b"501 Sintaxis invalida\r\n")
+            return
         client_socket.send(b"200 OK\r\n")
 
     def handle_quit(self, client_socket, args):
+        if args:
+            client_socket.send(b"501 Sintaxis invalida\r\n")
+            return
         client_socket.send(b"221 Goodbye\r\n")
         return True
 
     # Nuevos manejadores de comandos
     def handle_acct(self, client_socket, args):
+        if not args or len(args) > 1:
+            client_socket.send(b"501 Sintaxis invalida\r\n")
+            return
         client_socket.send(b"230 No se requiere cuenta para este servidor\r\n")
 
     def handle_smnt(self, client_socket, args):
         client_socket.send(b"502 SMNT no implementado\r\n")
 
     def handle_rein(self, client_socket, args):
+        if args:
+            client_socket.send(b"501 Sintaxis invalida\r\n")
+            return
         self.current_user = None
+        self.authenticated = False
         self.current_dir = self.base_dir
         client_socket.send(b"220 Servicio reiniciado\r\n")
 
     def handle_port(self, client_socket, args):
-        client_socket.send(b"200 Comando PORT no implementado\r\n")
+        """Maneja el comando PORT (modo activo)"""
+        if not args:
+            client_socket.send(b"501 Sintaxis: PORT h1,h2,h3,h4,p1,p2\r\n")
+            return
+
+        try:
+            # Parsear la dirección IP y el puerto
+            port_parts = args[0].split(',')
+            if len(port_parts) != 6:
+                client_socket.send(b"501 Sintaxis invalida\r\n")
+                return
+
+            # Construir la dirección IP y el puerto
+            ip = ".".join(port_parts[:4])
+            port = (int(port_parts[4]) << 8) + int(port_parts[5])
+
+            # Crear un socket de datos
+            self.data_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self.data_socket.connect((ip, port))
+
+            client_socket.send(b"200 Comando PORT exitoso\r\n")
+        except Exception as e:
+            print(f"Error en PORT: {e}")
+            client_socket.send(b"500 Error en comando PORT\r\n")
 
     def handle_pasv(self, client_socket, args):
         """Maneja el comando PASV (modo pasivo)"""
@@ -291,38 +376,44 @@ class ServerFTP:
             client_socket.send(b"500 Error en modo pasivo\r\n")
 
     def handle_type(self, client_socket, args):
-        if not args:
+        if not args or len(args) > 1:
             client_socket.send(b"501 Sintaxis: TYPE {A,E,I,L}\r\n")
             return
         type_code = args[0].upper()
         if type_code in ['A', 'E', 'I', 'L']:
+            self.transfer_type = type_code
             client_socket.send(f"200 Tipo establecido a {type_code}\r\n".encode())
         else:
             client_socket.send(b"504 Tipo no soportado\r\n")
 
     def handle_stru(self, client_socket, args):
-        if not args:
+        if not args or len(args) > 1:
             client_socket.send(b"501 Sintaxis: STRU {F,R,P}\r\n")
             return
+
         stru_code = args[0].upper()
-        if stru_code == 'F':
-            client_socket.send(b"200 Estructura establecida a File\r\n")
+        if stru_code in ['F', 'R', 'P']:
+            self.structure = stru_code
+            client_socket.send(f"200 Estructura establecida a {self.structs[stru_code]}\r\n".encode())
         else:
             client_socket.send(b"504 Estructura no soportada\r\n")
 
+
     def handle_mode(self, client_socket, args):
-        if not args:
+        if not args or len(args) > 1:
             client_socket.send(b"501 Sintaxis: MODE {S,B,C}\r\n")
             return
+        
         mode_code = args[0].upper()
-        if mode_code == 'S':
-            client_socket.send(b"200 Modo establecido a Stream\r\n")
+        if mode_code in ['S', 'B', 'C']:
+            self.mode = mode_code
+            client_socket.send(f"200 Modo establecido a {self.modes[mode_code]}\r\n".encode())
         else:
             client_socket.send(b"504 Modo no soportado\r\n")
 
     def handle_retr(self, client_socket, args):
         """Maneja el comando RETR (descargar archivo)"""
-        if not args:
+        if not args or len(args) > 1:
             client_socket.send(b"501 Sintaxis: RETR filename\r\n")
             return
         try:
@@ -335,7 +426,11 @@ class ServerFTP:
                 
                 # Enviar el archivo
                 with open(file_path, 'rb') as f:
-                    self.data_socket.sendall(f.read())
+                    while True:
+                        data = f.read()
+                        if not data:
+                            break
+                        self.data_socket.send(data)
                 
                 client_socket.send(b"226 Transferencia completa\r\n")
                 self.data_socket.close()
@@ -348,7 +443,7 @@ class ServerFTP:
 
     def handle_stor(self, client_socket, args):
         """Maneja el comando STOR (subir archivo)"""
-        if not args:
+        if not args or len(args) > 1:
             client_socket.send(b"501 Sintaxis: STOR filename\r\n")
             return
 
@@ -356,9 +451,6 @@ class ServerFTP:
             # Verificar si el archivo ya existe
             file_path = self.current_dir / Path(args[0]).name
             print(file_path)
-            if file_path.exists():
-                client_socket.send(b"550 Archivo ya existe\r\n")
-                return
 
             # Indicar al cliente que está listo para recibir el archivo
             client_socket.send(b"150 Listo para recibir datos\r\n")
@@ -372,9 +464,8 @@ class ServerFTP:
             with open(file_path, 'wb') as f:
                 print("Leyendo el archivo")
                 while True:
-                    data = self.data_socket.recv(4096)
-                    print("Data recivida")
-                    print(data)
+                    data = self.data_socket.recv(8192)
+                    print("Data recibida")
                     if b'EOF' in data:
                         f.write(data.split(b'EOF')[0])  # Escribe los datos antes del marcador EOF
                         break
@@ -395,39 +486,40 @@ class ServerFTP:
                 self.data_socket = None
 
     def handle_stou(self, client_socket, args):
+        if args:
+            client_socket.send(b"501 Sintaxis invalida\r\n")
+            return
         try:
-            import tempfile
             temp_file = tempfile.NamedTemporaryFile(delete=False, dir=self.current_dir)
             temp_name = Path(temp_file.name).name
-            client_socket.send(f"150 Archivo será almacenado como {temp_name}\r\n".encode())
-            
-            # Recibir datos
-            while True:
-                data = client_socket.recv(1024)
-                if not data:
-                    break
-                temp_file.write(data)
-            
+            client_socket.send(f"250 Archivo será almacenado como {temp_name}\r\n".encode())
             temp_file.close()
-            client_socket.send(f"226 Transferencia completa. Archivo guardado como {temp_name}\r\n".encode())
         except:
             client_socket.send(b"550 Error al almacenar archivo\r\n")
 
     def handle_appe(self, client_socket, args):
-        if not args:
+        if not args or len(args) > 1:
             client_socket.send(b"501 Sintaxis: APPE filename\r\n")
             return
         try:
-            file_path = self.current_dir / args[0]
+            file_path = self.current_dir / Path(args[0]).name
             mode = 'ab' if file_path.exists() else 'wb'
             
             client_socket.send(b"150 Listo para recibir datos\r\n")
+            
+            self.data_socket, _ = self.pasv_socket.accept()
+            print("Conexión de datos establecida.")
+
             with open(file_path, mode) as f:
+                print("Leyendo el archivo")
                 while True:
-                    data = client_socket.recv(1024)
-                    if not data:
+                    data = self.data_socket.recv(8192)
+                    print("Data recibida")
+                    if b'EOF' in data:
+                        f.write(data.split(b'EOF')[0])  # Escribe los datos antes del marcador EOF
                         break
                     f.write(data)
+                    print("Data escrita")
             
             client_socket.send(b"226 Transferencia completa\r\n")
         except:
@@ -453,11 +545,28 @@ class ServerFTP:
         client_socket.send(response.encode())
 
     def handle_nlst(self, client_socket, args):
+        if args and len(args) > 1:
+            client_socket.send(b"501 Sintaxis invalida\r\n")
+            return
+        
         try:
-            files = "\r\n".join(str(f.name) for f in self.current_dir.iterdir() if f.is_file())
-            response = f"150 Lista de archivos:\r\n{files}\r\n226 Transferencia completa\r\n"
-            client_socket.send(response.encode())
-        except:
+            print(args)
+            path = self.current_dir / args[0] if args else self.current_dir
+            client_socket.send(b"150 Iniciando transferencia\r\n")
+            
+            print(path)
+            # Aceptar la conexión de datos
+            self.data_socket, _ = self.pasv_socket.accept()
+            
+            # Enviar la lista de archivos
+            files = "\r\n".join(str(f.name) for f in path.iterdir() if f.is_file())
+            self.data_socket.send(files.encode())
+            
+            client_socket.send(b"226 Transferencia completa\r\n")
+            self.data_socket.close()  # Cerrar el socket de datos
+            self.data_socket = None  # Reiniciar el socket de datos
+        except Exception as e:
+            print(f"Error en NLST: {e}")
             client_socket.send(b"550 Error al listar archivos\r\n")
 
 if __name__ == "__main__":
