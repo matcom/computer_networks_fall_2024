@@ -56,7 +56,7 @@ class IRCServer:
         # Mensaje de bienvenida con código 001
         client_socket.sendall(":001 :Bienvenido al servidor IRC local\r\n".encode())
         # Notificación de unión al canal General
-        client_socket.sendall(":Te has unido al canal #General\r\n".encode())
+        client_socket.sendall("Te has unido al canal #General\r\n".encode())
 
         while True:
             data = client_socket.recv(4096)
@@ -142,12 +142,12 @@ class IRCServer:
         if channel not in self.channels:
             self.channels[channel]= Channel(channel)
             self.channels[channel].add_operator(client)
-            return f"Unido al canal {channel}."
+            return f"Te has unido al canal {channel}."
         if self.channels[channel].is_on_channel(client):
             return "El cliente ya está en el canal."
         self.channels[channel].add_user(client)
-        self.channels[channel].broadcast(f":{client.nick}! JOIN #{channel}", client)
-        return f"Unido al canal {channel}."
+        self.channels[channel].broadcast(f":{client.nick}! JOIN {channel}", client)
+        return f"Te has unido al canal {channel}."
 
 
     def part_channel(self, client_socket, channel):

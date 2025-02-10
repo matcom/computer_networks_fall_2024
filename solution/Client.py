@@ -75,6 +75,11 @@ class IRCClient:
 
     def handle_message(self, message):
         """Maneja el mensaje recibido del servidor y procesa los comandos."""
+        
+        # Si hay un callback de GUI, enviar el mensaje
+        if hasattr(self, 'handle_message_callback'):
+            self.handle_message_callback(message)
+            
         try:
             if not message:
                 return
@@ -176,7 +181,7 @@ class IRCClient:
             print(f"Código {code}: {content}")
 
     def handle_command(self, command, argument):
-        """Maneja el comando que llega desde los tests."""
+        """Maneja el comando que llega desde los tests o de las interfaces"""
         if command == "/nick":
             return self.change_nick(argument)
         elif command == "/join":
@@ -252,7 +257,7 @@ class IRCClient:
             if len(parts) < 2:
                 print ("Error: Debes proporcionar un destinatario y un mensaje")
             target, message = parts
-            self.send_command(f"NOTICE {target} {argument}") 
+            self.send_command(f"NOTICE {target} {message}") 
         except IndexError:
             print("Formato invalido")    
     
