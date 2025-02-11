@@ -15,7 +15,8 @@ class connection:
             client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             client_socket.connect((self.host, self.port))
             
-            data = from_json(client_socket.recv(1024))
+            data = client_socket.recv(1024)
+            print(data)
             
             if(data['status_code'] != '220'):
                 return False
@@ -23,7 +24,7 @@ class connection:
             self.client_socket = client_socket
             return True
         except Exception as e:
-            log(f'Error connecting to server: {e}')
+            log(f'Error connecting to server: {e} {data}')
             return False
         
     def send(self, data: bytes):
