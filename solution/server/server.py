@@ -1,4 +1,5 @@
 import socket
+import ssl
 import os
 
 from utils import from_json, to_json, log
@@ -9,6 +10,9 @@ PORT = 21         # Puerto FTP
 BUFFER_SIZE = 1024
 USERS = {"user": "pass"}  # Usuario y contraseña válidos
 FILE_ROOT = 'files'
+
+KEY = 'key.pem'
+CERT = 'cert.pem'
 
 state: dict = {}
 
@@ -181,12 +185,20 @@ def main():
     server_socket.listen(10)
     
     print(f"Servidor FTP escuchando en {HOST}:{PORT}...")
-
+    
+    # Crear un contexto SSL
+    context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
+    context.load_cert_chain(certfile=CERT, keyfile=KEY)
+    
     while True:
         client_socket, host = server_socket.accept()
         print(f"Nueva conexión desde {host}")
-        handle_client(client_socket)
-        client_socket.close()
+        
+        # Envolver el socket con SSL
+        ssl_socket = context.wrap_socket(client_socket, server_side=True)
+        
+        handle_client(ssl_socket)
+        ssl_socket.close()
 
 if __name__ == '__main__':
     main()

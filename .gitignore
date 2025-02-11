@@ -1,2 +1,5 @@
 *.pyc
 *.txt
+solution/server/cert.pem
+solution/server/key.pem
+solution/client/cert.pem

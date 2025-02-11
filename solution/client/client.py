@@ -70,11 +70,11 @@ def handle_command_retr(conn: connection, filename: str):
     if(rsp.status_code == '150'):
         log(rsp.message)
         
-        file = conn.client_socket.recv(1024)
+        file = conn.ssl_socket.recv(1024)
         with open(filename, 'wb') as f:
             f.write(file)
             
-        data = from_json(conn.client_socket.recv(1024))
+        data = from_json(conn.ssl_socket.recv(1024))
         rsp = response(data['status_code'], data['message'])
         
         if(rsp.status_code == '226'):
@@ -93,7 +93,7 @@ def handle_command_stor(conn : connection, filepath: str, filename: str):
         
         conn.send_file(filepath)
             
-        data = from_json(conn.client_socket.recv(1024))
+        data = from_json(conn.ssl_socket.recv(1024))
         rsp = response(data['status_code'], data['message'])
         
         if(rsp.status_code == '226'):
