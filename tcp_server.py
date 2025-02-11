@@ -1,5 +1,5 @@
 # Import necessary modules for handling HTTP requests and networking
-from .request_handler import PicoHTTPRequestHandler  # Custom request handler module
+from request_handler import PicoHTTPRequestHandler  # Custom request handler module
 import socket  # Module for working with sockets
 import logging  # Module for logging messages
 
