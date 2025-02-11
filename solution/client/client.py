@@ -18,7 +18,7 @@ def check_connection(host, port):
     
 def authenticate(conn: connection, user, password):
     # Enviar credenciales de usuario
-    resp = conn.send(f'USER {user}')
+    resp = conn.send(f'USER {user}'.encode())
     data = {
         'status_code': resp.decode().split(' ')[0],
         'message': ' '.join(resp.decode().split(' ')[1:])
@@ -29,7 +29,7 @@ def authenticate(conn: connection, user, password):
     log(rsp.message)
     
     if(rsp.status_code == '331'):
-        resp = conn.send(f'PASS {password}')
+        resp = conn.send(f'PASS {password}'.encode())
         data = {
             'status_code': resp.decode().split(' ')[0],
             'message': ' '.join(resp.decode().split(' ')[1:])

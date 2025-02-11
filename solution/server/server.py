@@ -34,7 +34,7 @@ state: dict = {}
 def handle_user_command(client_socket: socket, args): 
     user = args[0] if args else ""
     if user in users:
-        client_socket.send(to_json({"status_code" : "331", "message": "User name okay, need password."}))
+        client_socket.send(b'331 Please specify the password.')
     else:
         client_socket.send(to_json({"status_code" : "530", "message": "Login Failed."}))
     return user
@@ -42,7 +42,7 @@ def handle_user_command(client_socket: socket, args):
 def handle_pass_command(client_socket: socket, args, user):
     password = args[0] if args else ""
     if user in users and verify_password(users[user], password):
-        client_socket.send(to_json({"status_code" : "230", "message": "User logged in, proceed."}))
+        client_socket.send(b'230 Login successful.')
         return True
     else:
         client_socket.send(to_json({"status_code" : "530", "message": "Login Failed."}))   
@@ -147,10 +147,14 @@ def handle_quit_command(client_socket: socket):
     client_socket.send(to_json({"status_code" : "221", "message": "Goodbye."}))
 
 def handle_client(client_socket: socket):
-    client_socket.sendall(to_json({"status_code" : "220", "message": "Welcome to the FTP server"}))
+    client_socket.sendall('220 Welcome to the FTP server.\r\n'.encode())
     
     while True:
-        data = from_json(client_socket.recv(BUFFER_SIZE))
+        data = client_socket.recv(BUFFER_SIZE).decode().strip()
+        data = {
+            'command': data.split(' ')[0],
+            'args': data.split(' ')[1:]
+        }
         
         if not data:
             client_socket.close()
