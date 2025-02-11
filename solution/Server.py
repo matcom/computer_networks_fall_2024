@@ -46,6 +46,7 @@ class IRCServer:
 
         self.cipher = Fernet(SECRET_KEY)  # Crea un objeto de cifrado
 
+
     def start(self):
         while True:
             client_socket, client_address = self.server_socket.accept()
@@ -83,8 +84,8 @@ class IRCServer:
                 print(f"Error al descifrar o procesar el mensaje: {e}")
 
         client = next((item for item in self.clients if item.socket == client_socket), None)
-        self.clients.remove(client)
-        self.remove_client_from_channels(client)
+        if client: self.remove_client_from_channels(client)
+        if client and client in self.clients: self.clients.remove(client)
         client_socket.close()
         print("Cliente desconectado")        
 
@@ -122,7 +123,9 @@ class IRCServer:
             return self.handle_topic(client_socket, argument)
         elif command == "QUIT":
             self.remove_client_from_channels(sender)
+            self.clients.remove(sender)
             return f":{sender.nick} QUIT :Leaving"
+            
         else:
             return f":421 {sender.nick} {command} :Unknown command"
 
@@ -145,14 +148,15 @@ class IRCServer:
     
     def change_nick(self, client_socket, new_nick):
         client = next((item for item in self.clients if item.socket== client_socket), None)
-
+        if client: old_nick= client.nick
         if new_nick in self.nicknames:
             return f':433 {new_nick} :{self.NUMERIC_REPLIES['433']}'
         
         elif client and client.nick == new_nick:
             return f':433 {new_nick} :{self.NUMERIC_REPLIES['433']}'
         
-        elif client and client in self.clients:
+        elif client:
+            old_nick= client.nick
             self.add_nickname(new_nick)
             self.remove_nickname(client.nick)
 
@@ -164,12 +168,11 @@ class IRCServer:
                 for c in channel.users:
                     if c.socket == client_socket:
                         c.nick = new_nick
-                        channel.broadcast(f":{c.nick}! NICK {new_nick}", c)
                 for c in channel.operators:
                     if c.socket == client_socket:
                         c.nick = new_nick
    
-            return f":{client.nick}! NICK {new_nick}"         
+            return f":{old_nick}! NICK {new_nick}"         
         else: 
             new_cli = User(client_socket, new_nick)
             self.clients.append(new_cli)  
@@ -215,13 +218,16 @@ class IRCServer:
                     destination_sock = client.socket
                     encrypted_message = self.cipher.encrypt((f":{sender.nick}! PRIVMSG {target} :{message}\r\n").encode())
                     destination_sock.sendall(encrypted_message)
-            return "Mensaje enviado"
+            return f"Mensaje privado enviado a {target}: {message}"
         
         # Mensaje a un canal
         elif target in self.channels:
             if not self.channels[target].is_on_channel(sender):
                 return f":442 :{self.NUMERIC_REPLIES['442']}"
             
+            if self.channels[target].m and not self.channels[target].is_operator(sender):
+                return f":482 :{self.NUMERIC_REPLIES['482']}"
+
             self.channels[target].broadcast(f":{sender.nick}! PRIVMSG {target} :{message}")
             return f"Mensaje enviado a {target}"
 
@@ -239,6 +245,9 @@ class IRCServer:
         if target in self.channels:
             if not self.channels[target].is_on_channel(sender):
                 return f':442 :{self.NUMERIC_REPLIES['442']}'
+            
+            if self.channels[target].m and not self.channels[target].is_operator(sender):
+                return f":482 :{self.NUMERIC_REPLIES['482']}"
             
             self.channels[target].broadcast(f":{sender.nick} NOTICE {target} {message}")
             return f"Mensaje enviado a {target}"
@@ -294,7 +303,7 @@ class IRCServer:
     def show_topic(self, client_socket, channel):
         client = next((item for item in self.clients if item.socket == client_socket), None)      
         if channel in self.channels:
-            return f':332 {channel}: {self.channels[channel].topic}'
+            return f':332 {channel} {self.channels[channel].topic}'
         return f':401 :{self.NUMERIC_REPLIES['401']}'
         
 
@@ -331,19 +340,22 @@ class IRCServer:
         """Maneja el comando MODE"""
         try:
             parts = argument.split()
-            target = parts[1]
-            modes = parts[2] if len(parts) > 2 else ""
-            params = parts[3:] if len(parts) > 3 else []
+            target = parts[0]
+            mode = parts[1] if len(parts) > 1 else ""
+            param = parts[2] if len(parts) > 2 else ""
 
-            if target.startswith('#'):
-                self.handle_channel_mode(client_socket, target, modes, params)
-            else:
-                self.handle_user_mode(client_socket, target, modes)
+            if mode.startswith('+') or mode.startswith('-'):
+                if target.startswith('#'):
+                    return self.handle_channel_mode(client_socket, target, mode, param)
+                else:
+                    return self.handle_user_mode(client_socket, target, mode)
+            return f":472 COMANDO_INVALIDO :{self.NUMERIC_REPLIES['472']}"  
+        
         except Exception as e:
             return f":421 COMANDO_INVALIDO :{self.NUMERIC_REPLIES['421']}"
 
 
-    def handle_channel_mode(self, client_socket, channel, modes, params):
+    def handle_channel_mode(self, client_socket, channel, mode, param):
         """Maneja modos de canal"""
         if channel not in self.channels:
             return f':401 :{self.NUMERIC_REPLIES['401']}'
@@ -352,40 +364,41 @@ class IRCServer:
         # Verificar si el usuario es operador del canal
         if not self.channels[channel].is_operator(client):
             return f":482 {channel} :{self.NUMERIC_REPLIES['482']}"
+        
+        if len(mode)!= 2: return f":461 :{self.NUMERIC_REPLIES['461']}"
 
-        param_index = 0
-        for i, mode in enumerate(modes[1:]):  # Skip the +/- character
-            if mode == 'o': 
-                if param_index >= len(params):
-                    return f":461 :{self.NUMERIC_REPLIES['461']}"
-                param = params[param_index]
-                param_index += 1
-                
-                if modes[0] == '+':
-                    if mode == 'o':
-                        self.channels[channel].add_operator(param)
-                else:  # modes[0] == '-'
-                    if mode == 'o':
-                        self.channels[channel].remove_operator(param)
-            elif mode == 't':
-                if modes[0] == '+':
-                    self.channels[channel].t= True
-                else:
-                    self.channels[channel].t= False  
+        if mode[1] == 'o': 
+            user = next((item for item in self.clients if item.nick == param), None)
+            if not user:
+                return f':401 :{self.NUMERIC_REPLIES['401']}'
+            if not self.channels[channel].is_on_channel(user):
+                return f':441 {channel}: {self.NUMERIC_REPLIES['441']}'
+            if mode[0] == '+':
+                self.channels[channel].add_operator(user)
+                user.send_message(f'El usuario {client.nick} te ha añadido como operador del canal {channel}')
+            else:  
+                self.channels[channel].remove_operator(user)
+                user.send_message(f'El usuario {client.nick} te ha eliminado como operador del canal {channel}')
 
-            elif mode == 'm':  
-                if modes[0] == '+':
-                    self.channels[channel].m= True
-                else:
-                    self.channels[channel].m= True
+        elif mode[1] == 't':
+            if mode[0] == '+':
+                self.channels[channel].t= True
+            else:
+                self.channels[channel].t= False  
 
-            else: return f":472 :{self.NUMERIC_REPLIES['472']}"    
+        elif mode[1] == 'm':  
+            if mode[0] == '+':
+                self.channels[channel].m= True
+            else:
+                self.channels[channel].m= False
+
+        else: return f":472 :{self.NUMERIC_REPLIES['472']}"    
 
         return 'Operación Exitosa'    
 
 
 
-    def handle_user_mode(self, client_socket, target, modes):
+    def handle_user_mode(self, client_socket, target, mode):
         """Maneja modos de usuario"""
         if target not in [client.nick for client in self.clients]:
             return f':401 :{self.NUMERIC_REPLIES['401']}'
@@ -395,15 +408,16 @@ class IRCServer:
         if client.nick != target:
             return f":502 usuario :{self.NUMERIC_REPLIES['502']}"
         
+        if len(mode)!= 2: return f":461 :{self.NUMERIC_REPLIES['461']}"
+
         self.clients.remove(client)
 
-        for i, mode in enumerate(modes[1:]):  # Skip the +/- character
-            if mode == 'i':
-                if modes[0] == '+':
-                    client.visibility = True
-                else:
-                    client.visibility = False
-            else: return f":472 :{self.NUMERIC_REPLIES['472']}"   
+        if mode[1] == 'i':
+            if mode[0] == '+':
+                client.visibility = False
+            else:
+                client.visibility = True
+        else: return f":472 :{self.NUMERIC_REPLIES['472']}"   
 
         self.clients.append(client)
         return 'Operación Exitosa'

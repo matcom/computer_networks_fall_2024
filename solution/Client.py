@@ -15,8 +15,11 @@ class IRCClient:
         self.buffer = ""
         self.cipher = Fernet(SECRET_KEY)  # Usa la misma clave secreta que el servidor
         self.secret_key = secret_key
+
+
     def connect(self):
         """Se conecta al servidor IRC y envía el NICK y USER inicial."""
+        if self.connected : print('Ya estás conectado') ; return 
         self.sock.connect((self.host, self.port))
         self.connected = True
         sleep(0.2)
@@ -36,6 +39,7 @@ class IRCClient:
             self.sock.sendall(encrypted_command)
         else:
             self.sock.sendall((command + "\r\n").encode("utf-8"))
+
 
     def receive_response(self):
         """Recibe y almacena todas las respuestas del servidor hasta que no haya más datos en el buffer."""
@@ -60,6 +64,7 @@ class IRCClient:
         """Inicia un hilo para recibir mensajes del servidor."""
         threading.Thread(target=self.receive_messages, daemon=True).start()
 
+
     def receive_messages(self):
         """Escucha continuamente los mensajes del servidor."""
         while self.connected:
@@ -77,11 +82,13 @@ class IRCClient:
             except Exception as e:
                 print(f"Error al recibir mensaje: {e}.")
 
+
     def process_buffer(self):
         """Procesa los mensajes completos en el buffer."""
         while "\r\n" in self.buffer:
             message, self.buffer = self.buffer.split("\r\n", 1)  # Separar un mensaje completo
             self.handle_message(message)
+
 
     def handle_message(self, message):
         """Maneja el mensaje recibido del servidor y procesa los comandos."""
@@ -120,6 +127,7 @@ class IRCClient:
         except Exception as e:
             print(f"Error al procesar mensaje: {e}")
 
+
     def _handle_numeric_message(self, first_part, content):
         """Maneja mensajes con códigos numéricos"""
         if first_part.startswith(':') and first_part[1:].isdigit():
@@ -128,12 +136,14 @@ class IRCClient:
             return True
         return False
 
+
     def _handle_ping(self, first_part, content):
         """Maneja mensajes PING"""
         if first_part == "PING":
             self.send_command(f"PONG {content}")
             return True
         return False
+
 
     def _handle_user_commands(self, source, cmd, params):
         """Maneja comandos relacionados con usuarios."""
@@ -150,6 +160,7 @@ class IRCClient:
             print(f"{nick} se ha desconectado: {reason}")
         elif cmd == "NICK":
             print(f"{nick} ahora se conoce como {params[0]}")
+            if params[0] != self.nick : self.nick= params[0]
         elif cmd == "TOPIC":
             channel = params[0]
             topic = ' '.join(params[1:])[1:]  # Eliminar el ':' inicial
@@ -164,6 +175,7 @@ class IRCClient:
             reason = ' '.join(params[2:])[1:] if len(params) > 2 else "Sin razón especificada"
             print(f"{kicked_user} ha sido expulsado del canal {channel} por {nick}: {reason}")
 
+
     def _handle_privmsg(self, nick, params):
         """Maneja mensajes privados"""
         target = params[0]
@@ -172,6 +184,7 @@ class IRCClient:
             print(f"[{target}] {nick}: {msg_content}")
         else:
             print(f"Mensaje privado de {nick}: {msg_content}")
+
 
     def handle_numeric_response(self, code, content):
         """Procesa los códigos numéricos del servidor IRC."""
@@ -203,6 +216,7 @@ class IRCClient:
         else:
             print(f"Código {code}: {content}")
 
+
     def handle_command(self, command, argument):
         """Maneja el comando que llega desde los tests o de las interfaces"""
         if command == "/nick":
@@ -232,11 +246,13 @@ class IRCClient:
         else:
             return f"Error: Comando '{command}' no soportado"
 
+
     def change_nick(self, new_nick):
         """Cambia el nickname enviando el comando al servidor."""
         if new_nick:
             self.send_command(f"NICK {new_nick}")
         else: print('Error: Debes proporcionar un nickname')   
+
 
     def join_channel(self, channel):
         """Se une a un canal enviando el comando JOIN."""
@@ -250,6 +266,7 @@ class IRCClient:
         
         self.send_command(f"JOIN {channel}")
 
+
     def part_channel(self, channel):
         """Sale de un canal enviando el comando PART."""
         if not channel:
@@ -262,6 +279,7 @@ class IRCClient:
         
         self.send_command(f"PART {channel}")
 
+
     def send_private_message(self, argument):
         try:
             """Envía un mensaje privado a un usuario o canal."""
@@ -272,6 +290,7 @@ class IRCClient:
             self.send_command(f"PRIVMSG {target} {message}")
         except IndexError:
             print("Formato invalido")    
+
 
     def send_notice(self, argument):
         """Envía un mensaje NOTICE a un usuario o canal."""
@@ -284,11 +303,13 @@ class IRCClient:
             self.send_command(f"NOTICE {target} {argument}") 
         except IndexError:
             print("Formato invalido")    
-    
+
+
     def list_channels(self):
         """Solicita la lista de canales al servidor."""
         self.send_command("LIST")
     
+
     def list_users(self, channel):
         """Lista los usuarios de un canal específico."""
         if not channel:
@@ -301,11 +322,13 @@ class IRCClient:
         
         self.send_command(f"NAMES {channel}")
 
+
     def whois_user(self, user):
         """Obtiene información sobre un usuario."""
         if user:
             self.send_command(f"WHOIS {user}")
         else: print('Error: Debe proporcionar un nickname')    
+
 
     def kick_user(self, argument):
         try:
@@ -317,6 +340,7 @@ class IRCClient:
         except IndexError:
             print ("Error: Uso correcto: /kick <canal> <usuario> [motivo]")
     
+
     def change_topic(self, argument):
         """Cambia o consulta el tema de un canal."""
         try:
@@ -336,15 +360,20 @@ class IRCClient:
         except IndexError:
             print('Formato Inválido')        
 
+
     def handle_mode(self, argument):
-        print("Falta")        
-    
+        parts = argument.split(" ")
+        if len(parts)< 2 : print("Error: Formato inválido, faltan parámetros") 
+
+        if len(parts) == 2:
+            parts.append("")
+        target , mode , extra=  parts
+        self.send_command(f'MODE {target} {mode} {extra}')   
+
+
     def quit_server(self):
         """Sale del servidor IRC enviando el comando QUIT."""
         self.send_command("QUIT :Saliendo del servidor")
-        self.sock.close()
-        self.connected= False
-        print('Desconectado del servidor')
 
 def parse_arguments():
     parser = argparse.ArgumentParser(description="Parser de pruebas para cliente IRC")
@@ -353,8 +382,6 @@ def parse_arguments():
     parser.add_argument("-n", type=str, help="Nickname del usuario", required=True)
     parser.add_argument("-c", type=str, help="Comando de IRC a ejecutar", required=True)
     parser.add_argument("-a", type=str, help="Argumento del comando", required=False, default="", nargs="+")
-    parser.add_argument("-s", "--secret_key", type=bool, help="Uso de clave secreta para cifrado", required=False)
-
     return parser.parse_args()
 
 if __name__ == "__main__":
@@ -367,7 +394,11 @@ if __name__ == "__main__":
     client.receive_response()
     # Ejecutar el comando desde el test
     client.handle_command(args.c, argument)
-    if args.c != "/quit":
-        response = client.receive_response()  
-        # Mostrar la respuesta del servidor
-        print(response)    
+
+    response = client.receive_response()  
+    # Mostrar la respuesta del servidor
+    print(response)    
+
+    if args.c == '/quit':
+        client.sock.close()
+        client.connected= False

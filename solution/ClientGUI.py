@@ -160,6 +160,8 @@ class ClientGUI:
         if self.client and self.client.connected:
             try:
                 self.client.quit_server()
+                self.client.connected= False
+                self.client.sock.close()
                 self.connection_var.set("Conectar")
                 self.host_entry.config(state="normal")
                 self.port_entry.config(state="normal")
@@ -415,7 +417,7 @@ class ClientGUI:
             '001': "Bienvenido al servidor IRC",
             '312': f"Información del usuario: {content}",
             '331': "No hay topic establecido",
-            '332': f"Topic del canal: {content}",
+            '332': f"Topic del canal {content}",
             '353': f"Lista de usuarios: {content}",
             '366': "Fin de la lista de usuarios",
             '401': "Usuario/Canal no encontrado",

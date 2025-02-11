@@ -21,6 +21,9 @@ def main():
                 parts= user_input.split(" ", 1)
                 if len(parts)==1: parts.append("")
                 client.handle_command(parts[0], parts[1])
+                if parts[0] == '/quit':
+                    client.sock.close()
+                    client.connected= False
             else:
                 client.send_command(user_input)
 
