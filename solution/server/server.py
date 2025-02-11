@@ -1,5 +1,7 @@
 import socket
 import os
+import ssl
+import hashlib
 
 from utils import from_json, to_json, log
 
@@ -7,14 +9,31 @@ from utils import from_json, to_json, log
 HOST = '127.0.0.1'  # Dirección IP del servidor
 PORT = 21         # Puerto FTP
 BUFFER_SIZE = 1024
-USERS = {"user": "pass"}  # Usuario y contraseña válidos
 FILE_ROOT = 'files'
+KEY = 'key.pem'
+CERT = 'cert.pem'
+
+def hash_password(password: str, salt: bytes = None) -> tuple:
+    if salt is None:
+        salt = os.urandom(16)
+    key = hashlib.pbkdf2_hmac('sha256', password.encode('utf-8'), salt, 100000)
+    return salt, key
+
+def verify_password(stored_password: tuple, provided_password: str) -> bool:
+    salt, key = stored_password
+    new_key = hashlib.pbkdf2_hmac('sha256', provided_password.encode('utf-8'), salt, 100000)
+    return new_key == key
+
+# Usuarios y contraseñas válidos con contraseñas hasheadas
+users = {
+    "user": hash_password("pass")
+}
 
 state: dict = {}
 
 def handle_user_command(client_socket: socket, args): 
     user = args[0] if args else ""
-    if user in USERS:
+    if user in users:
         client_socket.send(to_json({"status_code" : "331", "message": "User name okay, need password."}))
     else:
         client_socket.send(to_json({"status_code" : "530", "message": "Login Failed."}))
@@ -22,7 +41,7 @@ def handle_user_command(client_socket: socket, args):
 
 def handle_pass_command(client_socket: socket, args, user):
     password = args[0] if args else ""
-    if user in USERS and USERS[user] == password:
+    if user in users and verify_password(users[user], password):
         client_socket.send(to_json({"status_code" : "230", "message": "User logged in, proceed."}))
         return True
     else:
