@@ -42,6 +42,22 @@ if http_method in ["POST", "DELETE", "PATCH", "PUT"]:  #Allow body for DELETE
 else:
     body = None 
 
+
+# HMAC Signature Section
+with st.expander("HMAC Signature"):
+    use_hmac = st.checkbox("Enable HMAC Signature", value=False)
+    if use_hmac:
+        secret_key = st.text_input("Secret Key", type="password")
+        if secret_key:
+            # Generate HMAC signature
+            message_to_sign = body if body else url  # Use body or URL as the message
+            signature = client.hmac_generator(secret_key, message_to_sign)
+            st.info(f"Generated Signature: `{signature}`")
+            # Add signature to headers
+            headers["X-Signature"] = signature
+        else:
+            st.warning("Please enter a secret key to generate the HMAC signature.")
+
 # Send request button
 if st.button("Send Request"):     
     # Manage requests

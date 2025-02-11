@@ -1,8 +1,11 @@
 import socket
 import ssl
-
+import hmac
+import hashlib
 class HTTPClient:
-    
+    def hmac_generator(self, key, msg):
+        return hmac.new(key.encode(), msg.encode(), hashlib.sha256).hexdigest()
+
     def parse_url(self, url):
         """Parses the URL and returns (host, port, path, use_ssl)."""
         use_ssl = False
