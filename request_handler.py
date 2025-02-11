@@ -54,7 +54,13 @@ class PicoHTTPRequestHandler:
         elif method == 'HEAD':
             self.handle_HEAD()
         elif method == 'POST':
-            self.send_error(403, "Forbidden")
+           self.handle_POST()
+        elif method == 'PUT':
+           self.handle_PUT()
+        elif method == 'PATCH':
+           self.handle_PATCH()
+        elif method == 'DELETE':
+           self.handle_DELETE()
         else:
             self.send_error(405, "Method Not Allowed")
 
@@ -123,7 +129,7 @@ class PicoHTTPRequestHandler:
         - Include appropriate HTTP headers (e.g., Content-Type, Content-Length).
         '''
     # Predefined content for the response.
-        content = b"Hola Amigo bienvenido al servidor"
+        content = b"Hola Amigo bienvenido al servidor\n"
         
         # Update the headers with the content type and length.
         self.headers.update({
@@ -147,7 +153,7 @@ class PicoHTTPRequestHandler:
         - Send the same headers as a GET request but without the response body.
         '''
         # Predefined content for the response (same as in handle_GET).
-        content = b"Hola Amigo bienvenido al servidor"
+        content = b"Hola Amigo bienvenido al servidor\n"
         
         # Update the headers with the content type and length.
         self.headers.update({
@@ -159,6 +165,146 @@ class PicoHTTPRequestHandler:
         # Send the HTTP response status line and headers (no body for HEAD requests).
         self.send_response(200, "OK")
         self.send_headers()
+
+    def handle_POST(self) -> None:
+        '''
+        Handles an HTTP POST request.
+        This method should:
+        - Read the request body.
+        - Process the request body (e.g., parse JSON, extract parameters).
+        - Send a response back to the client.
+        '''
+        # Leer el cuerpo de la solicitud.
+        content_length = self.headers.get('Content-Length')
+        body = ""
+        if content_length:
+            try:
+                content_length = int(content_length)
+            except ValueError:
+                self.send_error(400, "Bad Request: Invalid Content-Length")
+                return
+            
+            # Leer el número exacto de bytes especificado por Content-Length.
+            body = self.request_stream.read(content_length).decode()
+            if len(body) != content_length:
+                self.send_error(400, "Bad Request: Incomplete Body")
+                return
+            
+            # Procesar el cuerpo de la solicitud (por ejemplo, parsear JSON o extraer parámetros).
+            logger.info(f"Received POST data: {body}")
+
+        # Crear contenido de respuesta que incluya los datos recibidos.
+        response_content = f"Ha creado un post satisfactoriamente. Datos recibidos: {body}\n".encode()
+
+        self.headers.update({
+            'Content-Type': 'text/html',
+            'Content-Length': str(len(response_content)),
+            'Connection': 'close'
+        })
+
+        # Send the HTTP response status line and headers.
+        self.send_response(200, "OK")
+        self.send_headers()
+
+        # Write the response content as the response body.
+        self.response_stream.write(response_content)
+        self.response_stream.flush()
+
+    def handle_PUT(self) -> None:
+        '''
+        Handles an HTTP PUT request.
+        This method should:
+        - Read the request body.
+        - Process the request body (e.g., save data to a file).
+        - Send a response back to the client.
+        '''
+        content_length = self.headers.get('Content-Length')
+        body = ""
+        if content_length:
+            try:
+                content_length = int(content_length)
+            except ValueError:
+                self.send_error(400, "Bad Request: Invalid Content-Length")
+                return
+            
+            body = self.request_stream.read(content_length).decode()
+            if len(body) != content_length:
+                self.send_error(400, "Bad Request: Incomplete Body")
+                return
+            
+            logger.info(f"Received PUT data: {body}")
+
+        response_content = f"PUT request processed successfully. Data received: {body}\n".encode()
+
+        self.headers.update({
+            'Content-Type': 'text/html',
+            'Content-Length': str(len(response_content)),
+            'Connection': 'close'
+        })
+
+        self.send_response(200, "OK")
+        self.send_headers()
+        self.response_stream.write(response_content)
+        self.response_stream.flush()
+
+    def handle_PATCH(self) -> None:
+        '''
+        Handles an HTTP PATCH request.
+        This method should:
+        - Read the request body.
+        - Process the request body (e.g., update data).
+        - Send a response back to the client.
+        '''
+        content_length = self.headers.get('Content-Length')
+        body = ""
+        if content_length:
+            try:
+                content_length = int(content_length)
+            except ValueError:
+                self.send_error(400, "Bad Request: Invalid Content-Length")
+                return
+            
+            body = self.request_stream.read(content_length).decode()
+            if len(body) != content_length:
+                self.send_error(400, "Bad Request: Incomplete Body")
+                return
+            
+            logger.info(f"Received PATCH data: {body}")
+
+        response_content = f"PATCH request processed successfully. Data received: {body}\n".encode()
+
+        self.headers.update({
+            'Content-Type': 'text/html',
+            'Content-Length': str(len(response_content)),
+            'Connection': 'close'
+        })
+
+        self.send_response(200, "OK")
+        self.send_headers()
+        self.response_stream.write(response_content)
+        self.response_stream.flush()
+
+    def handle_DELETE(self) -> None:
+        '''
+        Handles an HTTP DELETE request.
+        This method should:
+        - Process the request (e.g., delete a resource).
+        - Send a response back to the client.
+        '''
+        logger.info(f"Received DELETE request for path: {self.path}")
+
+        response_content = f"DELETE request processed successfully for path: {self.path}\n".encode()
+
+        self.headers.update({
+            'Content-Type': 'text/html',
+            'Content-Length': str(len(response_content)),
+            'Connection': 'close'
+        })
+
+        self.send_response(200, "OK")
+        self.send_headers()
+        self.response_stream.write(response_content)
+        self.response_stream.flush()
 
     def send_response(self, status_code: int, status_message: str) -> None:
         '''
