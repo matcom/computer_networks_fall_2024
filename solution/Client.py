@@ -353,6 +353,7 @@ def parse_arguments():
     parser.add_argument("-n", type=str, help="Nickname del usuario", required=True)
     parser.add_argument("-c", type=str, help="Comando de IRC a ejecutar", required=True)
     parser.add_argument("-a", type=str, help="Argumento del comando", required=False, default="", nargs="+")
+    parser.add_argument("-s", "--secret_key", type=str, help="Clave secreta para cifrado", required=False)
 
     return parser.parse_args()
 
@@ -361,7 +362,7 @@ if __name__ == "__main__":
     sleep(1)
     argument = " ".join(args.a) if isinstance(args.a, list) else args.a
     # Crear el cliente y conectar al servidor
-    client = IRCClient(args.H, args.p, args.n, args.secret_key)
+    client = IRCClient(args.H, args.p, args.n)
     client.connect()
     client.receive_response()
     # Ejecutar el comando desde el test
