@@ -1,5 +1,3 @@
-# src/connection.py
-
 import socket
 import logging
 import ssl

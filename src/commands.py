@@ -1,5 +1,3 @@
-# src/commands.py
-
 from .response import SMTPResponse
 from .connection import SMTPConnection
 from .exceptions import SMTPException, TemporarySMTPException, PermanentSMTPException

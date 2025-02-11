@@ -1,5 +1,3 @@
-# src/client.py
-
 from .connection import SMTPConnection
 from .commands import SMTPCommands
 from .response import SMTPResponse

@@ -1,5 +1,3 @@
-# src/response.py
-
 from .exceptions import SMTPException, TemporarySMTPException, PermanentSMTPException
 class SMTPResponse:
     """

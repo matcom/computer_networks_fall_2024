@@ -38,6 +38,10 @@ class SMTPClientGUI(QMainWindow):
         self.init_email_fields()
         self.layout.addSpacing(20)
 
+        # Campos de adjuntos
+        self.init_attachment_fields()
+        self.layout.addSpacing(20)
+
         # Botón de envío
         self.send_button = QPushButton("Enviar Correo", self)
         self.send_button.clicked.connect(self.send_email)
@@ -120,19 +124,55 @@ class SMTPClientGUI(QMainWindow):
         self.layout.addWidget(QLabel("Mensaje:"))
         self.layout.addWidget(self.message_input)
         
-        
-    def seleccionar_archivo(self):
-            # Abrir diálogo para seleccionar archivo
-            nombre_archivo, _ = QFileDialog.getOpenFileName(
-                self,
-                "Seleccionar Archivo",
-                "",
-                "Todos los archivos (*.*)"
-            )
-            
-            # Si se seleccionó un archivo, actualizar el texto del label
-            if nombre_archivo:
-                self.label_archivo.setText(nombre_archivo)
+    def init_attachment_fields(self):
+        """Inicializa los campos de adjuntos."""
+        attachment_layout = QHBoxLayout()
+
+        self.attachment_input = QLineEdit(self)
+        self.attachment_input.setPlaceholderText("Ruta del archivo")
+        attachment_layout.addWidget(QLabel("Adjunto:"))
+        attachment_layout.addWidget(self.attachment_input)
+
+        self.browse_button = QPushButton("Buscar", self)
+        self.browse_button.clicked.connect(self.browse_file)
+        attachment_layout.addWidget(self.browse_button)
+
+        self.add_attachment_button = QPushButton("Agregar Adjunto", self)
+        self.add_attachment_button.clicked.connect(self.add_attachment)
+        attachment_layout.addWidget(self.add_attachment_button)
+
+        self.layout.addLayout(attachment_layout)
+
+        # Lista de adjuntos
+        self.attachment_list = QListWidget(self)
+        self.layout.addWidget(self.attachment_list)
+
+        # Botón para eliminar adjuntos
+        self.remove_attachment_button = QPushButton("Eliminar Adjunto Seleccionado", self)
+        self.remove_attachment_button.clicked.connect(self.remove_attachment)
+        self.layout.addWidget(self.remove_attachment_button)
+
+    def browse_file(self):
+        """Abre un diálogo para seleccionar un archivo."""
+        file_name, _ = QFileDialog.getOpenFileName(self, "Seleccionar archivo", "", "Todos los archivos (*.*)")
+        if file_name:
+            self.attachment_input.setText(file_name)
+
+    def add_attachment(self):
+        """Agrega un archivo a la lista de adjuntos."""
+        file_path = self.attachment_input.text().strip()
+        if file_path:
+            self.attachment_list.addItem(QListWidgetItem(file_path))
+            self.attachment_input.clear()
+        else:
+            QMessageBox.warning(self, "Advertencia", "Por favor, selecciona un archivo.")
+
+    def remove_attachment(self):
+        """Elimina el archivo seleccionado de la lista de adjuntos."""
+        selected = self.attachment_list.currentRow()
+        if selected >= 0:
+            self.attachment_list.takeItem(selected)
+
     def remove_recipient(self):
         selected = self.recipient_list.currentRow()
         if selected >= 0:
@@ -178,8 +218,9 @@ class SMTPClientGUI(QMainWindow):
         # Configurar y lanzar hilo
         client = SMTPClient(
             self.host_input.text().strip(),
-            int(self.port_input.text().strip())
-        )
+            int(self.port_input.text().strip()))
+        
+        attachments = [self.attachment_list.item(i).text() for i in range(self.attachment_list.count())]
         
         self.thread = EmailSenderThread(
             client=client,
@@ -189,7 +230,8 @@ class SMTPClientGUI(QMainWindow):
             ),
             recipients=[self.recipient_list.item(i).text() for i in range(self.recipient_list.count())],
             subject=self.subject_input.text().strip(),
-            body=self.message_input.toPlainText().strip()
+            body=self.message_input.toPlainText().strip(),
+            attachments=attachments
         )
         
         self.thread.finished.connect(self.handle_send_result)
@@ -224,18 +266,20 @@ class SMTPClientGUI(QMainWindow):
         self.message_input.clear()
         self.recipient_list.clear()
         self.subject_input.clear()
+        self.attachment_list.clear()
 
 class EmailSenderThread(QThread):
     finished = pyqtSignal(bool, str)
     progress = pyqtSignal(int)
 
-    def __init__(self, client: SMTPClient, user, recipients, subject, body):
+    def __init__(self, client: SMTPClient, user, recipients, subject, body, attachments=None):
         super().__init__()
         self.client = client
         self.user = user
         self.recipients = recipients
         self.subject = subject
         self.body = body
+        self.attachments = attachments if attachments else []
 
     def run(self):
         try:
@@ -247,7 +291,22 @@ class EmailSenderThread(QThread):
             if self.client.does_server_supports_authentication():
                 self.client.authenticate(mechanism='PLAIN', username=self.user[0], password=self.user[1]).raise_for_status("Authentication error")
             
-            self.client.send_mail(self.user[0], self.recipients, self.subject, self.body).raise_for_status("Email error")
+            if self.attachments:
+                self.client.send_mail_with_attachments(
+                    sender=self.user[0],
+                    recipients=self.recipients,
+                    subject=self.subject,
+                    body=self.body,
+                    attachments=self.attachments
+                ).raise_for_status("Email with attachments error")
+            else:
+                self.client.send_mail(
+                    self.user[0],
+                    self.recipients,
+                    self.subject,
+                    self.body
+                ).raise_for_status("Email error")
+            
             self.client.disconnect()
             
             self.finished.emit(True, "Correo enviado exitosamente")
@@ -263,126 +322,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-# class SMTPClientGUI(QMainWindow):
-#     def __init__(self):
-#         super().__init__()
-#         self.setWindowTitle("Cliente SMTP")
-#         self.setGeometry(100, 100, 600, 500)
-
-#         # Widgets principales
-#         self.central_widget = QWidget()
-#         self.setCentralWidget(self.central_widget)
-#         self.layout = QVBoxLayout(self.central_widget)
-
-#         # Campos de entrada
-#         self.host_input = QLineEdit(self)
-#         self.host_input.setPlaceholderText("Servidor SMTP (ej: localhost)")
-#         self.layout.addWidget(QLabel("Servidor SMTP:"))
-#         self.layout.addWidget(self.host_input)
-
-#         self.port_input = QLineEdit(self)
-#         self.port_input.setPlaceholderText("Puerto (ej: 1025)")
-#         self.layout.addWidget(QLabel("Puerto:"))
-#         self.layout.addWidget(self.port_input)
-
-#         self.sender_input = QLineEdit(self)
-#         self.sender_input.setPlaceholderText("Remitente (ej: remitente@dominio.com)")
-#         self.layout.addWidget(QLabel("Remitente:"))
-#         self.layout.addWidget(self.sender_input)
-
-#         self.password_input = QLineEdit(self)
-#         self.password_input.setPlaceholderText("Contraseña")
-#         self.password_input.setEchoMode(QLineEdit.Password)
-#         self.layout.addWidget(QLabel("Contraseña:"))
-#         self.layout.addWidget(self.password_input)
-
-#         self.recipient_input = QLineEdit(self)
-#         self.recipient_input.setPlaceholderText("Destinatario (ej: destinatario@dominio.com)")
-#         self.layout.addWidget(QLabel("Destinatario:"))
-#         self.layout.addWidget(self.recipient_input)
-
-#         self.recipient_list = QListWidget(self)
-#         self.layout.addWidget(QLabel("Destinatarios:"))
-#         self.layout.addWidget(self.recipient_list)
-
-#         self.add_recipient_button = QPushButton("Agregar Destinatario", self)
-#         self.add_recipient_button.clicked.connect(self.add_recipient)
-#         self.layout.addWidget(self.add_recipient_button)
-
-#         self.subject_input = QLineEdit(self)
-#         self.subject_input.setPlaceholderText("Asunto")
-#         self.layout.addWidget(QLabel("Asunto:"))
-#         self.layout.addWidget(self.subject_input)
-
-#         self.message_input = QTextEdit(self)
-#         self.message_input.setPlaceholderText("Mensaje")
-#         self.layout.addWidget(QLabel("Mensaje:"))
-#         self.layout.addWidget(self.message_input)
-
-#         # Botón de envío
-#         self.send_button = QPushButton("Enviar Correo", self)
-#         self.send_button.clicked.connect(self.send_email)
-#         self.layout.addWidget(self.send_button)
-
-#     def add_recipient(self):
-#         """Agrega un destinatario a la lista."""
-#         recipient = self.recipient_input.text()
-#         if recipient:
-#             self.recipient_list.addItem(QListWidgetItem(recipient))
-#             self.recipient_input.clear()
-        
-#     def send_email(self):
-#         """Envía el correo usando SMTPClient."""
-#         try:
-#             # Obtener los valores de los campos
-#             host = self.host_input.text()
-#             port = int(self.port_input.text())
-#             sender = self.sender_input.text()
-#             password = self.password_input.text()
-#             subject = self.subject_input.text()
-#             body = self.message_input.toPlainText()
-
-#             # Obtener la lista de destinatarios
-#             recipients = [self.recipient_list.item(i).text() for i in range(self.recipient_list.count())]
-#             if not recipients:
-#                 raise ValueError("At least one recipient must be defined")
-
-#             # Crear el cliente SMTP
-#             client = SMTPClient(host, port)
-#             response = client.connect()
-            
-#             response.raise_for_status("Connection error")
-            
-#             # Verificar si el servidor soporta TLS
-#             if client.does_server_supports_tls():
-#                 response = client.connect_by_tls()    
-#                 response.raise_for_status("TLS connection error")
-            
-#             # Verificar si el servidor soporta autenticación
-#             if client.does_server_supports_authentication():
-#                 response = client.authenticate(mechanism='PLAIN', username=sender, password=password)
-#                 response.raise_for_status("Authentication error")
-
-#             # Enviar el correo
-#             response = client.send_mail(sender, recipients, subject, body)
-#             response.raise_for_status("Email error")
-            
-#             # Desconectar
-#             client.disconnect()
-
-#             # Mostrar mensaje de éxito
-#             QMessageBox.information(self, "Success", "The email has been send successfully")
-        
-#         except Exception as e:
-#             # Mostrar mensaje de error
-#             QMessageBox.critical(self, "Error", f"{str(e)}")
-
-# def main():
-#     app = QApplication(sys.argv)
-#     window = SMTPClientGUI()
-#     window.show()
-#     sys.exit(app.exec_())
-
-# if __name__ == "__main__":
-#     main()
