@@ -11,6 +11,7 @@ def check_connection(host, port):
     success = conn.connect()
     
     if success:
+        print('220')
         return conn, '220'
     else:
         return None, '500'
@@ -28,7 +29,8 @@ def authenticate(conn: connection, user, password):
         rsp = response(data['status_code'], data['message'])
         
         if(rsp.status_code == '230'):
-            print('Authentication successful.')
+            log('Authentication successful.')
+            print(rsp.status_code)
             return True
         
     return False

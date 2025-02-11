@@ -10,8 +10,8 @@ HOST = '127.0.0.1'  # Dirección IP del servidor
 PORT = 21         # Puerto FTP
 BUFFER_SIZE = 1024
 FILE_ROOT = '.'
-KEY = 'key.pem'
-CERT = 'cert.pem'
+# KEY = 'key.pem'
+# CERT = 'cert.pem'
 
 def hash_password(password: str, salt: bytes = None) -> tuple:
     if salt is None:
