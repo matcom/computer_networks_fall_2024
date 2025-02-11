@@ -22,7 +22,7 @@ def main():
         
         # Crear instancia del cliente
         print(f"\nConnecting to {server_ip}:{server_port}...")
-        ftp_client = Client(server_ip, server_port)
+        ftp_client = Client(server_ip, server_port, ".local")
         
         # Inicia el cliente
         ftp_client.ftp_client()
