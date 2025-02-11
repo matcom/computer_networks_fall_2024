@@ -2,6 +2,8 @@ import argparse
 import socket
 from time import sleep
 import threading
+from cryptography.fernet import Fernet
+from secret_key import SECRET_KEY
 
 class IRCClient:
     def __init__(self, host, port, nick):
@@ -9,8 +11,9 @@ class IRCClient:
         self.port = port
         self.nick = nick
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.connected= False
-        self.buffer=""
+        self.connected = False
+        self.buffer = ""
+        self.cipher = Fernet(SECRET_KEY)  # Usa la misma clave secreta que el servidor
 
     def connect(self):
         """Se conecta al servidor IRC y envía el NICK y USER inicial."""
@@ -25,8 +28,11 @@ class IRCClient:
         
 
     def send_command(self, command):
-        """Envía un mensaje al servidor IRC."""
-        self.sock.sendall((command + "\r\n").encode("utf-8"))
+        # """Envía un mensaje al servidor IRC."""
+        # self.sock.sendall((command + "\r\n").encode("utf-8"))
+        """Cifra y envía un mensaje al servidor IRC."""
+        encrypted_command = self.cipher.encrypt((command + "\r\n").encode("utf-8"))
+        self.sock.sendall(encrypted_command)
 
     def receive_response(self):
         """Recibe y almacena todas las respuestas del servidor hasta que no haya más datos en el buffer."""
@@ -55,11 +61,12 @@ class IRCClient:
         """Escucha continuamente los mensajes del servidor."""
         while self.connected:
             try:
-                info = self.sock.recv(4096)  # 4096 bytes recibidos
-                if not info:
+                encrypted_info = self.sock.recv(4096)  # 4096 bytes recibidos
+                if not encrypted_info:
                     continue
 
-                self.buffer += info.decode('utf-8', errors='replace')
+                info = self.cipher.decrypt(encrypted_info).decode('utf-8', errors='replace')
+                self.buffer += info
                 self.process_buffer()
 
             except UnicodeDecodeError as e:
@@ -351,7 +358,7 @@ if __name__ == "__main__":
     sleep(1)
     argument = " ".join(args.a) if isinstance(args.a, list) else args.a
     # Crear el cliente y conectar al servidor
-    client = IRCClient(args.H, args.p, args.n)
+    client = IRCClient(args.H, args.p, args.n, args.secret_key)
     client.connect()
     client.receive_response()
     # Ejecutar el comando desde el test

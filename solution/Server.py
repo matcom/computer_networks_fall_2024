@@ -2,7 +2,8 @@ import socket
 import threading
 from User import User
 from Channel import Channel
-
+from cryptography.fernet import Fernet
+from secret_key import SECRET_KEY
 class IRCServer:
     def __init__(self, host='0.0.0.0', port=6667):
         self.host = host
@@ -43,6 +44,8 @@ class IRCServer:
             '502': "Un usuario solo puede cambiar sus propios modos"
         }
 
+        self.cipher = Fernet(SECRET_KEY)  # Crea un objeto de cifrado
+
     def start(self):
         while True:
             client_socket, client_address = self.server_socket.accept()
@@ -55,19 +58,29 @@ class IRCServer:
     def handle_client(self, client_socket):
         """Maneja la conexión de un cliente."""
         # Mensaje de bienvenida con código 001
-        client_socket.sendall(":001 :Bienvenido al servidor IRC local\r\n".encode())
+        welcome_message = ":001 :Bienvenido al servidor IRC local\r\n"
+        encrypted_welcome = self.cipher.encrypt(welcome_message.encode())
+        client_socket.sendall(encrypted_welcome)
+
         # Notificación de unión al canal General
-        client_socket.sendall("Te has unido al canal #General\r\n".encode())
+        join_message = "Te has unido al canal #General\r\n"
+        encrypted_join = self.cipher.encrypt(join_message.encode())
+        client_socket.sendall(encrypted_join)
 
         while True:
-            data = client_socket.recv(4096)
-            if not data:
+            encrypted_data = client_socket.recv(4096)
+            if not encrypted_data:
                 break
-            data = data.decode().strip()
-            print(f"Recibido: {data}")
-            response = self.process_command(client_socket, data)
-            if response:
-                client_socket.sendall((response + "\r\n").encode())
+
+            try:
+                data = self.cipher.decrypt(encrypted_data).decode().strip()
+                print(f"Recibido: {data}")
+                response = self.process_command(client_socket, data)
+                if response:
+                    encrypted_response = self.cipher.encrypt((response + "\r\n").encode())
+                    client_socket.sendall(encrypted_response)
+            except Exception as e:
+                print(f"Error al descifrar o procesar el mensaje: {e}")
 
         client = next((item for item in self.clients if item.socket == client_socket), None)
         self.clients.remove(client)
@@ -200,7 +213,8 @@ class IRCServer:
             for client in self.clients:
                 if client.nick == target: 
                     destination_sock = client.socket
-            destination_sock.sendall((f":{sender.nick}! PRIVMSG {target} :{message}\r\n").encode())
+                    encrypted_message = self.cipher.encrypt((f":{sender.nick}! PRIVMSG {target} :{message}\r\n").encode())
+                    destination_sock.sendall(encrypted_message)
             return "Mensaje enviado"
         
         # Mensaje a un canal
@@ -208,7 +222,7 @@ class IRCServer:
             if not self.channels[target].is_on_channel(sender):
                 return f":442 :{self.NUMERIC_REPLIES['442']}"
             
-            self.channels[target].broadcast(f":{sender.nick}! PRIVMSG {target} :{message}", sender)
+            self.channels[target].broadcast(f":{sender.nick}! PRIVMSG {target} :{message}")
             return f"Mensaje enviado a {target}"
 
         # Si no es ni usuario ni canal, devolver mensaje de error
@@ -226,7 +240,7 @@ class IRCServer:
             if not self.channels[target].is_on_channel(sender):
                 return f':442 :{self.NUMERIC_REPLIES['442']}'
             
-            self.channels[target].broadcast(f":{sender.nick} NOTICE {target} {message}", sender)
+            self.channels[target].broadcast(f":{sender.nick} NOTICE {target} {message}")
             return f"Mensaje enviado a {target}"
 
         return  f':401 :{self.NUMERIC_REPLIES['401']}'
