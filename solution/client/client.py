@@ -18,14 +18,23 @@ def check_connection(host, port):
     
 def authenticate(conn: connection, user, password):
     # Enviar credenciales de usuario
-    data = from_json(conn.send(to_json({'command': 'USER', 'args': [user]})))
+    resp = conn.send(f'USER {user}')
+    data = {
+        'status_code': resp.decode().split(' ')[0],
+        'message': ' '.join(resp.decode().split(' ')[1:])
+    }
     
     rsp = response(data['status_code'], data['message'])
     
     log(rsp.message)
     
     if(rsp.status_code == '331'):
-        data = from_json(conn.send(to_json({'command': 'PASS', 'args': [password]})))
+        resp = conn.send(f'PASS {password}')
+        data = {
+            'status_code': resp.decode().split(' ')[0],
+            'message': ' '.join(resp.decode().split(' ')[1:])
+        }
+        
         rsp = response(data['status_code'], data['message'])
         
         if(rsp.status_code == '230'):
