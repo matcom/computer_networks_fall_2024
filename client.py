@@ -36,9 +36,10 @@ class HTTPClient:
         host, port, path = self.parse_url(url)
         
         # Create a socket for the connection
+       
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        sock.connect((host, port))
-        
+        sock.connect(('localhost', 8080))
+     
         # Build basic headers
         default_headers = {
             "Host": host,
@@ -63,6 +64,7 @@ class HTTPClient:
         if body:
             request += body
         
+        
         # Send the request through the socket
         sock.send(request.encode())
         
@@ -73,6 +75,8 @@ class HTTPClient:
             if not data:
                 break
             response += data
+
+        
         
         # Close the socket connection
         sock.close()
@@ -88,25 +92,25 @@ class HTTPClient:
         
         # Return the status code and the body of the response
         response_dict = {
-            "status": f"{status_code}",
+            "status": status_code,
             "body": f"{body.decode('utf-8', errors='ignore')}",
             "headers": f"{headers}"  # Optionally include headers in the response
         }
-        
         response = json.dumps(response_dict, indent=4)
-        return response
+        print(response)
+    
     def head(self, url, headers=None):
         """Carry out a HEAD request and returns status_code and empty body."""
-        return self.http_request("HEAD", url, headers=headers)
+        self.http_request("HEAD", url, headers=headers)
     
     def delete(self, url, body=None, headers=None):
         """Carry out a DELETE request and returns status_code and body."""
-        return self.http_request("DELETE", url, body=body, headers=headers)
+        self.http_request("DELETE", url, body=body, headers=headers)
     
     def patch(self, url, body=None, headers=None):
         """Carry out a PATCH request and returns status_code and body."""
-        return self.http_request("PATCH", url, body=body, headers=headers)
+        self.http_request("PATCH", url, body=body, headers=headers)
     
     def put(self, url, body=None, headers=None):
         """Carry out a PUT request and returns status_code and body."""
-        return self.http_request("PUT", url, body=body, headers=headers)
+        self.http_request("PUT", url, body=body, headers=headers)
