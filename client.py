@@ -76,8 +76,6 @@ class HTTPClient:
                 break
             response += data
 
-        
-        
         # Close the socket connection
         sock.close()
         

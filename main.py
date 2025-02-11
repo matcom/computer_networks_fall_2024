@@ -15,9 +15,33 @@ def parse_headers(header_string):
         return headers
     except json.JSONDecodeError:
         raise ValueError("Invalid JSON format for headers.")
+    
+def parse_data(data_string):
+    """Parse data from a JSON string into a dictionary."""
+    if not data_string:
+        return {}
+    try:
+        data = json.loads(data_string)
+        if not isinstance(data, dict):
+            raise ValueError("Data must be a JSON object.")
+        return data
+    except json.JSONDecodeError:
+        raise ValueError("Invalid JSON format for data.")
 
 def main():
     
+    d_index = sys.argv.index("-d") if "-d" in sys.argv else -1
+    if d_index != -1:
+        data = ""
+        args = []
+        for arg in sys.argv[d_index+1:] :
+            args.append(arg)
+
+        sys.argv = sys.argv[:d_index]
+            
+        data = str.join(" ",args) if len(args) > 0 else None
+    else:
+        data = None
     # Create the HTTP client
     client = HTTPClient()
 
@@ -28,7 +52,9 @@ def main():
     parser.add_argument("-m", "--method", type=str, required=True, help="HTTP method (GET, POST, HEAD, DELETE, PATCH, PUT)")
     parser.add_argument("-u", "--url", type=str, required=True, help="URL to make the request to")
     parser.add_argument("-h", "--headers", type=str, help="Request headers as a JSON string (e.g., '{\"User-Agent\": \"device\"}')", default="{}")
-    parser.add_argument("-d", "--data", type=str, help="Request body data", default=None)      
+
+    if not data :
+        parser.add_argument("-d", "--data", type=str, help="Request body data", default=None)  
 
     # Parse the arguments
     args = parser.parse_args()
@@ -58,7 +84,7 @@ def main():
             client.http_request(
                 method=args.method.upper(),
                 url=args.url,
-                body=args.data,
+                body=args.data if not data else data,
                 headers=headers
             )
 
