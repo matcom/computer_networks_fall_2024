@@ -1,6 +1,6 @@
 import streamlit as st
 import socket
-from client import HTTPClient
+from interface_client import HTTPClient
 
 # Create an instance of the HTTPClient
 client = HTTPClient()
@@ -43,39 +43,36 @@ else:
     body = None 
 
 # Send request button
-if st.button("Send Request"):
-    try:
-        if not url.startswith("http://"):
-            raise ValueError("Only HTTP URLs are supported (not HTTPS)")
-        
-        # Manage requests
-        if http_method == "HEAD":
-            status_code, response_body = client.head(url, headers=headers)
-        elif http_method == "DELETE":
-            status_code, response_body = client.delete(url, body=body, headers=headers)
-        elif http_method == "PATCH":
-            status_code, response_body = client.patch(url, body=body, headers=headers)
-        elif http_method == "PUT":
-            status_code, response_body = client.put(url, body=body, headers=headers)
-        else:
-            status_code, response_body = client.http_request(
-                method=http_method,
-                url=url,
-                body=body,
-                headers=headers
-            )
-        
-        st.subheader("Response")
-        st.markdown(f"**Status Code:** `{status_code}`")
-        
-        st.subheader("Response Body")
-        # Show warning for HEAD
-        if http_method == "HEAD":
-            st.warning("HEAD responses don't have a body by specification")
-        st.text_area("Content", response_body, height=400)
-        
-    except Exception as e:
-        st.error(f"Error: {str(e)}")
+if st.button("Send Request"):     
+    # Manage requests
+    if http_method == "HEAD":
+        status_code, response_headers, response_body = client.head(url, headers=headers)
+    elif http_method == "DELETE":
+        status_code, response_headers, response_body = client.delete(url, body=body, headers=headers)
+    elif http_method == "PATCH":
+        status_code, response_headers, response_body = client.patch(url, body=body, headers=headers)
+    elif http_method == "PUT":
+        status_code, response_headers, response_body = client.put(url, body=body, headers=headers)
+    else:
+        status_code, response_headers, response_body = client.http_request(
+            method=http_method,
+            url=url,
+            body=body,
+            headers=headers
+        )
+    
+    st.subheader("Response")
+    st.markdown(f"**Status Code:** `{status_code}`")
+    
+    st.subheader("Response Headers")
+    st.text_area("Headers", response_headers, height=200)
+    
+    st.subheader("Response Body")
+    # Show warning for HEAD
+    if http_method == "HEAD":
+        st.warning("HEAD responses don't have a body by specification")
+    st.text_area("Content", response_body, height=400)
+    
 
 # Examples section
 st.markdown("---")
