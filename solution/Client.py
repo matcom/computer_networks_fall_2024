@@ -6,7 +6,7 @@ from cryptography.fernet import Fernet
 from secret_key import SECRET_KEY
 
 class IRCClient:
-    def __init__(self, host, port, nick):
+    def __init__(self, host, port, nick, secret_key=None):
         self.host = host
         self.port = port
         self.nick = nick
@@ -14,7 +14,7 @@ class IRCClient:
         self.connected = False
         self.buffer = ""
         self.cipher = Fernet(SECRET_KEY)  # Usa la misma clave secreta que el servidor
-
+        self.secret_key = secret_key
     def connect(self):
         """Se conecta al servidor IRC y envía el NICK y USER inicial."""
         self.sock.connect((self.host, self.port))
@@ -31,8 +31,11 @@ class IRCClient:
         # """Envía un mensaje al servidor IRC."""
         # self.sock.sendall((command + "\r\n").encode("utf-8"))
         """Cifra y envía un mensaje al servidor IRC."""
-        encrypted_command = self.cipher.encrypt((command + "\r\n").encode("utf-8"))
-        self.sock.sendall(encrypted_command)
+        if self.secret_key:
+            encrypted_command = self.cipher.encrypt((command + "\r\n").encode("utf-8"))
+            self.sock.sendall(encrypted_command)
+        else:
+            self.sock.sendall((command + "\r\n").encode("utf-8"))
 
     def receive_response(self):
         """Recibe y almacena todas las respuestas del servidor hasta que no haya más datos en el buffer."""
