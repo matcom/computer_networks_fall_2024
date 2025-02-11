@@ -140,7 +140,7 @@ class CommandHandler:
             if len(parts) == 3:
                 username, password = parts[1], parts[2]
                 # Verificar credenciales (ejemplo simple)
-                if username == "user" and password == "pass":
+                if username == "user@admin.com" and password == "pass":
                     session.authenticated = True
                     return "235 Authentication successful\r\n"
                 else:
@@ -170,7 +170,7 @@ class CommandHandler:
         try:
             password = base64.b64decode(password_credential).decode('us-ascii')
             # Verificar credenciales (ejemplo simple)
-            if session.auth_username == "user" and password == "pass":
+            if session.auth_username == "user@admin.com" and password == "pass":
                 session.authenticated = True
                 return "235 Authentication successful\r\n"
             else:

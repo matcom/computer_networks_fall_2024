@@ -32,17 +32,16 @@ class SMTPClient:
             self.connection.connect()
             response = self.commands.ehlo(self.connection.host)
             
-            if not response.is_success():
-                raise SMTPException(f"Error en EHLO: {response}")
+            if response.is_success():
+                # Parsear capacidades del servidor si EHLO tiene éxito
+                self.auth_methods = None
+                for line in response.message.splitlines():
+                    if "AUTH" in line:
+                        self.auth_methods = line[line.index('AUTH')+5:].split(' ')
+                    elif "STARTTLS" in line:
+                        self.supports_tls = True
             
-            # Parsear capacidades del servidor si EHLO tiene éxito
-            self.auth_methods = None
-            for line in response.message.splitlines():
-                if "AUTH" in line:
-                    self.auth_methods = line[line.index('AUTH')+5:].split(' ')
-                elif "STARTTLS" in line:
-                    self.supports_tls = True
-                        
+            return response
         except Exception as e:
             raise SMTPException(f"Error al conectar: {e}")
 
@@ -50,22 +49,26 @@ class SMTPClient:
         """
         Establece la conexión segura con el servidor SMTP a traves de TLS y realiza el handshake inicial (EHLO).
         """
+        
         if not self.supports_tls:
-            raise SMTPException(f"El servidor no soporta TLS")
+                raise SMTPException(f"El servidor no soporta TLS")
+            
+        try:
+            self.connection.start_tls()
+            
+            # Reenviar EHLO después de iniciar TLS
+            response = self.commands.ehlo(self.connection.host)
+            if response.is_success():
+                # Parsear capacidades del servidor si EHLO tiene éxito
+                self.auth_methods = None
+                for line in response.message.splitlines():
+                    if "AUTH" in line:
+                        self.auth_methods = line[line.index('AUTH')+5:].split(' ')
+                        
+            return response
         
-        self.connection.start_tls()
-        
-        # Reenviar EHLO después de iniciar TLS
-        response = self.commands.ehlo(self.connection.host)
-        if not response.is_success():
-            raise SMTPException(f"Error en EHLO tras STARTTLS: {response}")
-
-    
-        # Parsear capacidades del servidor si EHLO tiene éxito
-        self.auth_methods = None
-        for line in response.message.splitlines():
-            if "AUTH" in line:
-                self.auth_methods = line[line.index('AUTH')+5:].split(' ')
+        except Exception as e:
+            raise SMTPException(f"Error al conectar: {e}")
     
     def disconnect(self):
         """
@@ -89,10 +92,7 @@ class SMTPClient:
             raise SMTPException(f"Mecanismo no soportado por el servidor: {mechanism}")
         
         try:
-            response = self.commands.authenticate(mechanism, username, password)
-            if not response.is_success():
-                raise SMTPException(f"Autenticación fallida: {response}")
-                        
+            return self.commands.authenticate(mechanism, username, password)     
         except Exception as e:
             raise SMTPException(f"Error durante la autenticación: {e}")
 
@@ -128,13 +128,13 @@ class SMTPClient:
             response = self.commands.mail_from(sender)
             
             if response.is_permanent_error() or response.is_provisional():
-                return response.to_json()
+                return response
             
             for recipient in recipients:
                 response = self.commands.rcpt_to(recipient)
                 
                 if response.is_permanent_error() or response.is_provisional():
-                    return response.to_json()
+                    return response
             
             # Formatear los headers
             headers_string = self.format_headers(headers, sender, recipients)
@@ -144,7 +144,7 @@ class SMTPClient:
             
             response = self.commands.data(formatted_message)
         
-            return response.to_json()
+            return response
             
         
         except TemporarySMTPException as e:
@@ -171,13 +171,13 @@ class SMTPClient:
             response = self.commands.mail_from(sender)
             
             if response.is_permanent_error() or response.is_provisional():
-                return response.to_json()
+                return response
             
             for recipient in recipients:
                 response = self.commands.rcpt_to(recipient)
                 
                 if response.is_permanent_error() or response.is_provisional():
-                    return response.to_json()
+                    return response
                      
             # Construir mensaje MIME manualmente
             boundary = generate_boundary() # Debe ser único por mensaje
@@ -216,7 +216,7 @@ class SMTPClient:
             formatted_message = "\r\n".join(message)
             
             response = self.commands.data(formatted_message)
-            return response.to_json()
+            return response
         
         except TemporarySMTPException as e:
             print(f"Error temporal: {e}. Puedes reintentar más tarde.")

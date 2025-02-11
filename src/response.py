@@ -73,14 +73,12 @@ class SMTPResponse:
         """
         return 500 <= self.code < 600
 
-    def raise_for_status(self):
+    def raise_for_status(self, str):
         """
         Lanza excepciones específicas según el código de la respuesta.
         """
-        if self.is_temporary_error():
-            raise TemporarySMTPException(f"Error temporal: {self}")
-        elif self.is_permanent_error():
-            raise PermanentSMTPException(f"Error permanente: {self}")
+        if self.is_temporary_error() or self.is_permanent_error():
+            raise PermanentSMTPException(f"{str}: {self.message}")
     
     def to_json(self):
         """
