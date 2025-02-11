@@ -72,7 +72,7 @@ class HttpClientGUI:
         url = self.url_entry.get()
         method = self.method_var.get()
         headers = self.headers_entry.get("1.0", "end").strip()
-        body = self.body_text.get("1.0", "end").strip()
+        body = json.dumps(self.body_text.get("1.0", "end").strip())
 
         try:
             headers = json.loads(headers) if headers else {}
