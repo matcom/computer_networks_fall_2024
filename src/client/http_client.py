@@ -110,9 +110,9 @@ if __name__ == "__main__":
     endpoint = "/api/Authentication/register"
     
     body = json.dumps({
-        "id":33590,
+        "id":3591,
         "name": "User_335",
-        "userName": "username_33590",
+        "userName": "username_3591",
         "email": "example3@gmail.com",
         "password": "Password_333!",
         "userRole": "Technician",
@@ -141,9 +141,11 @@ if __name__ == "__main__":
     print("Encabezados:", response.headers)
     print("Cuerpo:", response.body[:500])
 
-    # Case 3: HTTPS
-    response = final_request("GET","https://jsonplaceholder.typicode.com", headers={}, body="")
+    # Case 3: GET DownTrack
     
+    endpoint = "/api/Employee/GET_ALL"
+    response = final_request("GET", f"{host}{endpoint}", headers={}, body="")
+
     print("Código de estado:", response.code)
     print("Encabezados:", response.headers)
     print("Cuerpo:", response.body[:500])
