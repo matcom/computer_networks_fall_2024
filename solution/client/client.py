@@ -160,7 +160,7 @@ def handle_command_rmd(conn: connection, dirname: str):
         
 def close_connection(conn: connection):
     log('Closing connection...')
-    conn.send(to_json({'command': 'QUIT', 'args': []}))
+    conn.send('QUIT'.encode())
 
 def handle_command(conn: connection, command, arg1, arg2):
     if command == 'LIST':
