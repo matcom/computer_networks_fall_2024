@@ -139,7 +139,7 @@ class ClientGUI:
                 messagebox.showerror("Error", "Debes especificar un nickname")
                 return
 
-            self.client = IRCClient(self.host, self.port, nick)
+            self.client = IRCClient(self.host, self.port, nick, True)
             self.client.connect()
             self.client.handle_message_callback = self.handle_message
             self.client.start_receiving()
@@ -192,17 +192,23 @@ class ClientGUI:
 
     def send_message(self, event=None):
         """Enviar mensaje al canal actual"""
-        # if not self.client or not self.current_channel:
-        #     messagebox.showwarning("Advertencia", "Debes estar conectado y en un canal")
-        #     return
             
         message = self.message_entry.get()
         if message:
+            if message == "/quit":
+                self.disconnect()
+                return
+            if message == "/part #General":
+                messagebox.showerror("Error", "No puedes abandonar el canal #General")
+                return
             if message.startswith('/'):
                 # Comandos
                 self.add_chat_message(f"Command:{message}", "command")
                 self.client.handle_command(message.split()[0], ' '.join(message.split()[1:]))
             else:
+                if not self.client or not self.current_channel:
+                    messagebox.showwarning("Advertencia", "Debes estar conectado y en un canal para enviar mensajes")
+                    return
                 # Mensaje normal al canal o a usuario
                 self.client.handle_command("/privmsg" ,f"{self.current_channel} {message}")
             self.message_entry.delete(0, tk.END)
@@ -312,7 +318,7 @@ class ClientGUI:
         try:
             if not message:
                 return
-            if message.startswith("Mensaje enviado a"):
+            if message.startswith("Mensaje enviado"):
                 return
             parts = message.split(' ', 1)
             first_part = parts[0]
@@ -376,14 +382,17 @@ class ClientGUI:
             reason = ' '.join(params)[1:] if params else "No reason given"
             self.add_chat_message(f"{nick} se ha desconectado: {reason}")
         elif cmd == "NICK":
+            self.nick = params[0]
+            self.nick_entry.delete(0, tk.END)
+            self.nick_entry.insert(0, self.nick)
             self.add_chat_message(f"{nick} ahora se conoce como {params[0]}")
         elif cmd == "TOPIC":
             channel = params[0]
-            topic = ' '.join(params[1:])[1:]  # Eliminar el ':' inicial
+            topic = ' '.join(params[1:])[1:]
             self.add_chat_message(f"El tema del canal {channel} ha cambiado a: {topic}")
         elif cmd == "NOTICE":
             target = params[0]
-            notice_content = ' '.join(params[1:])[1:]  # Eliminar el ':' inicial
+            notice_content = ' '.join(params[1:])[1:]
             self.add_chat_message(f"[NOTICE] {nick} a {target}: {notice_content}")
         elif cmd == "KICK":
             channel = params[0]

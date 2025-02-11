@@ -6,7 +6,7 @@ from cryptography.fernet import Fernet
 from secret_key import SECRET_KEY
 
 class IRCClient:
-    def __init__(self, host, port, nick, secret_key=None):
+    def __init__(self, host, port, nick, secret_key=False):
         self.host = host
         self.port = port
         self.nick = nick
@@ -353,7 +353,7 @@ def parse_arguments():
     parser.add_argument("-n", type=str, help="Nickname del usuario", required=True)
     parser.add_argument("-c", type=str, help="Comando de IRC a ejecutar", required=True)
     parser.add_argument("-a", type=str, help="Argumento del comando", required=False, default="", nargs="+")
-    parser.add_argument("-s", "--secret_key", type=str, help="Clave secreta para cifrado", required=False)
+    parser.add_argument("-s", "--secret_key", type=bool, help="Uso de clave secreta para cifrado", required=False)
 
     return parser.parse_args()
 
