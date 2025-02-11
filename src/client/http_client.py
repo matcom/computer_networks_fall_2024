@@ -106,32 +106,32 @@ def final_request (method="GET",url="/",headers = None,body =""):
 if __name__ == "__main__":
     
     # Case 1 : My API - DownTrack
-    host = "http://localhost:5217"
-    endpoint = "/api/Authentication/register"
+    # host = "http://localhost:5217"
+    # endpoint = "/api/Authentication/register"
     
-    body = json.dumps({
-        "id":3591,
-        "name": "User_335",
-        "userName": "username_3591",
-        "email": "example3@gmail.com",
-        "password": "Password_333!",
-        "userRole": "Technician",
-        "specialty": "mechanic",
-        "salary": 19090,
-        "expYears": 10,
-        "departamentId": 1,
-        "sectionId": 1
-    })
+    # body = json.dumps({
+    #     "id":3591,
+    #     "name": "User_335",
+    #     "userName": "username_3591",
+    #     "email": "example3@gmail.com",
+    #     "password": "Password_333!",
+    #     "userRole": "Technician",
+    #     "specialty": "mechanic",
+    #     "salary": 19090,
+    #     "expYears": 10,
+    #     "departamentId": 1,
+    #     "sectionId": 1
+    # })
     
-    headers = {
-        "Content-Type": "application/json"
-    }
+    # headers = {
+    #     "Content-Type": "application/json"
+    # }
     
-    response = final_request("POST", f"{host}{endpoint}", headers=headers, body=body)
+    # response = final_request("POST", f"{host}{endpoint}", headers=headers, body=body)
 
-    print("Código de estado:", response.code)
-    print("Encabezados:", response.headers)
-    print("Cuerpo:", response.body[:500])
+    # print("Código de estado:", response.code)
+    # print("Encabezados:", response.headers)
+    # print("Cuerpo:", response.body[:500])
 
     # Case 2: HTTPS 
     
@@ -143,10 +143,10 @@ if __name__ == "__main__":
 
     # Case 3: GET DownTrack
     
-    endpoint = "/api/Employee/GET_ALL"
-    response = final_request("GET", f"{host}{endpoint}", headers={}, body="")
+    # endpoint = "/api/Employee/GET_ALL"
+    # response = final_request("GET", f"{host}{endpoint}", headers={}, body="")
 
-    print("Código de estado:", response.code)
-    print("Encabezados:", response.headers)
-    print("Cuerpo:", response.body[:500])
+    # print("Código de estado:", response.code)
+    # print("Encabezados:", response.headers)
+    # print("Cuerpo:", response.body[:500])
 

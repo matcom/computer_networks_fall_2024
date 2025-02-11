@@ -52,6 +52,7 @@ class HTTPServer:
 
     def handle_request(self, request):
         """Procesa la solicitud HTTP y genera la respuesta adecuada."""
+        
         try:
             lines = request.split("\r\n")
             request_line = lines[0].split(" ")
@@ -63,7 +64,7 @@ class HTTPServer:
             if "Content-Length" in headers:
                 body_length = int(headers["Content-Length"])
                 body = request[-body_length:]  # Extraer el cuerpo del mensaje si existe
-
+                
             return self.build_response(method, path, headers, body)
 
         except Exception:
@@ -81,38 +82,15 @@ class HTTPServer:
     def build_response(self, method, path, headers, body):
         """Genera respuestas HTTP según el método y la ruta solicitada."""
 
+        
         logger.info(f"Method : {method} - Path: {path}")
         
         # 414 - URI Too Long
+        
         if len(path) > 2048:
-            return self.http_response(414)
-
-        # Verificar si el cliente tiene una versión válida del recurso (usando If-Modified-Since o If-None-Match)
-        last_modified = self.get_last_modified(path)  # Esta función puede devolver la última fecha de modificación del recurso
-        if last_modified:
-            if "If-Modified-Since" in headers:
-                if_modified_since = headers["If-Modified-Since"]
-                if if_modified_since >= last_modified:
-                    return self.http_response(304, headers=headers)  # No se ha modificado, devolver 304
-
-            if "If-None-Match" in headers:
-                if_none_match = headers["If-None-Match"]
-                if if_none_match == self.get_etag(path):  # Comparar con el ETag
-                    return self.http_response(304, headers=headers)  # ETag coincide, devolver 304
-
-        # Redirecciones
-        if path == "/old-page":
-            return self.http_response(301, location="/new-page")
-        
-        if path == "/temp-move":
-            return self.http_response(302, location="/temporary-page")  # 302 Found
-
-        
-         # Si la ruta no existe
-        if path != "/":
-            return self.http_response(404)
-        
-        # 411 - Length Required
+             return self.http_response(414)
+       
+        #411 - Length Required
         if method in ["POST", "PUT"] and "Content-Length" not in headers:
             return self.http_response(411)
 
@@ -123,47 +101,45 @@ class HTTPServer:
                 return self.http_response(415)
 
         if method == "GET":
-            return self.http_response(200, "Hello, GET!")
+            return self.http_response(200, "OK", "Hello, GET!","")
 
         elif method == "POST":
-            return self.http_response(200, f"Received POST: {body}")
+            return self.http_response(200, "OK", f"Received POST: {body}")
 
         elif method == "HEAD":
-            return self.http_response(200, "", include_body=False)
+            return self.http_response(200,"OK", "", include_body=False)
 
         elif method == "PUT":
-            return self.http_response(200, "PUT request successful!")
+            return self.http_response(200,"OK", "PUT request successful!")
 
         elif method == "DELETE":
-            return self.http_response(200, "DELETE request successful!")
+            return self.http_response(200,"OK", "DELETE request successful!")
 
         elif method == "OPTIONS":
-            return self.http_response(200, "", headers={"Allow": "OPTIONS, GET, POST, HEAD, PUT, DELETE, TRACE, CONNECT"})
+            return self.http_response(200, "OK","", headers={"Allow": "OPTIONS, GET, POST, HEAD, PUT, DELETE, TRACE, CONNECT"})
 
         elif method == "TRACE":
-            return self.http_response(200, f"TRACE received:\n{headers}")
+            return self.http_response(200,"OK", f"TRACE received:\n{headers}")
 
         else:
             return self.http_response(405)
 
-    def http_response(self, status_code, reason, body, headers=None,location=None, include_body=True):
+    def http_response(self, status_code, reason, body=None, headers=None, include_body=True,location=None):
         """Construye una respuesta HTTP válida con headers y cuerpo."""
+
         headers = headers or {}
         headers["Server"] = "CustomHTTPServer/1.0"
         headers["Date"] = datetime.datetime.now(datetime.timezone.utc).strftime("%a, %d %b %Y %H:%M:%S GMT")
 
         
-         # Obtener el mensaje de estado y la descripción
-        reason, default_body = HTTP_STATUS_CODES.get(status_code, ("Unknown", "Unknown error"))
+        # Obtener el mensaje de estado y la descripción
+        #reason, default_body = HTTP_STATUS_CODES.get(status_code, ("Unknown", "Unknown error"))
 
         # Manejo de redirecciones (301, 302, etc.)
         if status_code in [301, 302, 304] and location:
             headers["Location"] = location
             body = f"Redirecting to {location}"
 
-        # Si no se especifica un body, usar el mensaje por defecto
-        if not body and include_body:
-            body = default_body
             
         # Verificar si el cliente acepta gzip
         accept_encoding = headers.get("Accept-Encoding","").lower()
@@ -182,6 +158,7 @@ class HTTPServer:
                 headers["Content-Encoding"] = "deflate"
                 
             headers["Content-Length"] = str(len(body_bytes))
+            
         else:
             body_bytes = b""
 
@@ -190,7 +167,11 @@ class HTTPServer:
             response += f"{key}: {value}\r\n"
         response += "\r\n"
 
+ 
         logger.debug(f"Respuesta generada: {status_code} {reason} {'-> ' + location if location else ''}")
+        
+        print(response)
+        print(body_bytes.decode())
         return response + body_bytes.decode()
 
     
