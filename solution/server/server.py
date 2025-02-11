@@ -9,7 +9,7 @@ from utils import from_json, to_json, log
 HOST = '127.0.0.1'  # Dirección IP del servidor
 PORT = 21         # Puerto FTP
 BUFFER_SIZE = 1024
-FILE_ROOT = 'files'
+FILE_ROOT = '.'
 KEY = 'key.pem'
 CERT = 'cert.pem'
 
