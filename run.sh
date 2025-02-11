@@ -46,5 +46,5 @@ except json.JSONDecodeError:
 client = SMTPClient(host, port)
 client.connect()
 response = client.send_mail(sender, recipients, subject, body, headers)
-print(json.dumps(response))
+print(json.dumps(response.to_json()))
 END
