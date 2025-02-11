@@ -2,4 +2,6 @@
 
 # Replace the next shell command with the entrypoint of your solution
 
-echo $@
+PROTOCOL=2
+
+python Solution/client.py "$@"
