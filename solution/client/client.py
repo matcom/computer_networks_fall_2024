@@ -11,7 +11,7 @@ def check_connection(host, port):
     success = conn.connect()
     
     if success:
-        print('220')
+        print('220 Welcome to the FTP server.')
         return conn, '220'
     else:
         return None, '500'
@@ -24,9 +24,9 @@ def authenticate(conn: connection, user, password):
         'message': ' '.join(resp.decode().split(' ')[1:])
     }
     
-    rsp = response(data['status_code'], data['message'])
+    print(data)
     
-    log(rsp.message)
+    rsp = response(data['status_code'], data['message'])
     
     if(rsp.status_code == '331'):
         resp = conn.send(f'PASS {password}\r\n'.encode())
@@ -35,132 +35,152 @@ def authenticate(conn: connection, user, password):
             'message': ' '.join(resp.decode().split(' ')[1:])
         }
         
+        print(data)
+        
         rsp = response(data['status_code'], data['message'])
         
         if(rsp.status_code == '230'):
-            log('Authentication successful.')
-            print(rsp.status_code)
             return True
         
     return False
 
 def handle_command_list(conn: connection):
-    data = from_json(conn.send(to_json({'command': 'LIST', 'args': []})))
-    rsp = response(data['status_code'], data['message'])
+    resp = conn.send(b'LIST\r\n')
     
-    if(rsp.status_code == '150'):
-        rsp = response(data['status_code'], data['message'], data['data'])
-        log(rsp.message)
-        print('\n'.join(rsp.data))
-    else:
-        print(rsp.message)
+    data = {
+        'status_code': resp.decode().split(' ')[0],
+        'message': ' '.join(resp.decode().split(' ')[1:])
+    }
+    
+    print(data)
         
 def handle_command_pwd(conn: connection):
-    data = from_json(conn.send(to_json({'command': 'PWD', 'args': []})))
-    rsp = response(data['status_code'], data['message'], data['data'])
+    resp = conn.send(b'PWD\r\n')
     
-    if(rsp.status_code == '257'):
-        log(rsp.message)
-        print(rsp.data)
-    else:
-        print(rsp.message)
+    data = {
+        'status_code': resp.decode().split(' ')[0],
+        'message': ' '.join(resp.decode().split(' ')[1:])
+    }
+    
+    print(data)
         
 def handle_command_cwd(conn: connection, dirname: str):
-    data = from_json(conn.send(to_json({'command': 'CWD', 'args': [dirname]})))
-    rsp = response(data['status_code'], data['message'])
+    resp = conn.send(f'CWD {dirname}\r\n'.encode())
     
-    if(rsp.status_code == '250'):
-        log(rsp.message)
-    else:
-        print(rsp.message)
+    data = {
+        'status_code': resp.decode().split(' ')[0],
+        'message': ' '.join(resp.decode().split(' ')[1:])
+    }
+    
+    print(data)
         
 def handle_command_retr(conn: connection, filename: str):
-    data = from_json(conn.send(to_json({'command': 'RETR', 'args': [filename]})))
-    rsp = response(data['status_code'], data['message'])
+    resp = conn.send(f'RETR {filename}\r\n'.encode())
     
-    if(rsp.status_code == '150'):
-        log(rsp.message)
-        
+    data = {
+        'status_code': resp.decode().split(' ')[0],
+        'message': ' '.join(resp.decode().split(' ')[1:])
+    }
+    
+    print(data)
+    
+    if(data['status_code'] == '150'):
         file = conn.client_socket.recv(1024)
         with open(filename, 'wb') as f:
             f.write(file)
             
-        data = from_json(conn.client_socket.recv(1024))
-        rsp = response(data['status_code'], data['message'])
+        resp = conn.client_socket.recv(1024)
+        data = {
+            'status_code': resp.decode().split(' ')[0],
+            'message': ' '.join(resp.decode().split(' ')[1:])
+        }
         
-        if(rsp.status_code == '226'):
-            log(rsp.message)
-        else:
-            print(rsp.message)
-    else:
-        print(rsp.message)
+        print(data)
         
 def handle_command_stor(conn : connection, filepath: str, filename: str):
-    data = from_json(conn.send(to_json({'command': 'STOR', 'args': [filename]})))
+    resp = conn.send(f'STOR {filename}\r\n'.encode())
+    
+    data = {
+        'status_code': resp.decode().split(' ')[0],
+        'message': ' '.join(resp.decode().split(' ')[1:])
+    }
+    
     rsp = response(data['status_code'], data['message'])
     
     if(rsp.status_code == '150'):
-        log(rsp.message)
-        
         conn.send_file(filepath)
             
-        data = from_json(conn.client_socket.recv(1024))
-        rsp = response(data['status_code'], data['message'])
+        resp = conn.client_socket.recv(1024)
         
-        if(rsp.status_code == '226'):
-            log(rsp.message)
-        else:
-            print(rsp.message)
-    else:
-        print(rsp.message)
+        data = {
+            'status_code': resp.decode().split(' ')[0],
+            'message': ' '.join(resp.decode().split(' ')[1:])
+        }
+        
+        print(data)
         
 def handle_command_rnfr(conn: connection, old_filename: str, new_filename: str):
-    data = from_json(conn.send(to_json({'command': 'RNFR', 'args': [old_filename]})))
+    resp = conn.send(f'RNFR {old_filename}\r\n'.encode())
+    
+    data = {
+        'status_code': resp.decode().split(' ')[0],
+        'message': ' '.join(resp.decode().split(' ')[1:])
+    }
+    
+    print(data)
+    
     rsp = response(data['status_code'], data['message'])
     
     if(rsp.status_code == '350'):
-        log(rsp.message)
+        resp = conn.send(f'RNTO {new_filename}\r\n'.encode())
         
-        data = from_json(conn.send(to_json({'command': 'RNTO', 'args': [new_filename]})))
-        rsp = response(data['status_code'], data['message'])
+        data = {
+            'status_code': resp.decode().split(' ')[0],
+            'message': ' '.join(resp.decode().split(' ')[1:])
+        }
         
-        if(rsp.status_code == '250'):
-            log(rsp.message)
-        else:
-            print(rsp.message)
-    else:
-        print(rsp.message)
+        print(data)
         
 def handle_command_dele(conn: connection, filename: str):
-    data = from_json(conn.send(to_json({'command': 'DELE', 'args': [filename]})))
-    rsp = response(data['status_code'], data['message'])
+    resp = conn.send(f'DELE {filename}\r\n'.encode())
     
-    if(rsp.status_code == '250'):
-        log(rsp.message)
-    else:
-        print(rsp.message)
+    data = {
+        'status_code': resp.decode().split(' ')[0],
+        'message': ' '.join(resp.decode().split(' ')[1:])
+    }
+    
+    print(data)
         
 def handle_command_mkd(conn: connection, dirname: str):
-    data = from_json(conn.send(to_json({'command': 'MKD', 'args': [dirname]})))
-    rsp = response(data['status_code'], data['message'])
+    resp = conn.send('MKD {dirname}\r\n'.encode())
     
-    if(rsp.status_code == '257'):
-        log(rsp.message)
-    else:
-        print(rsp.message)
+    data = {
+        'status_code': resp.decode().split(' ')[0],
+        'message': ' '.join(resp.decode().split(' ')[1:])
+    }
+    
+    print(data)
         
 def handle_command_rmd(conn: connection, dirname: str):
-    data = from_json(conn.send(to_json({'command': 'RMD', 'args': [dirname]})))
-    rsp = response(data['status_code'], data['message'])
+    resp = conn.send('RMD {dirname}\r\n'.encode())
     
-    if(rsp.status_code == '250'):
-        log(rsp.message)
-    else:
-        print(rsp.message)
+    data = {
+        'status_code': resp.decode().split(' ')[0],
+        'message': ' '.join(resp.decode().split(' ')[1:])
+    }
+    
+    print(data)
         
 def close_connection(conn: connection):
     log('Closing connection...')
-    conn.send('QUIT\r\n'.encode())
+    resp = conn.send('QUIT\r\n'.encode())
+    
+    data = {
+        'status_code': resp.decode().split(' ')[0],
+        'message': ' '.join(resp.decode().split(' ')[1:])
+    }
+    
+    print(data)
 
 def handle_command(conn: connection, command, arg1, arg2):
     if command == 'LIST':
@@ -209,8 +229,8 @@ def main():
         print('Login Failed.')
         return
     
-    # if args.command:
-    #     handle_command(conn, args.command, args.arg1, args.arg2)
+    if args.command:
+        handle_command(conn, args.command, args.arg1, args.arg2)
     
     close_connection(conn)
 
