@@ -22,7 +22,8 @@ class ServerFTP:
         self.host = host
         self.port = port
         self.users = {
-            "joel": "joel"
+            "joel": "joel",
+            "claudia": "clau"
         }
         self.base_dir = Path.cwd()
         self.commands = {
@@ -131,7 +132,6 @@ class ServerFTP:
         while True:
             try:
                 data = client_socket.recv(8192).decode().strip()
-                print(data)
                 if not data:
                     break
 
@@ -198,7 +198,6 @@ class ServerFTP:
         client_socket.send(response.encode())
 
     def handle_cwd(self, client_socket, client_state, args):
-        print(args)
         if not args or len(args) > 1:
             client_socket.send(b"501 Sintaxis invalida\r\n")
             return
@@ -246,11 +245,9 @@ class ServerFTP:
             return
         
         try:
-            print(args)
             path = client_state.current_dir / args[0] if args else client_state.current_dir
             client_socket.send(b"150 Iniciando transferencia\r\n")
             
-            print(path)
             # Aceptar la conexión de datos
             client_state.data_socket, _ = client_state.pasv_socket.accept()
             
@@ -386,30 +383,7 @@ class ServerFTP:
         client_socket.send(b"220 Servidor reiniciado\r\n")
 
     def handle_port(self, client_socket, client_state, args):
-        """Maneja el comando PORT (modo activo)"""
-        if not args:
-            client_socket.send(b"501 Sintaxis: PORT h1,h2,h3,h4,p1,p2\r\n")
-            return
-
-        try:
-            # Parsear la dirección IP y el puerto
-            port_parts = args[0].split(',')
-            if len(port_parts) != 6:
-                client_socket.send(b"501 Sintaxis invalida\r\n")
-                return
-
-            # Construir la dirección IP y el puerto
-            ip = ".".join(port_parts[:4])
-            port = (int(port_parts[4]) << 8) + int(port_parts[5])
-
-            # Crear un socket de datos
-            client_state.data_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            client_state.data_socket.connect((ip, port))
-
-            client_socket.send(b"200 Comando PORT exitoso\r\n")
-        except Exception as e:
-            print(f"Error en PORT: {e}")
-            client_socket.send(b"500 Error en comando PORT\r\n")
+        client_socket.send(b"502 PORT no implementado\r\n")
 
     def handle_pasv(self, client_socket, client_state, args):
         """Maneja el comando PASV (modo pasivo)"""
@@ -508,7 +482,6 @@ class ServerFTP:
         try:
             # Verificar si el archivo ya existe
             file_path = client_state.current_dir / Path(args[0]).name
-            print(file_path)
 
             # Indicar al cliente que está listo para recibir el archivo
             client_socket.send(b"150 Listo para recibir datos\r\n")
@@ -584,7 +557,7 @@ class ServerFTP:
             client_socket.send(b"550 Error al anexar al archivo\r\n")
 
     def handle_allo(self, client_socket, client_state, args):
-        client_socket.send(b"200 ALLO no necesario\r\n")
+        client_socket.send(b"502 ALLO no implementado\r\n")
 
     def handle_rest(self, client_socket, client_state, args):
         client_socket.send(b"502 REST no implementado\r\n")
@@ -646,11 +619,9 @@ class ServerFTP:
             return
         
         try:
-            print(args)
             path = client_state.current_dir / args[0] if args else client_state.current_dir
             client_socket.send(b"150 Iniciando transferencia\r\n")
             
-            print(path)
             # Aceptar la conexión de datos
             client_state.data_socket, _ = client_state.pasv_socket.accept()
             
