@@ -27,7 +27,7 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
         if body:
             response = {
                 "status": status_code,
-                "body": body
+                "body": body if body is not None else ""
             }
             self.wfile.write(json.dumps(response).encode('utf-8'))
 
