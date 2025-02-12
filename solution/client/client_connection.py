@@ -13,10 +13,10 @@ class connection:
         
     def connect(self):
         try:
-            client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            client_socket.connect((self.host, self.port))
+            self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self.client_socket.connect((self.host, self.port))
             
-            resp = client_socket.recv(1024).decode().strip()
+            resp = self.client_socket.recv(1024).decode().strip()
             data = {
                 'status_code': resp.split(' ')[0],
                 'message': ' '.join(resp.split(' ')[1:])
