@@ -19,6 +19,7 @@ class FTPClient:
         self.control_sock: Optional[socket.socket] = None
         self.data_sock: Optional[socket.socket] = None
         self.mode = TransferMode.PASSIVE
+        self.authenticated = False
         self.logger = logging.getLogger(self.__class__.__name__)
         self.command_dispatcher: Dict[str, Callable] = {
             "USER": self._handle_user,
@@ -92,6 +93,7 @@ class FTPClient:
         response = self.send_command("PASS", password)
         if FTPResponseCode.USER_LOGGED_IN != self._parse_code(response):
             raise FTPAuthError(self._parse_code(response), "Contraseña inválida")
+        self.authenticated = True
         return response
 
     def get_current_dir(self) -> str:
@@ -397,7 +399,7 @@ class FTPClient:
         """Reinicializa la conexión."""
         response = self.send_command("REIN")
         if self._parse_code(response) == FTPResponseCode.READY_FOR_NEW_USER:
-            self.current_user = None
+            self.authenticated = False
         return response
 
     def get_system(self) -> str:

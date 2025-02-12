@@ -18,6 +18,8 @@ class PassCommand(Command):
         password = args[0]
         if server.credentials_manager.verify_user(server.current_user, password):
             server.authenticated = True
+            print("Cliente autenticado")
             client_socket.send(b"230 User logged in\r\n")
         else:
+            print("Fallo autenticación")
             client_socket.send(b"530 Login incorrect\r\n")

@@ -34,6 +34,9 @@ class FTPCLI(cmd.Cmd):
         """Procesa el comando antes de ejecutarlo"""
         # Mostrar el prompt con color usando rich
         self.console.print("ftp> ", style=self.prompt_style, end="")
+        if not self.client.authenticated and line.split()[0].upper() not in ["USER", "PASS", "CONNECT", "QUIT", "HELP", "LOGIN"]:
+            self.console.print("[red]Error: Debe autenticarse primero.[/red]")
+            return ""
         return line
 
     def preloop(self):
@@ -114,9 +117,6 @@ class FTPCLI(cmd.Cmd):
     def do_list(self, arg):
         """Lista archivos en el servidor: LIST [path]"""
         try:
-            # Primero entrar en modo pasivo
-            self.client.enter_passive_mode()
-            
             # Obtener y procesar la lista de archivos
             file_list = self.client.list_directory(arg)
             
@@ -381,7 +381,7 @@ class FTPCLI(cmd.Cmd):
         """Muestra el directorio actual"""
         try:
             # Asegurar que estamos en modo pasivo
-            self.client.enter_passive_mode()
+            #self.client.enter_passive_mode()
             
             response = self.client.get_current_dir()
             # Extraer el path entre comillas y limpiarlo
@@ -560,7 +560,7 @@ class FTPCLI(cmd.Cmd):
             self.console.print("[red]Error: Uso: SITE <comando> [args][/red]")
             return
         try:
-            response = self.client.site_command(arg)
+            response = self.client.execute("SITE", arg)
             self.console.print(f"[cyan]{response}[/cyan]")
         except Exception as e:
             self.console.print(f"[red]Error: {e}[/red]")
@@ -613,7 +613,7 @@ class FTPCLI(cmd.Cmd):
         """Lista solo nombres de archivos: NLST [path]"""
         try:
             # Asegurar que estamos en modo pasivo
-            self.client.enter_passive_mode()
+            #self.client.enter_passive_mode()
             
             # Obtener la lista de archivos
             file_list = self.client.list_files(arg).splitlines()
