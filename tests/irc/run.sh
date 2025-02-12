@@ -4,7 +4,7 @@ failed=0
 
 # Test 1: Conectar, establecer y cambiar nickname
 echo "Running Test 1: Conectar, establecer y cambiar nickname"
-./exec.sh -H "localhost" -p "8080" -n "TestUser1" -c "/nick" -a "NuevoNick"
+./tests/irc/exec.sh -H "localhost" -p "8080" -n "TestUser1" -c "/nick" -a "NuevoNick"
 if [[ $? -ne 0 ]]; then
   echo "Test 1 failed"
   failed=1
@@ -12,7 +12,7 @@ fi
 
 # Test 2: Entrar a un canal
 echo "Running Test 2: Entrar a un canal"
-./exec.sh  -H "localhost" -p "8080" -n "TestUser1" -c "/join" -a "#Nuevo"
+./tests/irc/exec.sh  -H "localhost" -p "8080" -n "TestUser1" -c "/join" -a "#Nuevo"
 if [[ $? -ne 0 ]]; then
   echo "Test 2 failed"
   failed=1
@@ -20,7 +20,7 @@ fi
 
 # Test 3: Enviar un mensaje a un canal
 echo "Running Test 3: Enviar un mensaje a un canal"
-./exec.sh  -H "localhost" -p "8080" -n "TestUser1" -c "/notice" -a "#General Hello, world!"
+./tests/irc/exec.sh  -H "localhost" -p "8080" -n "TestUser1" -c "/notice" -a "#General Hello, world!"
 if [[ $? -ne 0 ]]; then
   echo "Test 3 failed"
   failed=1
@@ -28,7 +28,7 @@ fi
 
 # Test 4: Salir de un canal
 echo "Running Test 4: Salir de un canal"
-./exec.sh  -H "localhost" -p "8080" -n "NewNick" -c "/part" -a "#General"
+./tests/irc/exec.sh  -H "localhost" -p "8080" -n "NewNick" -c "/part" -a "#General"
 if [[ $? -ne 0 ]]; then
   echo "Test 5 failed"
   failed=1
