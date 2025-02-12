@@ -1,4 +1,5 @@
 import argparse
+import socket
 
 from client_connection import connection
 from response import response
@@ -91,8 +92,8 @@ def handle_command_retr(conn: connection, filename: str):
     
     print(data)
     
-    socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    socket.connect((data['ip'], data['port']))
+    data_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    data_socket.connect((data['ip'], data['port']))
     
     resp = conn.send(f'RETR {filename}\r\n'.encode())
     
