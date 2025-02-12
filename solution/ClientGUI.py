@@ -17,7 +17,8 @@ class ClientGUI:
         self.root = tk.Tk()
         self.root.title("Cliente IRC")
         self.root.geometry("800x650")
-        
+        self.root.resizable(True, True)
+
         # Frame para conexión
         self.connection_frame = ttk.LabelFrame(self.root, text="Conexión")
         self.connection_frame.pack(fill="x", padx=5, pady=5)
@@ -197,12 +198,12 @@ class ClientGUI:
             
         message = self.message_entry.get()
         if message:
-            if message == "/quit":
+            if message.startswith("/quit"):
                 self.disconnect()
                 return
-            if message == "/part #General":
-                messagebox.showerror("Error", "No puedes abandonar el canal #General")
-                return
+            # if message.startswith("/part #General "):
+            #     messagebox.showerror("Error", "No puedes abandonar el canal #General")
+            #     return
             if message.startswith('/'):
                 # Comandos
                 self.add_chat_message(f"Command:{message}", "command")
