@@ -6,7 +6,6 @@
   <component name="ChangeListManager">
     <list default="true" id="69e9842d-86b4-48d5-9192-21c871ef67e6" name="Changes" comment="fix exit in client2">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/main/client2.py" beforeDir="false" afterPath="$PROJECT_DIR$/main/client2.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/main/server.py" beforeDir="false" afterPath="$PROJECT_DIR$/main/server.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -134,7 +133,8 @@
       <workItem from="1739326605520" duration="14368000" />
       <workItem from="1739376141434" duration="4559000" />
       <workItem from="1739381520211" duration="147000" />
-      <workItem from="1739381821134" duration="172000" />
+      <workItem from="1739381821134" duration="459000" />
+      <workItem from="1739383409995" duration="251000" />
     </task>
     <task id="LOCAL-00001" summary="new changes from original repository">
       <option name="closed" value="true" />
