@@ -209,8 +209,8 @@ def main():
         print('Login Failed.')
         return
     
-    if args.command:
-        handle_command(conn, args.command, args.arg1, args.arg2)
+    # if args.command:
+    #     handle_command(conn, args.command, args.arg1, args.arg2)
     
     close_connection(conn)
 

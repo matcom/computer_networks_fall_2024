@@ -23,6 +23,8 @@ class connection:
                 'message': ' '.join(resp.split(' ')[1:])
             }
             
+            print(data)
+            
             if(data['status_code'] != '220'):
                 return False
             
