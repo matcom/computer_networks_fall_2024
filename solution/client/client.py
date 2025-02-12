@@ -2,7 +2,6 @@ import argparse
 import socket
 
 from client_connection import connection
-from response import response
 
 def check_connection(host, port):
     conn = connection(host, port)
@@ -10,7 +9,6 @@ def check_connection(host, port):
     success = conn.connect()
     
     if success:
-        print('220 Welcome to the FTP server.')
         return conn, '220'
     else:
         return None, '500'
@@ -25,9 +23,7 @@ def authenticate(conn: connection, user, password):
     
     print(data)
     
-    rsp = response(data['status_code'], data['message'])
-    
-    if(rsp.status_code == '331'):
+    if(data['status_code'] == '331'):
         resp = conn.send(f'PASS {password}\r\n'.encode())
         data = {
             'status_code': resp.decode().split(' ')[0],
@@ -36,10 +32,7 @@ def authenticate(conn: connection, user, password):
         
         print(data)
         
-        rsp = response(data['status_code'], data['message'])
-        
-        if(rsp.status_code == '230'):
-            print('Authenticated successfully.')
+        if(data['status_code'] == '230'):
             return True
         
     return False
@@ -180,9 +173,7 @@ def handle_command_rnfr(conn: connection, old_filename: str, new_filename: str):
     
     print(data)
     
-    rsp = response(data['status_code'], data['message'])
-    
-    if(rsp.status_code == '350'):
+    if(data['status_code'] == '350'):
         resp = conn.send(f'RNTO {new_filename}\r\n'.encode())
         
         data = {
@@ -276,7 +267,6 @@ def main():
     authenticated = authenticate(conn, args.user, args.password)
     
     if(not authenticated):
-        print('Login Failed.')
         return
     
     if args.command:

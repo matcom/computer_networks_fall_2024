@@ -9,7 +9,7 @@ from utils import from_json, to_json, log
 HOST = '127.0.0.1'  # Dirección IP del servidor
 PORT = 21         # Puerto FTP
 BUFFER_SIZE = 1024
-FILE_ROOT = '.'
+FILE_ROOT = './files'
 # KEY = 'key.pem'
 # CERT = 'cert.pem'
 
@@ -36,7 +36,7 @@ def handle_user_command(client_socket: socket, args):
     if user in users:
         client_socket.send(b'331 Please specify the password.')
     else:
-        client_socket.send(to_json({"status_code" : "530", "message": "Login Failed."}))
+        client_socket.send(b'530 Login incorrect.')
     return user
 
 def handle_pass_command(client_socket: socket, args, user):
@@ -45,7 +45,7 @@ def handle_pass_command(client_socket: socket, args, user):
         client_socket.send(b'230 Login successful.')
         return True
     else:
-        client_socket.send(to_json({"status_code" : "530", "message": "Login Failed."}))   
+        client_socket.send(b'530 Login incorrect.\r\n')   
         return False
     
 def handle_list_command(client_socket: socket, user: str):
@@ -144,10 +144,10 @@ def handle_rmd_command(client_socket: socket, args, user: str):
         client_socket.send(to_json({"status_code" : "550", "message": "Requested action not taken. Directory does not exist."}))
 
 def handle_quit_command(client_socket: socket):
-    client_socket.send(to_json({"status_code" : "221", "message": "Goodbye."}))
+    client_socket.send(b'221 Goodbye.\r\n')
 
 def handle_client(client_socket: socket):
-    client_socket.sendall('220 Welcome to the FTP server.\r\n'.encode())
+    client_socket.sendall(b'220 Welcome to the FTP server.\r\n')
     
     while True:
         data = client_socket.recv(BUFFER_SIZE).decode().strip()
@@ -193,7 +193,7 @@ def handle_client(client_socket: socket):
             handle_quit_command(client_socket)
             break
         else:
-            client_socket.send(to_json({"status_code" : "502", "message": "Command not recognized."}))
+            client_socket.send(b'500 Unknown command.\r\n')
     
     client_socket.close()
 
@@ -203,11 +203,11 @@ def main():
     server_socket.bind((HOST, PORT))
     server_socket.listen(10)
     
-    print(f"Servidor FTP escuchando en {HOST}:{PORT}...")
+    print(f"FTP Server listening on {HOST}:{PORT}")
 
     while True:
         client_socket, host = server_socket.accept()
-        print(f"Nueva conexión desde {host}")
+        print(f"Connection from {host}")
         handle_client(client_socket)
         client_socket.close()
 
