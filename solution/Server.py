@@ -86,6 +86,7 @@ class IRCServer:
         client = next((item for item in self.clients if item.socket == client_socket), None)
         if client: self.remove_client_from_channels(client)
         if client and client in self.clients: self.clients.remove(client)
+        if client and client.nick in self.nicknames: self.nicknames.remove(client.nick)
         client_socket.close()
         print("Cliente desconectado")        
 
@@ -124,6 +125,7 @@ class IRCServer:
         elif command == "QUIT":
             self.remove_client_from_channels(sender)
             self.clients.remove(sender)
+            self.nicknames.remove(sender.nick)
             return f":{sender.nick} QUIT :Leaving"
             
         else:
@@ -148,7 +150,6 @@ class IRCServer:
     
     def change_nick(self, client_socket, new_nick):
         client = next((item for item in self.clients if item.socket== client_socket), None)
-        if client: old_nick= client.nick
         if new_nick in self.nicknames:
             return f':433 {new_nick} :{self.NUMERIC_REPLIES['433']}'
         
@@ -267,9 +268,9 @@ class IRCServer:
 
     def whois_user(self,client_socket, user):
         client = next((item for item in self.clients if item.nick == user), None)
-        if client and client.visibility:         
-            return f':312 host:{client_socket.getpeername()[0]} nick:{client.nick}'
-        else: return f':401 :{self.NUMERIC_REPLIES['401']}'              
+        if client and not client.visibility and client.socket != client_socket:         
+            return f':401 :{self.NUMERIC_REPLIES['401']}'
+        else: return f':312 host:{client_socket.getpeername()[0]} nick:{client.nick}'
 
     def handle_topic(self, client_socket, argument):
         try:
