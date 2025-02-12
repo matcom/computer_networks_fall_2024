@@ -223,51 +223,93 @@ def stor_retr_files(command, pasv_response, server, client_socket, argument1,arg
             data_socket.connect((ip, port))
 
             if command == "RETR":
-                # Ejecuta el comando RETR
-                retr_response = send_command(client_socket, f"RETR {argument1}\r\n")
-                print(retr_response)
-
-                # Recibe los datos del archivo
-                file_data = data_socket.recv(1024)
-                while file_data:
-                    print(file_data.decode(), end="")
-                    file_data = data_socket.recv(1024)
-
-                # Cierra la conexión de datos
-                data_socket.close()
-
-                # Agrega verificación del mensaje 226
-                completion_response = client_socket.recv(1024).decode().strip()
-                print(json.dumps({"status": completion_response.split(" ")[0], "message": completion_response}, indent=4))
+                handleRETR(client_socket, data_socket, argument1)
                 
             elif command == "STOR":
-                # Ejecuta el comando STOR
-                stor_response = send_command(client_socket, f"STOR {argument2}\r\n")
-                print(stor_response)
-
-                # Verificación adicional antes de enviar datos
-                if "150" in stor_response:
-                    print("Enviando archivo...")
-                    
-                    # Abre el archivo para leer y enviarlo al servidor
-                    with open(argument1, "rb") as f:
-                        file_data = f.read(1024)
-                        while file_data:
-                            data_socket.sendall(file_data)
-                            file_data = f.read(1024)
-                            print("Enviando chunk de datos...")
-
-                    # Cierra la conexión de datos
-                    data_socket.shutdown(socket.SHUT_WR)
-                    data_socket.close()
-
-                    # Agrega verificación del mensaje 226
-                    completion_response = client_socket.recv(1024).decode().strip()
-                    print(json.dumps({"status": completion_response.split(" ")[0], "message": completion_response}, indent=4))
+                handleSTOR(client_socket, data_socket, argument1, argument2)
         else:
             print(json.dumps({"status": "500", "message": "Error al procesar la respuesta PASV"}, indent=4))
     else:
         print(json.dumps({"status": "500", "message": "Error al entrar en modo PASV"}, indent=4))
+        
+def handleRETR(client_socket, data_socket, argument1):
+    """
+    Executes the RETR command to retrieve a file from the FTP server and handles data reception.
+
+    Args:
+        client_socket (socket.socket): The client's control socket.
+        data_socket (socket.socket): The data socket for file transfer.
+        argument1 (str): The name of the file to retrieve.
+
+    Returns:
+        None
+
+    Process:
+        1. Sends the RETR command to the FTP server.
+        2. Receives and displays the server's response to the RETR command.
+        3. Receives the file data in 1024-byte chunks and prints it.
+        4. Closes the data connection.
+        5. Receives and displays the server's completion message, verifying the 226 status code.
+    """
+    # Ejecuta el comando RETR
+    retr_response = send_command(client_socket, f"RETR {argument1}\r\n")
+    print(retr_response)
+
+    # Recibe los datos del archivo
+    file_data = data_socket.recv(1024)
+    while file_data:
+        print(file_data.decode(), end="")
+        file_data = data_socket.recv(1024)
+
+    # Cierra la conexión de datos
+    data_socket.close()
+
+    # Agrega verificación del mensaje 226
+    completion_response = client_socket.recv(1024).decode().strip()
+    print(json.dumps({"status": completion_response.split(" ")[0], "message": completion_response}, indent=4))
+          
+def handleSTOR(client_socket, data_socket, argument1, argument2):
+    """
+    Handles the STOR command to upload a file to the server.
+    Args:
+        client_socket (socket.socket): The control connection socket to the FTP server.
+        data_socket (socket.socket): The data connection socket for transferring the file.
+        argument1 (str): The local file path to be uploaded.
+        argument2 (str): The remote file name to be stored on the server.
+    Returns:
+        None
+    The function performs the following steps:
+    1. Sends the STOR command to the server with the specified remote file name.
+    2. Checks the server's response for a positive preliminary reply (code 150).
+    3. If the response is positive, reads the local file in chunks and sends it through the data connection.
+    4. Closes the data connection after the file is completely sent.
+    5. Waits for the server's completion reply (code 226) and prints the response status and message.
+    """
+    # Ejecuta el comando STOR
+    stor_response = send_command(client_socket, f"STOR {argument2}\r\n")
+    print(stor_response)
+
+    # Verificación adicional antes de enviar datos
+    if "150" in stor_response:
+        print("Enviando archivo...")
+                    
+        # Abre el archivo para leer y enviarlo al servidor
+        with open(argument1, "rb") as f:
+            file_data = f.read(1024)
+            while file_data:
+                data_socket.sendall(file_data)
+                file_data = f.read(1024)
+                print("Enviando chunk de datos...")
+
+            # Cierra la conexión de datos
+            data_socket.shutdown(socket.SHUT_WR)
+            data_socket.close()
+
+            # Agrega verificación del mensaje 226
+            completion_response = client_socket.recv(1024).decode().strip()
+            print(json.dumps({"status": completion_response.split(" ")[0], "message": completion_response}, indent=4))
+    
+    
 
 def create_arg_parser():
     """
