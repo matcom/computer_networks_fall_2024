@@ -76,15 +76,66 @@ def handle_command_cwd(conn: connection, dirname: str):
 def handle_command_retr(conn: connection, filename: str):
     resp = conn.send(f'PASV\r\n'.encode())
     
-    print(resp)
+    status_code = resp.decode().split(' ')[0]
     
-        
-def handle_command_stor(conn : connection, filepath: str, filename: str):
-    resp = conn.send(f'STOR {filename}\r\n'.encode())
+    message, addr_part = resp.decode().split(' ', 1)[1].strip().split('(', 1)
+    nums = addr_part.rstrip(').\r\n').split(',')
+    ip = '.'.join(nums[:4])
+    port = int(nums[4]) * 256 + int(nums[5])
+    data = {
+        'status_code': status_code,
+        'message': message,
+        'ip': ip,
+        'port': port
+    }
+    
+    print(data)
+    
+    socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    socket.connect((data['ip'], data['port']))
+    
+    resp = conn.send(f'RETR {filename}\r\n'.encode())
     
     data = {
         'status_code': resp.decode().split(' ')[0],
         'message': ' '.join(resp.decode().split(' ')[1:])
+    }
+    
+    print(data)
+    
+    file = open(filename, 'wb')
+    while True:
+        data = socket.recv(1024)
+        if not data:
+            break
+        file.write(data)
+    file.close()
+    
+    socket.close()
+    
+    resp = conn.client_socket.recv(1024)
+    
+    data = {
+        'status_code': resp.decode().split(' ')[0],
+        'message': ' '.join(resp.decode().split(' ')[1:])
+    }
+    
+    print(data)
+        
+def handle_command_stor(conn : connection, filepath: str, filename: str):
+    resp = conn.send(f'STOR {filename}\r\n'.encode())
+    
+    status_code = resp.decode().split(' ')[0]
+    
+    message, addr_part = resp.decode().split(' ', 1)[1].strip().split('(', 1)
+    nums = addr_part.rstrip(').\r\n').split(',')
+    ip = '.'.join(nums[:4])
+    port = int(nums[4]) * 256 + int(nums[5])
+    data = {
+        'status_code': status_code,
+        'message': message,
+        'ip': ip,
+        'port': port
     }
     
     rsp = response(data['status_code'], data['message'])
