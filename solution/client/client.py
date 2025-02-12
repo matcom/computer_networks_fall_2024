@@ -144,7 +144,7 @@ def handle_command_stor(conn : connection, filepath: str, filename: str):
     data_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     data_socket.connect((data['ip'], data['port']))
     
-    resp = conn.send(f'RETR {filename}\r\n'.encode())
+    resp = conn.send(f'STOR {filename}\r\n'.encode())
     
     data = {
         'status_code': resp.decode().split(' ')[0],
