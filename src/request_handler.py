@@ -29,7 +29,7 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
                 "status": status_code,
                 "body": body if body is not None else ""
             }
-            self.wfile.write(json.dumps(response).encode('utf-8'))
+            self.wfile.write(response)
 
     def do_GET(self):
         #client_ip = self._get_client_ip()
