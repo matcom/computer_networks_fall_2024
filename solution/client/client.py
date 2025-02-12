@@ -18,7 +18,7 @@ def check_connection(host, port):
     
 def authenticate(conn: connection, user, password):
     # Enviar credenciales de usuario
-    resp = conn.send(f'USER {user}'.encode())
+    resp = conn.send(f'USER {user}\r\n'.encode())
     data = {
         'status_code': resp.decode().split(' ')[0],
         'message': ' '.join(resp.decode().split(' ')[1:])
@@ -29,7 +29,7 @@ def authenticate(conn: connection, user, password):
     log(rsp.message)
     
     if(rsp.status_code == '331'):
-        resp = conn.send(f'PASS {password}'.encode())
+        resp = conn.send(f'PASS {password}\r\n'.encode())
         data = {
             'status_code': resp.decode().split(' ')[0],
             'message': ' '.join(resp.decode().split(' ')[1:])
@@ -160,7 +160,7 @@ def handle_command_rmd(conn: connection, dirname: str):
         
 def close_connection(conn: connection):
     log('Closing connection...')
-    conn.send('QUIT'.encode())
+    conn.send('QUIT\r\n'.encode())
 
 def handle_command(conn: connection, command, arg1, arg2):
     if command == 'LIST':
