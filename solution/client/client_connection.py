@@ -1,6 +1,5 @@
 import socket
 import ssl
-from utils import log, from_json, to_json
 
 class connection:
     host: str
@@ -17,8 +16,6 @@ class connection:
             client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             client_socket.connect((self.host, self.port))
             
-            
-            # data = from_json(client_socket.recv(1024))
             resp = client_socket.recv(1024).decode().strip()
             data = {
                 'status_code': resp.split(' ')[0],
@@ -32,15 +29,14 @@ class connection:
             
             return True
         except Exception as e:
-            log(f'Error connecting to server: {e}')
             return False
         
     def send(self, data: bytes):
-        self.ssl_socket.sendall(data)
-        return self.ssl_socket.recv(1024)
+        self.client_socket.sendall(data)
+        return self.client_socket.recv(1024)
     
     def send_file(self, filepath: str):
         pointer = open(filepath, 'rb')
-        self.ssl_socket.sendfile(pointer)
+        self.client_socket.sendfile(pointer)
         pointer.close()
             
