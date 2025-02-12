@@ -14,17 +14,18 @@ class connection:
         
     def connect(self):
         try:
-            self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            client_socket.connect((self.host, self.port))
             
-            # Envolver el socket con SSL
-            context = ssl.create_default_context(ssl.Purpose.SERVER_AUTH)
-            context.load_verify_locations(cafile='cert.pem')  # Usar el certificado del servidor
             
-            self.ssl_socket = context.wrap_socket(self.client_socket, server_hostname=self.host)
-            self.ssl_socket.connect((self.host, self.port))
+            # data = from_json(client_socket.recv(1024))
+            resp = client_socket.recv(1024).decode().strip()
+            data = {
+                'status_code': resp.split(' ')[0],
+                'message': ' '.join(resp.split(' ')[1:])
+            }
             
-            # Recibir la respuesta del servidor
-            data = from_json(self.ssl_socket.recv(1024))
+            print(data)
             
             if(data['status_code'] != '220'):
                 return False
