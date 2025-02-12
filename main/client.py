@@ -103,6 +103,7 @@ class FTPClient:
                 data_socket.sendfile(file)
             data_socket.close()
             transfer_response = self.receive_response()
+            print(transfer_response)
             if "226" in transfer_response:
                 print(f"Archivo '{filename}' subido correctamente.")
             else:
@@ -118,7 +119,6 @@ class FTPClient:
     def delete(self, filename):
         try:
             response = self.send_command(f'DELE {filename}')
-            print(response)
             if "250" in response:  # Respuesta exitosa de DELE
                 print(f"Archivo '{filename}' eliminado correctamente.")
             else:
