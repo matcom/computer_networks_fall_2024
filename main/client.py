@@ -95,10 +95,10 @@ class FTPClient:
             ip, port = self.pasv()
             data_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             data_socket.connect((ip, port))
-            stor_response = self.send_command(f'STOR {filename}')
+            stor_response = self.send_command(f"STOR {filename}\r\n")
             print(stor_response)
-            if "150" not in stor_response:
-                raise Exception(f"Error al iniciar la subida del archivo '{filename}': {stor_response}")
+            if "150" in stor_response:
+                raise Exception(f"Subida del archivo '{filename}': {stor_response}")
             with open(filename, 'rb') as file:
                 data_socket.sendfile(file)
             data_socket.close()
@@ -117,8 +117,7 @@ class FTPClient:
 
     def delete(self, filename):
         try:
-            response = self.send_command(f'DELE {filename}')
-            print(response)
+            response = self.send_command(f"DELE {filename}\r\n")
             if "250" in response:  # Respuesta exitosa de DELE
                 print(f"Archivo '{filename}' eliminado correctamente.")
             else:
