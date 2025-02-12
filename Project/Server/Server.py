@@ -40,6 +40,7 @@ class FTPServer:
             "STOU": self.handle_stou,
             "APPE": self.handle_appe,
             "USER": self.handle_user,
+            "HELP": self.handle_help,
         }
 
     def send_response(self, connection, code, message):
@@ -410,6 +411,20 @@ class FTPServer:
             except Exception as e:
                 print(f"550 Error: {e}")
                 break
+    
+    def handle_help(self, args = ' '):
+        message = ""
+        if args is ' ':
+            for cmd in Utils.Commands.keys:
+                message += f"{cmd}: {Utils.Commands[cmd]}\n"
+        else: 
+            if args in Utils.Commands.keys:
+                message = Utils.Commands[args]
+            else:
+                self.send_response(self.connection_socket, 500, f"Unknown command: {args}")
+        self.send_response(self.connection_socket, 200, message)
+        return message
+
                      
 if __name__ == "__main__":
     server = FTPServer(12001)
