@@ -124,7 +124,7 @@ def handle_command_retr(conn: connection, filename: str):
     print(data)
         
 def handle_command_stor(conn : connection, filepath: str, filename: str):
-    resp = conn.send(f'STOR {filename}\r\n'.encode())
+    resp = conn.send(f'PASV\r\n'.encode())
     
     status_code = resp.decode().split(' ')[0]
     
@@ -139,19 +139,36 @@ def handle_command_stor(conn : connection, filepath: str, filename: str):
         'port': port
     }
     
-    rsp = response(data['status_code'], data['message'])
+    print(data)
     
-    if(rsp.status_code == '150'):
-        conn.send_file(filepath)
-            
-        resp = conn.client_socket.recv(1024)
-        
-        data = {
-            'status_code': resp.decode().split(' ')[0],
-            'message': ' '.join(resp.decode().split(' ')[1:])
-        }
-        
-        print(data)
+    data_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    data_socket.connect((data['ip'], data['port']))
+    
+    resp = conn.send(f'RETR {filename}\r\n'.encode())
+    
+    data = {
+        'status_code': resp.decode().split(' ')[0],
+        'message': ' '.join(resp.decode().split(' ')[1:])
+    }
+    
+    print(data)
+    
+    file = open(filepath, 'rb')
+    
+    data_socket.sendfile(file)
+    
+    file.close()
+    
+    data_socket.close()
+    
+    resp = conn.client_socket.recv(1024)
+    
+    data = {
+        'status_code': resp.decode().split(' ')[0],
+        'message': ' '.join(resp.decode().split(' ')[1:])
+    }
+    
+    print(data)
         
 def handle_command_rnfr(conn: connection, old_filename: str, new_filename: str):
     resp = conn.send(f'RNFR {old_filename}\r\n'.encode())
