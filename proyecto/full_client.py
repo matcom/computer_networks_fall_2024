@@ -33,7 +33,7 @@ class FTPClient:
         
         return response
 
-    def send_stor_command(self, data_sock, command, *args):
+    def send_command_and_file(self, data_sock, command, *args):
         """Envía un comando STOR al servidor FTP."""
         if not self.sock:
             raise Exception("No hay conexión al servidor FTP.")

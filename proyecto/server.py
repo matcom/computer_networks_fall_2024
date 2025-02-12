@@ -332,7 +332,7 @@ class ServerFTP:
         if args:
             client_socket.send(b"501 Sintaxis invalida\r\n")
             return
-        client_socket.send(b"215 UNIX Type: L8\r\n")
+        client_socket.send(b"502 Comando no implementado\r\n")
 
     def handle_help(self, client_socket, client_state, args):
         if args and len(args) > 1:
@@ -380,7 +380,7 @@ class ServerFTP:
         client_state.current_user = None
         client_state.authenticated = False
         client_state.current_dir = client_state.base_dir
-        client_socket.send(b"220 Servidor reiniciado\r\n")
+        client_socket.send(b"220 Conexion al servidor reiniciada\r\n")
 
     def handle_port(self, client_socket, client_state, args):
         client_socket.send(b"502 PORT no implementado\r\n")

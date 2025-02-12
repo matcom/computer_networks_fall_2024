@@ -5,7 +5,7 @@ import os
 import socket
 from pathlib import Path
 
-base_dir = "C:\\Users\\Joel\\Documents\\GitHub\\computer_networks_fall_2024\\proyecto"
+base_dir = Path.cwd()
 
 # Función para inicializar el cliente FTP
 def initialize_ftp_client():
@@ -68,7 +68,7 @@ def execute_command():
                                     filename = args[0]
                                     if cmd == "STOR":
                                         if os.path.exists(filename):
-                                            response = st.session_state.ftp_client.send_stor_command(data_sock, "STOR", filename)
+                                            response = st.session_state.ftp_client.send_command_and_file(data_sock, "STOR", filename)
                                             st.session_state.client_responses.insert(0, response)
                                         else:
                                             st.session_state.client_responses.insert(0, "Archivo no encontrado")
@@ -84,7 +84,7 @@ def execute_command():
 
                                     elif cmd == "APPE":
                                         if os.path.exists(filename):
-                                            response = st.session_state.ftp_client.send_stor_command(data_sock, "APPE", filename)
+                                            response = st.session_state.ftp_client.send_command_and_file(data_sock, "APPE", filename)
                                             st.session_state.client_responses.insert(0, response)
                                         else:
                                             st.session_state.client_responses.insert(0, "Archivo no encontrado")
