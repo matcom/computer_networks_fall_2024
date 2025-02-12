@@ -28,8 +28,8 @@ def handle_user(ftp_server, client_socket,state, args):
         client_socket.send(b"501 Syntax error in parameters or arguments\r\n")
         return
     
-    current_user = args[0]
-    if current_user in ftp_server.users:
+    state.current_user = args[0]
+    if state.current_user in ftp_server.users:
         client_socket.send(b"331 Username okay, need password\r\n")
     else:
         state.current_user = None
@@ -391,15 +391,18 @@ def handle_help(ftp_server, client_socket, state,args):
     if args and len(args) > 1:
         client_socket.send(b"501 Sintaxis: HELP [command]\r\n")
         return
+    
     if args:
         helpCommand = args[0].upper()
         if helpCommand in ftp_server.commands_help:
+            print(ftp_server.commands_help[helpCommand])
             response = f"214 {helpCommand}: {ftp_server.commands_help[helpCommand]}.\r\n"
         else:
             response = f"501 Comando \'{helpCommand}\' no reconocido\r\n"
     
-    commands = ", ".join(sorted(ftp_server.commands.keys()))
-    response = f"214-The following commands are available:\r\n{commands}\r\n214 End of help.\r\n"
+    else:
+        commands = ", ".join(sorted(ftp_server.commands.keys()))
+        response = f"214-The following commands are available:\r\n{commands}\r\n214 End of help.\r\n"
     client_socket.send(response.encode())
 
 def handle_noop(ftp_server, client_socket,state, args):

@@ -1,6 +1,8 @@
 import socket
 import threading
-from handlers import *
+from pathlib import Path
+from .handlers import handle_user, handle_pass, handle_pwd, handle_cwd, handle_cdup, handle_list, handle_quit, handle_mkd, handle_rmd, handle_dele, handle_rnfr, handle_rnto, handle_syst, handle_help, handle_noop, handle_acct, handle_smnt, handle_rein, handle_port, handle_pasv, handle_type, handle_stru, handle_mode, handle_retr, handle_stor, handle_stou, handle_appe, handle_allo, handle_rest, handle_abor, handle_site, handle_stat, handle_nlst
+
 
 class State:
     def __init__(self, base_dir):
@@ -33,8 +35,7 @@ class FTPServer:
         }
         
         self.users = {
-            "Mauricio": "Mauricio",
-            "Richard": "Richard"
+            "Mauricio": "Mauricio"
         }
         
         self.base_dir = Path.cwd()
