@@ -1,3 +1,5 @@
+import json
+
 def parse_headers(raw_headers):
     return {k: v for k, v in (line.split(': ', 1) for line in raw_headers)}
 

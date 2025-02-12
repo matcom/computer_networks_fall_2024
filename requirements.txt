@@ -1,0 +1,7 @@
+quart>=0.18.3
+pytest-asyncio
+types-requests
+mypy
+pytest 
+pytest-mock
+jsonlib-python3
