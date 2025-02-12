@@ -93,7 +93,7 @@ class Client:
             return f"Error in {command}: {e}"
     
     def unauthorized_command(self, command):
-        return not self.logged_in and cmd not in unlogged_commands
+        return not self.logged_in and command not in self.unlogged_commands
     
     # Conectar el socket de datos para transferencia de informacion
     def connect_data_socket(self):

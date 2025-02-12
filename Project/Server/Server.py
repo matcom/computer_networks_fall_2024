@@ -109,7 +109,7 @@ class FTPServer:
             . Sends the current working directory
         """
         current_directory = os.getcwd()
-        self.send_response(self.connection_socket, 257, f'"{current_directory}"')
+        self.send_response(self.connection_socket, 257, f'"{current_directory}{self.user_file_name()}"')
     
     def handle_dele(self, filename):
         """
@@ -272,11 +272,11 @@ class FTPServer:
     def handle_stou(self, filename):
         """Stores the file with a unique name adding a timestamp to it"""
         unique_filename = f"{int(time.time())}_{filename}"  
-        return self.handle_store(self.connection_socket, unique_filename)   
+        return self.handle_store(unique_filename)   
     
     def handle_appe(self, filename):
         """ Stores the file, if it already exists appends the data to the file. """
-        return self.handle_store(self.connection_socket, filename, mode='ab')
+        return self.handle_store(filename, mode='ab')
 
     def handle_store(self, filename, mode='wb'):
         """
