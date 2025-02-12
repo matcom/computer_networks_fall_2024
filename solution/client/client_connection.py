@@ -29,6 +29,7 @@ class connection:
             
             return True
         except Exception as e:
+            print(f'Error connecting to server: {e}')
             return False
         
     def send(self, data: bytes):

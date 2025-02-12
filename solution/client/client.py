@@ -194,7 +194,7 @@ def handle_command_dele(conn: connection, filename: str):
     print(data)
         
 def handle_command_mkd(conn: connection, dirname: str):
-    resp = conn.send('MKD {dirname}\r\n'.encode())
+    resp = conn.send(f'MKD {dirname}\r\n'.encode())
     
     data = {
         'status_code': resp.decode().split(' ')[0],
@@ -204,7 +204,7 @@ def handle_command_mkd(conn: connection, dirname: str):
     print(data)
         
 def handle_command_rmd(conn: connection, dirname: str):
-    resp = conn.send('RMD {dirname}\r\n'.encode())
+    resp = conn.send(f'RMD {dirname}\r\n'.encode())
     
     data = {
         'status_code': resp.decode().split(' ')[0],

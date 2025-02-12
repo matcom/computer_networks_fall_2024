@@ -45,15 +45,17 @@ def handle_pass_command(client_socket: socket, args, user):
         client_socket.send(b'230 Login successful.')
         return True
     else:
-        client_socket.send(b'530 Login incorrect.\r\n')   
+        client_socket.send(b'530 Login incorrect.')   
         return False
     
 def handle_list_command(client_socket: socket, user: str):
     files = os.listdir(f'{FILE_ROOT}/{state[user]}')
-    client_socket.send(to_json({"status_code" : "150", "message": "Here comes the directory listing.", "data": files}))
+    files = ' '.join(files)
+    client_socket.send(f'150 Here comes the directory listing. {files} '.encode())
     
 def handle_pwd_command(client_socket: socket, user: str):
-    client_socket.send(to_json({"status_code" : "257", "message": "Directory created.", "data": '/' if state[user] == '' else f'{state[user]}'}))
+    path = '/' if state[user] == '' else state[user]    
+    client_socket.send(f'257 {path} is the current directory.'.encode())
     
 def handle_cwd_command(client_socket: socket, args, user: str):
     dirname = args[0] if args else ""
@@ -67,9 +69,9 @@ def handle_cwd_command(client_socket: socket, args, user: str):
         else:
             state[user] = f'{dirname}/'
         
-        client_socket.send(to_json({"status_code" : "250", "message": "Directory changed."}))
+        client_socket.send('250 Directory successfully changed.'.encode())
     except FileNotFoundError:
-        client_socket.send(to_json({"status_code" : "550", "message": "Requested action not taken. Directory does not exist."}))
+        client_socket.send('550 Requested action not taken. Directory does not exist.'.encode())
     
 def handle_retr_command(client_socket: socket, args, user: str):
     filename = args[0] if args else ""
@@ -95,19 +97,18 @@ def handle_stor_command(client_socket: socket, args, user: str):
         pointer.close()
         
         client_socket.send(to_json({"status_code" : "226", "message": "Transfer complete."}))
-    except FileNotFoundError:
+    except Exception:
         client_socket.send(to_json({"status_code" : "550", "message": "Requested action not taken. File unavailable."}))
         
 def handle_rnfr_command(client_socket: socket, args, user: str):
     filename = args[0] if args else ""
     try:
-        pointer = open(f'{FILE_ROOT}/{state[user]}{filename}', 'rb')
-        pointer.close()
+        os.stat(f'{FILE_ROOT}/{state[user]}{filename}')
         
-        client_socket.send(to_json({"status_code" : "350", "message": "Ready for RNTO."}))
+        client_socket.send('350 Ready to RNTO.'.encode())
         return filename
-    except FileNotFoundError:
-        client_socket.send(to_json({"status_code" : "550", "message": "Requested action not taken. File unavailable."}))
+    except Exception:
+        client_socket.send('550 Requested action not taken. File unavailable.'.encode())
         return None
         
 def handle_rnto_command(client_socket: socket, old_filename: str, args, user: str):
@@ -115,39 +116,39 @@ def handle_rnto_command(client_socket: socket, old_filename: str, args, user: st
     try:
         os.rename(f'{FILE_ROOT}/{state[user]}{old_filename}', f'{FILE_ROOT}/{state[user]}{new_filename}')
         
-        client_socket.send(to_json({"status_code" : "250", "message": "Rename successful."}))
+        client_socket.send('250 Rename successful.'.encode())
     except FileNotFoundError:
-        client_socket.send(to_json({"status_code" : "550", "message": "Requested action not taken. File unavailable."}))
+        client_socket.send('550 Requested action not taken. File unavailable.'.encode())
 
 def handle_dele_command(client_socket: socket, args, user: str):
     filename = args[0] if args else ""
     try:
         os.remove(f'{FILE_ROOT}/{state[user]}{filename}')
-        client_socket.send(to_json({"status_code" : "250", "message": "Requested file action okay, completed."}))
+        client_socket.send('250 File deleted successfully.'.encode())
     except FileNotFoundError:
-        client_socket.send(to_json({"status_code" : "550", "message": "Requested action not taken. File unavailable."}))
+        client_socket.send('550 Requested action not taken. File unavailable.'.encode())
 
 def handle_mkd_command(client_socket: socket, args, user: str):
     dirname = args[0] if args else ""
     try:
         os.mkdir(f'{FILE_ROOT}/{state[user]}{dirname}')
-        client_socket.send(to_json({"status_code" : "257", "message": "Directory created."}))
+        client_socket.send('257 Directory created successfully.'.encode())
     except FileExistsError:
-        client_socket.send(to_json({"status_code" : "550", "message": "Requested action not taken. Directory already exists."}))
+        client_socket.send('550 Requested action not taken. Directory already exists.'.encode())
         
 def handle_rmd_command(client_socket: socket, args, user: str):
     dirname = args[0] if args else ""
     try:
         os.rmdir(f'{FILE_ROOT}/{state[user]}{dirname}')
-        client_socket.send(to_json({"status_code" : "250", "message": "Directory removed."}))
+        client_socket.send('250 Directory removed successfully.'.encode())
     except FileNotFoundError:
-        client_socket.send(to_json({"status_code" : "550", "message": "Requested action not taken. Directory does not exist."}))
+        client_socket.send('550 Requested action not taken. Directory does not exist.'.encode())
 
 def handle_quit_command(client_socket: socket):
-    client_socket.send(b'221 Goodbye.\r\n')
+    client_socket.send(b'221 Goodbye.')
 
 def handle_client(client_socket: socket):
-    client_socket.sendall(b'220 Welcome to the FTP server.\r\n')
+    client_socket.sendall(b'220 Welcome to the FTP server.')
     
     while True:
         data = client_socket.recv(BUFFER_SIZE).decode().strip()
@@ -193,7 +194,7 @@ def handle_client(client_socket: socket):
             handle_quit_command(client_socket)
             break
         else:
-            client_socket.send(b'500 Unknown command.\r\n')
+            client_socket.send(b'500 Unknown command.')
     
     client_socket.close()
 
