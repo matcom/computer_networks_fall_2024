@@ -1,4 +1,3 @@
-import socket
 import argparse
 
 from client_connection import connection
@@ -75,27 +74,10 @@ def handle_command_cwd(conn: connection, dirname: str):
     print(data)
         
 def handle_command_retr(conn: connection, filename: str):
-    resp = conn.send(f'RETR {filename}\r\n'.encode())
+    resp = conn.send(f'PASV\r\n'.encode())
     
-    data = {
-        'status_code': resp.decode().split(' ')[0],
-        'message': ' '.join(resp.decode().split(' ')[1:])
-    }
+    print(resp)
     
-    print(data)
-    
-    if(data['status_code'] == '150'):
-        file = conn.client_socket.recv(1024)
-        with open(filename, 'wb') as f:
-            f.write(file)
-            
-        resp = conn.client_socket.recv(1024)
-        data = {
-            'status_code': resp.decode().split(' ')[0],
-            'message': ' '.join(resp.decode().split(' ')[1:])
-        }
-        
-        print(data)
         
 def handle_command_stor(conn : connection, filepath: str, filename: str):
     resp = conn.send(f'STOR {filename}\r\n'.encode())
