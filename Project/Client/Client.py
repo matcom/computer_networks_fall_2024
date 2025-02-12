@@ -364,10 +364,6 @@ class Client:
                 self.client_socket.close()  
                 break
             
-            if response.startswith("500"):      # Unknown command
-                sug = Utils.Get_suggestion(cmd)
-                print(f"Command {cmd} not found, try with {sug}")
-
     def ftp_client(self):
         self.connect()    
         self.log_in()

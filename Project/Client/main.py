@@ -7,7 +7,7 @@ def get_connection_details():
     
     while True:
         try:
-            port = input("Server Port (default: 12000): ").strip() or '12001'
+            port = input("Server Port (default: 12000): ").strip() or '12000'
             port = int(port)
             if 0 <= port <= 65535:
                 return server_ip, port

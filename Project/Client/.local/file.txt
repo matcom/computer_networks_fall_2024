@@ -1,0 +1,6 @@
+Este es el tercer archivo de texto.
+Contiene varias líneas de texto para probar la transferencia de archivos más grandes.
+Línea 1: FTP es genial.
+Línea 2: Prueba de transferencia de archivos.
+Línea 3: ¡Funciona correctamente!
+Línea 4: Fin del archivo.

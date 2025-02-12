@@ -354,6 +354,21 @@ class FTPServer:
         
         else:
             self.send_response(self.connection_socket, 530, "Login failed, incorrect user.")
+    
+    def handle_help(self, args=None ):
+        message = ""
+        if args:
+            args = args.upper()
+            if args in Utils.Commands.keys():
+                self.send_response(self.connection_socket, 200, f"\n{args} : {Utils.Commands[args]}")
+            else:
+                suggestion = Utils.Get_suggestion(args)
+                self.send_response(self.connection_socket, 500, f"Unknown command: {args}, perhaps you meant {suggestion}.")
+        else:
+            msg = "\n"
+            for cmd in Utils.Commands.keys():
+                msg += f"{cmd + {Utils.Commands[cmd]}}\n"
+            self.send_response(self.connection_socket, 200, msg)
 
     #----------------------------------   Actions   ------------------------------------------------
     def ftp_server(self):
@@ -406,26 +421,13 @@ class FTPServer:
                     if(cmd == "QUIT"):
                         break
                 else:
-                    self.send_response(self.connection_socket, 500, "Unknown command")
+                    suggestion = Utils.Get_suggestion(cmd)
+                    self.send_response(self.connection_socket, 500, f"Unknown command, perhaps you meant {suggestion}.")
             
             except Exception as e:
                 print(f"550 Error: {e}")
                 break
-    
-    def handle_help(self, args = ' '):
-        message = ""
-        if args is ' ':
-            for cmd in Utils.Commands.keys:
-                message += f"{cmd}: {Utils.Commands[cmd]}\n"
-        else: 
-            if args in Utils.Commands.keys:
-                message = Utils.Commands[args]
-            else:
-                self.send_response(self.connection_socket, 500, f"Unknown command: {args}")
-        self.send_response(self.connection_socket, 200, message)
-        return message
-
                      
 if __name__ == "__main__":
-    server = FTPServer(12001)
+    server = FTPServer(12000)
     server.ftp_server()

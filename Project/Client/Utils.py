@@ -60,28 +60,3 @@ def validate_mode(mode):
     if not mode in "F,R,P".split(","):
         raise ValueError(f"Error: Invalid Mode {mode}")
 
-# Calcular distancia de levenshtein
-def levenshtein_distance(s1, s2):
-    if len(s1) == 0:
-        return len(s2)
-    if len(s2) == 0:
-        return len(s1)
-    if s1[0] == s2[0]:
-        return levenshtein_distance(s1[1:], s2[1:])
-    
-    insert_cost = levenshtein_distance(s1, s2[1:])
-    delete_cost = levenshtein_distance(s1[1:], s2)
-    replace_cost = levenshtein_distance(s1[1:], s2[1:])
-    
-    return 1 + min(insert_cost, delete_cost, replace_cost)
-
-# Devuelve el comando mas parecido al ingresado
-def Get_suggestion(command):
-    lev = 1000000000000
-    sug = ""
-    for c in Commands.keys:
-        newLev = levenshtein_distance(c, command)
-        if newLev < lev:
-            lev = newLev
-            sug = c
-    return sug
