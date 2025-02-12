@@ -21,8 +21,9 @@ class FTPClient:
         return self.receive_response()
 
     def login(self, username, password):
-        self.send_command(f'USER {username}')
-        self.send_command(f'PASS {password}')
+        user_response = self.send_command(f'USER {username}')
+        pass_response = self.send_command(f'PASS {password}')
+        return user_response, pass_response
 
     def pasv(self):
         response = self.send_command('PASV')
@@ -40,17 +41,17 @@ class FTPClient:
         ip, port = self.pasv()
         data_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         data_socket.connect((ip, port))
-        self.send_command('LIST')
+        list_response = self.send_command('LIST')
         data = data_socket.recv(4096).decode('utf-8')
         data_socket.close()
         print(data)
-        return data
+        return list_response, data
 
     def retr(self, filename):
         ip, port = self.pasv()
         data_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         data_socket.connect((ip, port))
-        self.send_command(f'RETR {filename}')
+        retr_response = self.send_command(f'RETR {filename}')
         with open(filename, 'wb') as file:
             while True:
                 data = data_socket.recv(4096)
@@ -59,6 +60,7 @@ class FTPClient:
                 file.write(data)
         data_socket.close()
         print(f"Archivo '{filename}' descargado correctamente.")
+        return retr_response
 
     def print_working_directory(self):
         response = self.send_command('PWD')
@@ -77,32 +79,34 @@ class FTPClient:
             raise Exception(f"Error al cambiar al directorio '{directory}'.")
 
     def rename(self, from_name, to_name):
-        response = self.send_command(f'RNFR {from_name}')
-        if "350" in response:  # Respuesta exitosa de RNFR
-            response = self.send_command(f'RNTO {to_name}')
-            if "250" in response:  # Respuesta exitosa de RNTO
+        rnfr_response = self.send_command(f'RNFR {from_name}')
+        if "350" in rnfr_response:  # Respuesta exitosa de RNFR
+            rnto_response = self.send_command(f'RNTO {to_name}')
+            if "250" in rnto_response:  # Respuesta exitosa de RNTO
                 print(f"Archivo renombrado de '{from_name}' a '{to_name}'.")
             else:
                 raise Exception(f"Error al renombrar el archivo a '{to_name}'.")
         else:
             raise Exception(f"Error al renombrar el archivo desde '{from_name}'.")
+        return rnfr_response, rnto_response
 
     def stor(self, filename):
         try:
             ip, port = self.pasv()
             data_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             data_socket.connect((ip, port))
-            response = self.send_command(f'STOR {filename}')
-            if "150" not in response:
-                raise Exception(f"Error al iniciar la subida del archivo '{filename}': {response}")
+            stor_response = self.send_command(f'STOR {filename}')
+            if "150" not in stor_response:
+                raise Exception(f"Error al iniciar la subida del archivo '{filename}': {stor_response}")
             with open(filename, 'rb') as file:
                 data_socket.sendfile(file)
             data_socket.close()
-            response = self.receive_response()
-            if "226" in response:
+            transfer_response = self.receive_response()
+            if "226" in transfer_response:
                 print(f"Archivo '{filename}' subido correctamente.")
             else:
-                raise Exception(f"Error al completar la subida del archivo '{filename}': {response}")
+                raise Exception(f"Error al completar la subida del archivo '{filename}': {transfer_response}")
+            return stor_response, transfer_response
         except FileNotFoundError:
             raise Exception(f"Archivo '{filename}' no encontrado.")
         except PermissionError:
@@ -117,6 +121,7 @@ class FTPClient:
                 print(f"Archivo '{filename}' eliminado correctamente.")
             else:
                 raise Exception(f"Error al eliminar el archivo '{filename}': {response}")
+            return response
         except FileNotFoundError:
             raise Exception(f"Archivo '{filename}' no encontrado.")
         except PermissionError:
@@ -130,6 +135,7 @@ class FTPClient:
             print(f"Directorio '{directory}' creado correctamente.")
         else:
             raise Exception(f"Error al crear el directorio '{directory}'.")
+        return response
 
     def remove_directory(self, directory):
         response = self.send_command(f'RMD {directory}')
@@ -137,11 +143,13 @@ class FTPClient:
             print(f"Directorio '{directory}' eliminado correctamente.")
         else:
             raise Exception(f"Error al eliminar el directorio '{directory}'.")
+        return response
 
     def quit(self):
-        self.send_command('QUIT')
+        response = self.send_command('QUIT')
         self.control_socket.close()
         print("Conexión cerrada.")
+        return response
 
 
 def main():
@@ -167,48 +175,57 @@ def main():
     arg2 = args.get('-b', '')
 
     client = FTPClient(host, port)
-    client.login(user, password)
+    user_response, pass_response = client.login(user, password)
 
     try:
         if command == "LIST":
-            client.list_files()
+            list_response, data = client.list_files()
+            print(list_response, data)
         elif command == "RETR":
             if not arg1:
                 print("Falta el argumento requerido: -a para el comando RETR")
                 return
-            client.retr(arg1)
+            retr_response = client.retr(arg1)
+            print(retr_response)
         elif command == "STOR":
             if not arg1:
                 print("Falta el argumento requerido: -a para el comando STOR")
                 return
-            client.stor(arg1)
+            stor_response, transfer_response = client.stor(arg1)
+            print(stor_response, transfer_response)
         elif command == "PWD":
-            client.print_working_directory()
+            pwd_response = client.print_working_directory()
+            print(pwd_response)
         elif command == "CWD":
             if not arg1:
                 print("Falta el argumento requerido: -a para el comando CWD")
                 return
-            client.change_working_directory(arg1)
+            cwd_response = client.change_working_directory(arg1)
+            print(cwd_response)
         elif command == "RNFR":
             if not arg1 or not arg2:
                 print("Faltan los argumentos requeridos: -a y -b para el comando RNFR")
                 return
-            client.rename(arg1, arg2)
+            rnfr_response, rnto_response = client.rename(arg1, arg2)
+            print(rnfr_response, rnto_response)
         elif command == "DELE":
             if not arg1:
                 print("Falta el argumento requerido: -a para el comando DELE")
                 return
-            client.delete(arg1)
+            dele_response = client.delete(arg1)
+            print(dele_response)
         elif command == "MKD":
             if not arg1:
                 print("Falta el argumento requerido: -a para el comando MKD")
                 return
-            client.make_directory(arg1)
+            mkd_response = client.make_directory(arg1)
+            print(mkd_response)
         elif command == "RMD":
             if not arg1:
                 print("Falta el argumento requerido: -a para el comando RMD")
                 return
-            client.remove_directory(arg1)
+            rmd_response = client.remove_directory(arg1)
+            print(rmd_response)
         elif command:
             print(f"Comando '{command}' no reconocido.")
         else:
@@ -216,7 +233,8 @@ def main():
     except Exception as e:
         print(f"Error durante la ejecución del comando '{command}': {str(e)}")
 
-    client.quit()
+    quit_response = client.quit()
+    print(quit_response)
 
 
 if __name__ == "__main__":
