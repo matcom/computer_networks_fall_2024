@@ -106,13 +106,13 @@ def handle_command_retr(conn: connection, filename: str):
     
     file = open(filename, 'wb')
     while True:
-        data = socket.recv(1024)
+        data = data_socket.recv(1024)
         if not data:
             break
         file.write(data)
     file.close()
     
-    socket.close()
+    data_socket.close()
     
     resp = conn.client_socket.recv(1024)
     
