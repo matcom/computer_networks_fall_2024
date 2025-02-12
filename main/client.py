@@ -90,46 +90,6 @@ class FTPClient:
             raise Exception(f"Error al renombrar el archivo desde '{from_name}'.")
         return rnfr_response, rnto_response
 
-    def stor(self, filename):
-        try:
-            ip, port = self.pasv()
-            data_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            data_socket.connect((ip, port))
-            stor_response = self.send_command(f"STOR {filename}\r\n")
-            print(stor_response)
-            if "150" in stor_response:
-                raise Exception(f"Subida del archivo '{filename}': {stor_response}")
-            with open(filename, 'rb') as file:
-                data_socket.sendfile(file)
-            data_socket.close()
-            transfer_response = self.receive_response()
-            if "226" in transfer_response:
-                print(f"Archivo '{filename}' subido correctamente.")
-            else:
-                raise Exception(f"Error al completar la subida del archivo '{filename}': {transfer_response}")
-            return stor_response, transfer_response
-        except FileNotFoundError:
-            raise Exception(f"Archivo '{filename}' no encontrado.")
-        except PermissionError:
-            raise Exception(f"Permiso denegado para leer el archivo '{filename}'.")
-        except Exception as e:
-            raise Exception(f"Error al subir el archivo '{filename}': {str(e)}")
-
-    def delete(self, filename):
-        try:
-            response = self.send_command(f"DELE {filename}\r\n")
-            if "250" in response:  # Respuesta exitosa de DELE
-                print(f"Archivo '{filename}' eliminado correctamente.")
-            else:
-                raise Exception(f"Error al eliminar el archivo '{filename}': {response}")
-            return response
-        except FileNotFoundError:
-            raise Exception(f"Archivo '{filename}' no encontrado.")
-        except PermissionError:
-            raise Exception(f"Permiso denegado para eliminar el archivo '{filename}'.")
-        except Exception as e:
-            raise Exception(f"Error al eliminar el archivo '{filename}': {str(e)}")
-
     def make_directory(self, directory):
         response = self.send_command(f'MKD {directory}')
         if "257" in response:  # Respuesta exitosa de MKD
@@ -137,6 +97,33 @@ class FTPClient:
         else:
             raise Exception(f"Error al crear el directorio '{directory}'.")
         return response
+
+    def delete_file(self, filename):
+        response = self.send_command(f'DELE {filename}')
+        if "250" in response:  # Respuesta exitosa de DELE
+            print(f"Archivo '{filename}' eliminado correctamente.")
+        else:
+            raise Exception(f"Error al eliminar el archivo '{filename}'.")
+        return response
+
+    def stor(self, local_filepath, remote_filename):
+        ip, port = self.pasv()
+        data_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        data_socket.connect((ip, port))
+        stor_response = self.send_command(f'STOR {remote_filename}')
+        with open(local_filepath, 'rb') as file:
+            while True:
+                data = file.read(4096)
+                if not data:
+                    break
+                data_socket.sendall(data)
+        data_socket.close()
+        final_response = self.receive_response()
+        if "226" in final_response or "250" in final_response:
+            print(f"Archivo '{local_filepath}' subido como '{remote_filename}' correctamente.")
+        else:
+            raise Exception(f"Error al subir el archivo '{local_filepath}'.")
+        return stor_response, final_response
 
     def remove_directory(self, directory):
         response = self.send_command(f'RMD {directory}')
@@ -182,18 +169,25 @@ def main():
         if command == "LIST":
             list_response, data = client.list_files()
             print(list_response, data)
+        elif command == "DELE":
+            if not arg1:
+                print("Falta el argumento requerido: -a para el comando DELE")
+                return
+            dele_response = client.delete_file(arg1)
+            print(dele_response)
+        elif command == "STOR":
+            if not arg1 or not arg2:
+                print("Faltan los argumentos requeridos: -a (archivo local) y -b (nombre remoto) para el comando STOR")
+                return
+            stor_response, final_response = client.stor(arg1, arg2)
+            print(stor_response, final_response)
+
         elif command == "RETR":
             if not arg1:
                 print("Falta el argumento requerido: -a para el comando RETR")
                 return
             retr_response = client.retr(arg1)
             print(retr_response)
-        elif command == "STOR":
-            if not arg1:
-                print("Falta el argumento requerido: -a para el comando STOR")
-                return
-            stor_response, transfer_response = client.stor(arg1)
-            print(stor_response, transfer_response)
         elif command == "PWD":
             pwd_response = client.print_working_directory()
             print(pwd_response)
@@ -209,12 +203,6 @@ def main():
                 return
             rnfr_response, rnto_response = client.rename(arg1, arg2)
             print(rnfr_response, rnto_response)
-        elif command == "DELE":
-            if not arg1:
-                print("Falta el argumento requerido: -a para el comando DELE")
-                return
-            dele_response = client.delete(arg1)
-            print(dele_response)
         elif command == "MKD":
             if not arg1:
                 print("Falta el argumento requerido: -a para el comando MKD")
