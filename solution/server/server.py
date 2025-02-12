@@ -1,9 +1,6 @@
 import socket
 import os
-import ssl
 import hashlib
-
-from utils import from_json, to_json, log
 
 # Configuración del servidor
 HOST = '127.0.0.1'  # Dirección IP del servidor
@@ -72,33 +69,55 @@ def handle_cwd_command(client_socket: socket, args, user: str):
         client_socket.send('250 Directory successfully changed.'.encode())
     except FileNotFoundError:
         client_socket.send('550 Requested action not taken. Directory does not exist.'.encode())
+        
+def handle_pasv_command(client_socket: socket, user: str):    
+    data_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    data_socket.bind((HOST, 0))
+    data_socket.listen(1)
     
-def handle_retr_command(client_socket: socket, args, user: str):
+    port = data_socket.getsockname()[1]
+    port_bytes = [str(port >> 8), str(port & 0xff)]
+    
+    # print(port)
+    
+    client_socket.send(f'227 Entering Passive Mode ({",".join(HOST.split("."))},{",".join(port_bytes)})'.encode())
+    # print(f'227 Entering Passive Mode ({",".join(HOST.split("."))},{",".join(port_bytes)}')
+    
+    data_client_socket, host = data_socket.accept()
+    
+    return data_client_socket
+    
+def handle_retr_command(client_socket: socket, data_socket: socket, args, user: str):
     filename = args[0] if args else ""
     try:
         pointer = open(f'{FILE_ROOT}/{state[user]}{filename}', 'rb')
         
-        client_socket.send(to_json({"status_code" : "150", "message": "Opening data connection."}))
+        client_socket.send('150 Opening data connection.'.encode())
         
-        client_socket.sendfile(pointer)
+        data_socket.sendfile(pointer)
         pointer.close()
         
-        client_socket.send(to_json({"status_code" : "226", "message": "Transfer complete."}))
+        data_socket.close()
+        
+        client_socket.send('226 Transfer complete.'.encode())
     except FileNotFoundError:
-        client_socket.send(to_json({"status_code" : "550", "message": "Requested action not taken. File unavailable."}))
+        client_socket.send('550 Requested action not taken. File unavailable.'.encode())
 
-def handle_stor_command(client_socket: socket, args, user: str):
+def handle_stor_command(client_socket: socket, data_socket: socket, args, user: str):
     filename = args[0] if args else ""
     try:
-        client_socket.send(to_json({"status_code" : "150", "message": "Opening data connection."}))
-        
         pointer = open(f'{FILE_ROOT}/{state[user]}{filename}', 'wb')
-        pointer.write(client_socket.recv(BUFFER_SIZE))
+        
+        client_socket.send('150 Opening data connection.'.encode())
+        
+        pointer.write(data_socket.recv(BUFFER_SIZE))
         pointer.close()
         
-        client_socket.send(to_json({"status_code" : "226", "message": "Transfer complete."}))
+        data_socket.close()
+        
+        client_socket.send('226 Transfer complete.'.encode())
     except Exception:
-        client_socket.send(to_json({"status_code" : "550", "message": "Requested action not taken. File unavailable."}))
+        client_socket.send('550 Requested action not taken. File unavailable.'.encode())
         
 def handle_rnfr_command(client_socket: socket, args, user: str):
     filename = args[0] if args else ""
@@ -176,10 +195,12 @@ def handle_client(client_socket: socket):
             handle_pwd_command(client_socket, user)
         elif command == "CWD" and authenticated:
             handle_cwd_command(client_socket, args, user)
+        elif command == "PASV":
+            data_socket = handle_pasv_command(client_socket, user)
         elif command == "RETR" and authenticated:
-            handle_retr_command(client_socket, args, user)
+            handle_retr_command(client_socket, data_socket, args, user)
         elif command == "STOR" and authenticated:
-            handle_stor_command(client_socket, args, user)
+            handle_stor_command(client_socket, data_socket, args, user)
         elif command == "RNFR" and authenticated:
             filename = handle_rnfr_command(client_socket, args, user)
         elif command == "RNTO" and authenticated and filename:
