@@ -4,7 +4,7 @@ import argparse
 import json
 import re
 
-def ftp_client(args):
+def ftpClient(args):
     """
     Main function of the FTP client.
     
@@ -26,9 +26,8 @@ def ftp_client(args):
     command = args.command
     argument1 = args.argument1
     argument2 = args.argument2
-    use_tls = args.use_tls  # New argument to use or not use TLS
+    use_tls = args.use_tls  
 
-    # Alternative way to handle commands without using delegates
     command_templates = {
         "USER": f"USER {argument1}\r\n",
         "PASS": f"PASS {argument1}\r\n",
@@ -66,52 +65,45 @@ def ftp_client(args):
     }
 
     try:
-        # Connects to the server
-        client_socket = connect_to_server(server, port, use_tls)
+        client_socket = connectToServer(server, port, use_tls)
 
-        # Receives the server's welcome message
         welcome_message = client_socket.recv(1024).decode().strip()
         welcome_status = welcome_message.split(" ")[0]
         print(json.dumps({"status": welcome_status, "message": welcome_message}, indent=4))
 
-        # Authentication with USER and PASS
-        user_response = send_command(client_socket, f"USER {username}\r\n")
+        user_response = sendCommand(client_socket, f"USER {username}\r\n")
         print(user_response)
 
-        pass_response = send_command(client_socket, f"PASS {password}\r\n")
+        pass_response = sendCommand(client_socket, f"PASS {password}\r\n")
         print(pass_response)
 
-        # Verifies if authentication was successful
-        if "230" in pass_response:  # Code 230: User logged in
-            # If the command is RETR or STOR, send PASV first
+        if "230" in pass_response:  
             if command == "RETR" or command == "STOR":
-                pasv_response = send_command(client_socket, "PASV\r\n")
+                pasv_response = sendCommand(client_socket, "PASV\r\n")
                 print(pasv_response)
-                stor_retr_files(command, pasv_response, server, client_socket, argument1, argument2);
+                storageRetrievalFiles(command, pasv_response, server, client_socket, argument1, argument2);
                 
             elif command == "RNFR":
-                rnfr_response = send_command(client_socket, f"RNFR {argument1}\r\n")
+                rnfr_response = sendCommand(client_socket, f"RNFR {argument1}\r\n")
                 print(rnfr_response)
-                rename_file(rnfr_response, client_socket, argument2)
+                renameFile(rnfr_response, client_socket, argument2)
                 
             else:
-                # Executes other commands
                 if command in command_templates:
-                    command_response = send_command(client_socket, command_templates[command])
+                    command_response = sendCommand(client_socket, command_templates[command])
                 else:
-                    command_response = json.dumps({"status": "500", "message": "Comando no soportado"}, indent=4)
+                    command_response = json.dumps({"status": "500", "message": "Unsupported command"}, indent=4)
 
                 print(command_response)
         else:
-            print(json.dumps({"status": "530", "message": "Error de autenticación. Verifica las credenciales."}, indent=4))
+            print(json.dumps({"status": "530", "message": "Authentication error. Please check your credentials."}, indent=4))
 
     except Exception as e:
-        print(json.dumps({"status": "500", "message": f"Error durante la ejecución: {e}"}, indent=4))
+        print(json.dumps({"status": "500", "message": f"Error during execution: {e}"}, indent=4))
     finally:
-        # Closes the connection
         client_socket.close()
 
-def send_command(client_socket, command):
+def sendCommand(client_socket, command):
     """
     Sends a command to the server via the provided client socket and returns the server's response.
     Args:
@@ -120,16 +112,16 @@ def send_command(client_socket, command):
     Returns:
         str: A JSON-formatted string containing the status code and the server's response message.
     Example:
-        response = send_command(client_socket, "LIST")
+        response = sendCommand(client_socket, "LIST")
         print(response)
     """
     
     client_socket.sendall(command.encode())
     response = client_socket.recv(1024).decode().strip()
-    status_code = response.split(" ")[0]  # Extrae el código de estado
+    status_code = response.split(" ")[0] 
     return json.dumps({"status": status_code, "message": response}, indent=4)
 
-def connect_to_server(server, port, tls=False):
+def connectToServer(server, port, tls=False):
     """
     Establishes a connection to the specified server and port.
 
@@ -146,14 +138,13 @@ def connect_to_server(server, port, tls=False):
     client_socket.connect((server, port))
 
     if tls:
-        # Configura el contexto SSL
         context = ssl.create_default_context()
         tls_socket = context.wrap_socket(client_socket, server_hostname=server)
         return tls_socket
     else:
         return client_socket
     
-def rename_file(rnfr_response, client_socket, argument):
+def renameFile(rnfr_response, client_socket, argument):
     """
     Renames a file on the FTP server if the initial rename request was successful.
 
@@ -166,34 +157,30 @@ def rename_file(rnfr_response, client_socket, argument):
     None
     """
     if "350" in rnfr_response:
-        rnto_response = send_command(client_socket, f"RNTO {argument}\r\n")
+        rnto_response = sendCommand(client_socket, f"RNTO {argument}\r\n")
         print(rnto_response)
 
-def parse_pasv_response(response, server_ip):
+def parsePasiveResponse(response, server_ip):
     """
-    Analiza la respuesta del comando PASV del protocolo FTP.
+    Parses the response of the PASV command from the FTP protocol.
 
     Args:
-        response (str): La respuesta del servidor al comando PASV.
-        server_ip (str): La dirección IP del servidor FTP.
+        response (str): The server's response to the PASV command.
+        server_ip (str): The FTP server's IP address.
 
     Returns:
-        tuple: Una tupla que contiene la dirección IP y el puerto en el que el servidor está esperando una conexión de datos.
-               Si la respuesta no es válida, retorna la dirección IP del servidor y None.
+        tuple: A tuple containing the IP address and port where the server is waiting for a data connection.
+               If the response is invalid, returns the server's IP address and None.
     """
-    # Busca una coincidencia en la respuesta usando una expresión regular
     match = re.search(r"(\d+),(\d+),(\d+),(\d+),(\d+),(\d+)", response)
     if match:
-        # Forma la dirección IP a partir de los primeros cuatro grupos
         ip = ".".join(match.groups()[:4])
-        # Calcula el puerto a partir de los dos últimos grupos
         port = int(match.groups()[4]) * 256 + int(match.groups()[5])
         return ip, port
     
-    # Si no hay coincidencia, retorna la dirección IP del servidor y None
-    return server_ip, None  # Usa la dirección IP del servidor si la respuesta no es válida
+    return server_ip, None  
 
-def stor_retr_files(command, pasv_response, server, client_socket, argument1,argument2):
+def storageRetrievalFiles(command, pasv_response, server, client_socket, argument1,argument2):
     """
         Handles the storage (STOR) and retrieval (RETR) of files in an FTP client.
         Parameters:
@@ -215,10 +202,9 @@ def stor_retr_files(command, pasv_response, server, client_socket, argument1,arg
         - Error messages are printed in JSON format if there are issues with the PASV response or data connection.
         """    
          
-    if "227" in pasv_response:  # Código 227: Entrando en modo pasivo
-        ip, port = parse_pasv_response(pasv_response, server)  # Pasa la dirección IP del servidor
+    if "227" in pasv_response: 
+        ip, port = parsePasiveResponse(pasv_response, server)  
         if ip and port:
-            # Establece la conexión de datos
             data_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             data_socket.connect((ip, port))
 
@@ -228,9 +214,9 @@ def stor_retr_files(command, pasv_response, server, client_socket, argument1,arg
             elif command == "STOR":
                 handleSTOR(client_socket, data_socket, argument1, argument2)
         else:
-            print(json.dumps({"status": "500", "message": "Error al procesar la respuesta PASV"}, indent=4))
+            print(json.dumps({"status": "500", "message": "Error processing PASV response"}, indent=4))
     else:
-        print(json.dumps({"status": "500", "message": "Error al entrar en modo PASV"}, indent=4))
+        print(json.dumps({"status": "500", "message": "Error entering PASV mode"}, indent=4))
         
 def handleRETR(client_socket, data_socket, argument1):
     """
@@ -251,20 +237,16 @@ def handleRETR(client_socket, data_socket, argument1):
         4. Closes the data connection.
         5. Receives and displays the server's completion message, verifying the 226 status code.
     """
-    # Ejecuta el comando RETR
-    retr_response = send_command(client_socket, f"RETR {argument1}\r\n")
+    retr_response = sendCommand(client_socket, f"RETR {argument1}\r\n")
     print(retr_response)
 
-    # Recibe los datos del archivo
     file_data = data_socket.recv(1024)
     while file_data:
         print(file_data.decode(), end="")
         file_data = data_socket.recv(1024)
 
-    # Cierra la conexión de datos
     data_socket.close()
 
-    # Agrega verificación del mensaje 226
     completion_response = client_socket.recv(1024).decode().strip()
     print(json.dumps({"status": completion_response.split(" ")[0], "message": completion_response}, indent=4))
           
@@ -285,27 +267,22 @@ def handleSTOR(client_socket, data_socket, argument1, argument2):
     4. Closes the data connection after the file is completely sent.
     5. Waits for the server's completion reply (code 226) and prints the response status and message.
     """
-    # Ejecuta el comando STOR
-    stor_response = send_command(client_socket, f"STOR {argument2}\r\n")
+    stor_response = sendCommand(client_socket, f"STOR {argument2}\r\n")
     print(stor_response)
 
-    # Verificación adicional antes de enviar datos
     if "150" in stor_response:
-        print("Enviando archivo...")
+        print("Sending file...")
                     
-        # Abre el archivo para leer y enviarlo al servidor
         with open(argument1, "rb") as f:
             file_data = f.read(1024)
             while file_data:
                 data_socket.sendall(file_data)
                 file_data = f.read(1024)
-                print("Enviando chunk de datos...")
+                print("Sending data chunk...")
 
-            # Cierra la conexión de datos
             data_socket.shutdown(socket.SHUT_WR)
             data_socket.close()
 
-            # Agrega verificación del mensaje 226
             completion_response = client_socket.recv(1024).decode().strip()
             print(json.dumps({"status": completion_response.split(" ")[0], "message": completion_response}, indent=4))
     
@@ -337,4 +314,4 @@ if __name__ == "__main__":
     argvs = parser.parse_args()
 
     # Call the main FTP client function
-    ftp_client(argvs)
+    ftpClient(argvs)
