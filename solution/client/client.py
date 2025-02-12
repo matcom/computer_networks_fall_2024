@@ -3,7 +3,6 @@ import socket
 
 from client_connection import connection
 from response import response
-from utils import log, from_json, to_json
 
 def check_connection(host, port):
     conn = connection(host, port)
@@ -40,6 +39,7 @@ def authenticate(conn: connection, user, password):
         rsp = response(data['status_code'], data['message'])
         
         if(rsp.status_code == '230'):
+            print('Authenticated successfully.')
             return True
         
     return False
@@ -223,7 +223,6 @@ def handle_command_rmd(conn: connection, dirname: str):
     print(data)
         
 def close_connection(conn: connection):
-    log('Closing connection...')
     resp = conn.send('QUIT\r\n'.encode())
     
     data = {
