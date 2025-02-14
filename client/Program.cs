@@ -6,8 +6,9 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Collections.Generic; // Necesario para List<string>
 
-
-Socket socket;
+class Client
+{
+    Socket socket;
 Socket data_socket;
 Socket dataSocketListener;
 string server;
@@ -463,7 +464,15 @@ string ListFiles(string path = "")
         return fileList;
     }
 
+}
 
-Init();
-System.Console.WriteLine("Hola mundo");
-Console.ReadLine();
+class Program
+{
+    public static void Main(string[] args){
+        foreach (var item in args)
+        {
+            System.Console.WriteLine(item);
+        }
+        Console.ReadLine();
+    }
+}
