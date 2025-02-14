@@ -3,4 +3,4 @@
 # Replace the next shell command with the entrypoint of your solution
 
 cd client
-dotnet run
+dotnet run -- $@
