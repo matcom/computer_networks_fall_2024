@@ -1,14 +1,10 @@
-﻿using System;
-using System.IO;
-using System.Net;
+﻿using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Text.RegularExpressions;
-using System.Collections.Generic; // Necesario para List<string>
 
-class Client
-{
-    Socket socket;
+
+Socket socket;
 Socket data_socket;
 Socket dataSocketListener;
 string server;
@@ -46,12 +42,13 @@ void SendData(Socket dataSocket, string filePath)
         }
     }
 
-void Init(){
-    server = "10.10.10.6";
-    port = 21;
+void Init(string _server, int _port, string _user, string _password){
+    server = _server;
+    port = _port;
+    user = _user;
+    password = _password;
+
     active = true;
-    user = string.Empty;
-    password = string.Empty;
     path = "/";
 }
 
@@ -132,7 +129,7 @@ void Connect(string _user, string _password)
     password = _password;
 
     SendCommand("USER " + user);
-    Console.WriteLine(ReceiveResponse());
+    // Console.WriteLine(ReceiveResponse());
 
     SendCommand("PASS " + password);
     Console.WriteLine(ReceiveResponse());
@@ -140,7 +137,7 @@ void Connect(string _user, string _password)
 
 //No disponible en FreeFTPd
 void Reinitialize(){
-    Init();
+    Init(server, port, user, password);
 
     SendCommand("REIN");
     Console.WriteLine(ReceiveResponse());
@@ -464,15 +461,7 @@ string ListFiles(string path = "")
         return fileList;
     }
 
-}
 
-class Program
-{
-    public static void Main(string[] args){
-        foreach (var item in args)
-        {
-            System.Console.WriteLine(item);
-        }
-        Console.ReadLine();
-    }
-}
+Init(args[1], int.Parse(args[3]), args[5], args[7]);
+Connect(user, password);
+// Console.ReadLine();
