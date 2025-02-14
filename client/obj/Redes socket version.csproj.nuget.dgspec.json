@@ -1,0 +1,61 @@
+{
+  "format": 1,
+  "restore": {
+    "C:\\Users\\Raidel Miguel\\Desktop\\computer_networks_project-main\\client\\Redes socket version.csproj": {}
+  },
+  "projects": {
+    "C:\\Users\\Raidel Miguel\\Desktop\\computer_networks_project-main\\client\\Redes socket version.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "C:\\Users\\Raidel Miguel\\Desktop\\computer_networks_project-main\\client\\Redes socket version.csproj",
+        "projectName": "Redes socket version",
+        "projectPath": "C:\\Users\\Raidel Miguel\\Desktop\\computer_networks_project-main\\client\\Redes socket version.csproj",
+        "packagesPath": "C:\\Users\\Raidel Miguel\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\Raidel Miguel\\Desktop\\computer_networks_project-main\\client\\obj\\",
+        "projectStyle": "PackageReference",
+        "configFilePaths": [
+          "C:\\Users\\Raidel Miguel\\AppData\\Roaming\\NuGet\\NuGet.Config"
+        ],
+        "originalTargetFrameworks": [
+          "net8.0"
+        ],
+        "sources": {
+          "C:\\Users\\Raidel Miguel\\Documents\\Code\\dotnet-sdk-8.0.107-win-x64\\sdk\\8.0.107\\Sdks": {}
+        },
+        "frameworks": {
+          "net8.0": {
+            "targetAlias": "net8.0",
+            "projectReferences": {}
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        }
+      },
+      "frameworks": {
+        "net8.0": {
+          "targetAlias": "net8.0",
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "C:\\Users\\Raidel Miguel\\Documents\\Code\\dotnet-sdk-8.0.107-win-x64\\sdk\\8.0.107/PortableRuntimeIdentifierGraph.json"
+        }
+      }
+    }
+  }
+}

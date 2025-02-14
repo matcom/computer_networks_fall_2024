@@ -1,0 +1,42 @@
+C:\Users\Raidel Miguel\Desktop\Redes socket version\bin\Debug\net8.0\Redes socket version.exe
+C:\Users\Raidel Miguel\Desktop\Redes socket version\bin\Debug\net8.0\Redes socket version.deps.json
+C:\Users\Raidel Miguel\Desktop\Redes socket version\bin\Debug\net8.0\Redes socket version.runtimeconfig.json
+C:\Users\Raidel Miguel\Desktop\Redes socket version\bin\Debug\net8.0\Redes socket version.dll
+C:\Users\Raidel Miguel\Desktop\Redes socket version\bin\Debug\net8.0\Redes socket version.pdb
+C:\Users\Raidel Miguel\Desktop\Redes socket version\obj\Debug\net8.0\Redes socket version.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\Raidel Miguel\Desktop\Redes socket version\obj\Debug\net8.0\Redes socket version.AssemblyInfoInputs.cache
+C:\Users\Raidel Miguel\Desktop\Redes socket version\obj\Debug\net8.0\Redes socket version.AssemblyInfo.cs
+C:\Users\Raidel Miguel\Desktop\Redes socket version\obj\Debug\net8.0\Redes socket version.csproj.CoreCompileInputs.cache
+C:\Users\Raidel Miguel\Desktop\Redes socket version\obj\Debug\net8.0\Redes socket version.dll
+C:\Users\Raidel Miguel\Desktop\Redes socket version\obj\Debug\net8.0\refint\Redes socket version.dll
+C:\Users\Raidel Miguel\Desktop\Redes socket version\obj\Debug\net8.0\Redes socket version.pdb
+C:\Users\Raidel Miguel\Desktop\Redes socket version\obj\Debug\net8.0\Redes socket version.genruntimeconfig.cache
+C:\Users\Raidel Miguel\Desktop\Redes socket version\obj\Debug\net8.0\ref\Redes socket version.dll
+C:\Users\Raidel Miguel\Desktop\FTP client\bin\Debug\net8.0\Redes socket version.exe
+C:\Users\Raidel Miguel\Desktop\FTP client\bin\Debug\net8.0\Redes socket version.deps.json
+C:\Users\Raidel Miguel\Desktop\FTP client\bin\Debug\net8.0\Redes socket version.runtimeconfig.json
+C:\Users\Raidel Miguel\Desktop\FTP client\bin\Debug\net8.0\Redes socket version.dll
+C:\Users\Raidel Miguel\Desktop\FTP client\bin\Debug\net8.0\Redes socket version.pdb
+C:\Users\Raidel Miguel\Desktop\FTP client\obj\Debug\net8.0\Redes socket version.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\Raidel Miguel\Desktop\FTP client\obj\Debug\net8.0\Redes socket version.AssemblyInfoInputs.cache
+C:\Users\Raidel Miguel\Desktop\FTP client\obj\Debug\net8.0\Redes socket version.AssemblyInfo.cs
+C:\Users\Raidel Miguel\Desktop\FTP client\obj\Debug\net8.0\Redes socket version.csproj.CoreCompileInputs.cache
+C:\Users\Raidel Miguel\Desktop\FTP client\obj\Debug\net8.0\Redes socket version.dll
+C:\Users\Raidel Miguel\Desktop\FTP client\obj\Debug\net8.0\refint\Redes socket version.dll
+C:\Users\Raidel Miguel\Desktop\FTP client\obj\Debug\net8.0\Redes socket version.pdb
+C:\Users\Raidel Miguel\Desktop\FTP client\obj\Debug\net8.0\Redes socket version.genruntimeconfig.cache
+C:\Users\Raidel Miguel\Desktop\FTP client\obj\Debug\net8.0\ref\Redes socket version.dll
+C:\Users\Raidel Miguel\Desktop\computer_networks_project-main\client\bin\Debug\net8.0\Redes socket version.exe
+C:\Users\Raidel Miguel\Desktop\computer_networks_project-main\client\bin\Debug\net8.0\Redes socket version.deps.json
+C:\Users\Raidel Miguel\Desktop\computer_networks_project-main\client\bin\Debug\net8.0\Redes socket version.runtimeconfig.json
+C:\Users\Raidel Miguel\Desktop\computer_networks_project-main\client\bin\Debug\net8.0\Redes socket version.dll
+C:\Users\Raidel Miguel\Desktop\computer_networks_project-main\client\bin\Debug\net8.0\Redes socket version.pdb
+C:\Users\Raidel Miguel\Desktop\computer_networks_project-main\client\obj\Debug\net8.0\Redes socket version.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\Raidel Miguel\Desktop\computer_networks_project-main\client\obj\Debug\net8.0\Redes socket version.AssemblyInfoInputs.cache
+C:\Users\Raidel Miguel\Desktop\computer_networks_project-main\client\obj\Debug\net8.0\Redes socket version.AssemblyInfo.cs
+C:\Users\Raidel Miguel\Desktop\computer_networks_project-main\client\obj\Debug\net8.0\Redes socket version.csproj.CoreCompileInputs.cache
+C:\Users\Raidel Miguel\Desktop\computer_networks_project-main\client\obj\Debug\net8.0\Redes socket version.dll
+C:\Users\Raidel Miguel\Desktop\computer_networks_project-main\client\obj\Debug\net8.0\refint\Redes socket version.dll
+C:\Users\Raidel Miguel\Desktop\computer_networks_project-main\client\obj\Debug\net8.0\Redes socket version.pdb
+C:\Users\Raidel Miguel\Desktop\computer_networks_project-main\client\obj\Debug\net8.0\Redes socket version.genruntimeconfig.cache
+C:\Users\Raidel Miguel\Desktop\computer_networks_project-main\client\obj\Debug\net8.0\ref\Redes socket version.dll
