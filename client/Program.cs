@@ -130,6 +130,7 @@ void Connect(string _user, string _password)
 
     SendCommand("USER " + user);
     // Console.WriteLine(ReceiveResponse());
+    ReceiveResponse();
 
     SendCommand("PASS " + password);
     Console.WriteLine(ReceiveResponse());
