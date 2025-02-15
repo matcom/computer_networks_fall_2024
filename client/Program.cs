@@ -117,7 +117,6 @@ string ReceiveData(Socket dataSocket)
         return sb.ToString();
     }
 
-
 //Funciones Principales
 void Connect(string _user, string _password)
 {
@@ -157,7 +156,7 @@ void ChangeWorkingDirectory(string directory)
     Console.WriteLine(ReceiveResponse());
 }
 
-void ChangeDirectoryUP(string directory)
+void ChangeDirectoryUP()
 {
     path = path.Substring(0, path.LastIndexOf('/'));
 
@@ -260,14 +259,26 @@ void UploadFile(string localFilePath, string remoteFileName)
             string response = ReceiveResponse();
             Console.WriteLine(response);
 
-            SendData(data_socket, localFilePath); // Enviar datos a traves del dataSocket
-            data_socket.Close();
+            data_socket.SendTimeout = 5000;
+            data_socket.ReceiveTimeout = 5000;
 
-            SetPassiveMode();
+            try
+            {
+                SendData(data_socket, localFilePath); // Enviar datos a traves del dataSocket
+            }
+            catch (SocketException ex)
+            {
+                if (ex.SocketErrorCode == SocketError.TimedOut) AbortCommand();
+                Console.WriteLine(ReceiveResponse()); //Recibe la respuesta final del servidor
+            }
+            finally
+            {
+                data_socket.Close();
+            }
+            
+            // SetPassiveMode();
 
-            Console.WriteLine(ReceiveResponse()); //Recibe la respuesta final del servidor
         }
-
     }
 
 void DownloadFile(string remoteFilePath, string localFilePath)
@@ -345,7 +356,6 @@ void AppendFile(string remoteFilePath, string localFilePath)
 
     // Console.WriteLine($"Transferencia completada: " + ReceiveResponse());
 }
-//Implemento el comando ACCT ?
 
 void RenameFile(string oldName, string newName)
 {
@@ -380,8 +390,7 @@ void AbortCommand()
     {
         // 1. Enviar el comando ABOR
         SendCommand("ABOR");
-        string abortResponse = ReceiveResponse();
-        Console.WriteLine(abortResponse);
+        Console.WriteLine(ReceiveResponse());
 
         // 3. Cerrar la conexión de datos (si está abierta)
         if (data_socket != null)
@@ -468,17 +477,85 @@ Connect(user, password);
 
 if(args.Length >= 9){
     string command = args[9];
-    string param_1;
-    string param_2;
+    string param_1 = string.Empty;
+    string param_2 = string.Empty;
 
-    if(args.Length >= 11) param_1 = args[11];
-    if(args.Length >= 13) param_2 = args[13];
-    
+    if(args.Length >= 11){
+        param_1 = args[11];
+
+        // Descomentar para usar en Windows con Git bash
+        // param_1 = param_1.Substring(20, param_1.Length - 20);
+    } 
+    if(args.Length >= 13){
+        param_2 = args[13];
+        
+        // Descomentar para usar en Windows con Git bash
+        // param_1 = param_1.Substring(20, param_1.Length - 20);
+    } 
+
     switch (command)
     {
+        case "NOOP":
+        {
+            Nothing();
+            break;
+        }
         case "PWD":
         {
             PrintWorkingDirectory();
+            break;
+        }
+        case "CWD":
+        {
+            ChangeWorkingDirectory(param_1);
+            break;
+        }
+        case "CDUP":
+        {
+            ChangeDirectoryUP();
+            break;
+        }
+        case "QUIT":
+        {
+            Close();
+            break;
+        }
+        case "RETR":
+        {
+            SetPassiveMode();
+            DownloadFile(param_1, ".");
+            break;
+        }
+        case "STOR":
+        {
+            SetPassiveMode();
+            UploadFile(param_1, param_2);
+            break;
+        }
+        case "ABOR":
+        {
+            SetPassiveMode();
+            AbortCommand();
+            break;
+        }
+        case "RNFR":
+        {
+            RenameFile(param_1, param_2);
+            break;
+        }
+         case "DELE":
+        {
+            DeleteFile(path, param_1);
+            break;
+        }
+        case "MKD":
+        {
+            MakeDirectory(param_1);
+            break;
+        }
+        case "RMD":
+        {
+            RemoveDirectory(param_1);
             break;
         }
         default:
