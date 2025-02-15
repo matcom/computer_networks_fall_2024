@@ -19,7 +19,7 @@ void SendCommand(string command)
 {
     byte[] commandBytes = Encoding.ASCII.GetBytes(command + "\r\n");
     socket.Send(commandBytes);
-    Console.WriteLine("Enviado: " + command);
+    // Console.WriteLine("Enviado: " + command);
 }
 
 string ReceiveResponse()
@@ -424,7 +424,7 @@ void RemoveDirectory(string directoryName)
     Console.WriteLine(mkdResponse);
 }
 
-void PrintWorkingDirectorySocket()
+void PrintWorkingDirectory()
     {
         // 1. Enviar el comando PWD
         SendCommand("PWD");
@@ -465,4 +465,24 @@ string ListFiles(string path = "")
 
 Init(args[1], int.Parse(args[3]), args[5], args[7]);
 Connect(user, password);
+
+if(args.Length >= 9){
+    string command = args[9];
+    string param_1;
+    string param_2;
+
+    if(args.Length >= 11) param_1 = args[11];
+    if(args.Length >= 13) param_2 = args[13];
+    
+    switch (command)
+    {
+        case "PWD":
+        {
+            PrintWorkingDirectory();
+            break;
+        }
+        default:
+            break;
+    }
+}
 // Console.ReadLine();
